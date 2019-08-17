@@ -4,9 +4,12 @@
 namespace EasySwoole\TpORM;
 
 
+use EasySwoole\Mysqli\Mysqli;
+
 abstract class AbstractModel
 {
     abstract function setTableName():string ;
+    abstract function mysqliConnection():Mysqli;
     protected function setPrefix():string
     {
         return '';

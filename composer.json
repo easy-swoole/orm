@@ -12,7 +12,8 @@
     }
   ],
   "require": {
-    "php": ">=7.1.0"
+    "php": ">=7.1.0",
+    "easyswoole/mysqli": "^1.2"
   },
   "require-dev": {
     "easyswoole/phpunit": "^1.0"
