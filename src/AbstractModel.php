@@ -6,32 +6,45 @@ namespace EasySwoole\TpORM;
 
 use EasySwoole\Mysqli\Mysqli;
 
-abstract class AbstractModel
+abstract class AbstractModel implements \ArrayAccess
 {
-    abstract function setTableName():string ;
+    const COLUMN_TYPE_INT = 1;
+    const COLUMN_TYPE_STRING = 2;
+    const COLUMN_TYPE_FLOAT = 3;
+
+    private $data = [];
+
+    abstract function tableName():string ;
+
     abstract function mysqliConnection():Mysqli;
-    protected function setPrefix():string
+
+    abstract function schemaInfo():array ;
+
+    protected function prefix():string
     {
         return '';
     }
+
     public static function primaryKey():?string
     {
         return null;
     }
 
-    protected function setSchema():array
+    protected function schemaType():array
     {
         return [];
     }
 
-    protected function setSchemaType():array
+    function find($pkValue = null)
     {
-        return [];
-    }
-
-    function find()
-    {
-
+        if($pkValue && !empty(static::primaryKey())){
+            $this->where(static::primaryKey(),$pkValue);
+        }
+        $data = $this->mysqliConnection()->getOne($this->prefix().$this->tableName());
+        if(!empty($data)){
+            $this->setData($data);
+        }
+        return $this;
     }
 
     function save(array $data)
@@ -49,14 +62,28 @@ abstract class AbstractModel
 
     }
 
-    public static function create(array $data = [])
+    public static function create(array $data = []):AbstractModel
     {
-
+        $instance = new static();
+        $instance->setData($data);
+        return $instance;
     }
 
-    public function where()
+    public function setData(array $data)
     {
-
+        $this->data = [];
+    }
+    /**
+     * @param        $whereProps
+     * @param string $whereValue
+     * @param string $operator
+     * @param string $cond
+     * @return AbstractModel
+     */
+    protected function where( $whereProps, $whereValue = 'DBNULL', $operator = '=', $cond = 'AND' ):AbstractModel
+    {
+        $this->mysqliConnection()->where($whereProps,$whereValue,$operator,$cond);
+        return $this;
     }
 
     public function update()
@@ -113,5 +140,29 @@ abstract class AbstractModel
         /*
          * 用以实现静态调用
          */
+    }
+
+    public function offsetExists($offset)
+    {
+        return isset($this->data[$offset]);
+    }
+
+    public function offsetGet($offset)
+    {
+        if(isset($this->data[$offset])){
+            return $this->data[$offset];
+        }else{
+            return null;
+        }
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        $this->data[$offset] = $value;
+    }
+
+    public function offsetUnset($offset)
+    {
+        unset($this->data[$offset]);
     }
 }
