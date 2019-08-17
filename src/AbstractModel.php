@@ -14,7 +14,7 @@ abstract class AbstractModel
     {
         return '';
     }
-    protected function setPrimaryKey():?string
+    public static function primaryKey():?string
     {
         return null;
     }
@@ -92,6 +92,20 @@ abstract class AbstractModel
     public function column()
     {
 
+    }
+
+    function hasOne(string $class,?string $foreignKey = null,?string $primaryKey = null)
+    {
+        //判断class是否是存在的model class
+        if($primaryKey === null){
+            $primaryKey = self::primaryKey();
+        }
+        if($foreignKey === null){
+            $foreignKey = $class::primaryKey();
+        }
+        //做关联主键空判
+        //执行join get one
+        //return $class($data);
     }
 
     public static function __callStatic($name, $arguments)
