@@ -80,7 +80,7 @@ abstract class AbstractModel implements \ArrayAccess
      * @param string $cond
      * @return AbstractModel
      */
-    protected function where( $whereProps, $whereValue = 'DBNULL', $operator = '=', $cond = 'AND' ):AbstractModel
+    public function where( $whereProps, $whereValue = 'DBNULL', $operator = '=', $cond = 'AND' ):AbstractModel
     {
         $this->mysqliConnection()->where($whereProps,$whereValue,$operator,$cond);
         return $this;
