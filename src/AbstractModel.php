@@ -30,11 +30,6 @@ abstract class AbstractModel implements \ArrayAccess
         return null;
     }
 
-    protected function schemaType():array
-    {
-        return [];
-    }
-
     function find($pkValue = null)
     {
         if($pkValue && !empty(static::primaryKey())){
@@ -47,9 +42,12 @@ abstract class AbstractModel implements \ArrayAccess
         return $this;
     }
 
-    function save(array $data)
+    /*
+     * insert
+     */
+    function save()
     {
-
+        return $this->mysqliConnection()->insert($this->prefix().$this->tableName(),$this->data);
     }
 
     function saveAll()
@@ -57,10 +55,6 @@ abstract class AbstractModel implements \ArrayAccess
 
     }
 
-    function allowField()
-    {
-
-    }
 
     public static function create(array $data = []):AbstractModel
     {
@@ -69,12 +63,21 @@ abstract class AbstractModel implements \ArrayAccess
         return $instance;
     }
 
-    public function setData(array $data)
+    public function setData(array $data,bool $clearData = true):AbstractModel
     {
-        $this->data = [];
+        if($clearData){
+            $this->data = [];
+        }
+        foreach ($this->schemaInfo() as $key => $type){
+            if(isset($data[$key])){
+                $this->data[$key] = $this->valueMap($data[$key],$type);
+            }
+        }
+        return $this;
     }
+
     /**
-     * @param        $whereProps
+     * @param $whereProps
      * @param string $whereValue
      * @param string $operator
      * @param string $cond
@@ -86,7 +89,7 @@ abstract class AbstractModel implements \ArrayAccess
         return $this;
     }
 
-    public function update()
+    public function update(array $data = [],array $columns = null)
     {
 
     }
@@ -106,20 +109,12 @@ abstract class AbstractModel implements \ArrayAccess
 
     }
 
-    public function order()
+    public function order( string $orderByField, string $orderByDirection = "DESC", $customFieldsOrRegExp = null ):AbstractModel
     {
-
+        $this->mysqliConnection()->orderBy($orderByField,$orderByDirection,$customFieldsOrRegExp);
+        return $this;
     }
 
-    public function value()
-    {
-
-    }
-
-    public function column()
-    {
-
-    }
 
     function hasOne(string $class,?string $foreignKey = null,?string $primaryKey = null)
     {
@@ -133,13 +128,6 @@ abstract class AbstractModel implements \ArrayAccess
         //做关联主键空判
         //执行join get one
         //return $class($data);
-    }
-
-    public static function __callStatic($name, $arguments)
-    {
-        /*
-         * 用以实现静态调用
-         */
     }
 
     public function offsetExists($offset)
@@ -164,5 +152,26 @@ abstract class AbstractModel implements \ArrayAccess
     public function offsetUnset($offset)
     {
         unset($this->data[$offset]);
+    }
+
+    private function valueMap($data,int $type)
+    {
+        switch ($type){
+            case self::COLUMN_TYPE_INT:{
+                return (int)$data;
+                break;
+            }
+            case self::COLUMN_TYPE_STRING:{
+                return (string)$data;
+                break;
+            }
+            case  self::COLUMN_TYPE_FLOAT:{
+                return (float)$data;
+                break;
+            }
+            default:{
+                return $data;
+            }
+        }
     }
 }
