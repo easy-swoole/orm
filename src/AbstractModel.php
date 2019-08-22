@@ -6,13 +6,14 @@ namespace EasySwoole\TpORM;
 
 use EasySwoole\Mysqli\Mysqli;
 
-abstract class AbstractModel implements \ArrayAccess
+abstract class AbstractModel implements \ArrayAccess,\JsonSerializable,\Iterator
 {
     const COLUMN_TYPE_INT = 1;
     const COLUMN_TYPE_STRING = 2;
     const COLUMN_TYPE_FLOAT = 3;
 
     private $data = [];
+    private $iteratorKey;
 
     abstract function tableName():string ;
 
@@ -130,6 +131,10 @@ abstract class AbstractModel implements \ArrayAccess
         //return $class($data);
     }
 
+    /*
+     * ************ ArrayAccess *************
+     */
+
     public function offsetExists($offset)
     {
         return isset($this->data[$offset]);
@@ -144,15 +149,72 @@ abstract class AbstractModel implements \ArrayAccess
         }
     }
 
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value):bool
     {
+        if(!in_array($offset,$this->schemaInfo())){
+            return false;
+        }
         $this->data[$offset] = $value;
+        return true;
     }
 
     public function offsetUnset($offset)
     {
         unset($this->data[$offset]);
     }
+
+    /*
+        * ************ Iterator *************
+    */
+
+    public function current()
+    {
+        return $this->data[$this->iteratorKey];
+    }
+
+    public function next()
+    {
+        $temp = array_keys($this->data);
+        while ($tempKey = array_shift($temp)){
+            if($tempKey === $this->iteratorKey){
+                $this->iteratorKey = array_shift($temp);
+                break;
+            }
+        }
+        return $this->iteratorKey;
+    }
+
+    public function key()
+    {
+        return $this->iteratorKey;
+    }
+
+    public function valid()
+    {
+        return isset($this->data[$this->iteratorKey]);
+    }
+
+    public function rewind()
+    {
+        $temp = array_keys($this->data);
+        $this->iteratorKey = array_shift($temp);
+    }
+
+
+    /*
+       * ************ JsonSerializable *************
+    */
+
+    public function jsonSerialize()
+    {
+        return $this->data;
+    }
+
+    public function toArray():array
+    {
+        return $this->data;
+    }
+
 
     private function valueMap($data,int $type)
     {
