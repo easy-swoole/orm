@@ -1,27 +1,27 @@
 <?php
 
 
-namespace EasySwoole\TpORM;
+namespace EasySwoole\TpORM\Utility;
 
 
-class ColumnType
+class Column
 {
-    const COLUMN_TYPE_INT = 1;
-    const COLUMN_TYPE_STRING = 2;
-    const COLUMN_TYPE_FLOAT = 3;
+    const TYPE_INT = 1;
+    const TYPE_STRING = 2;
+    const TYPE_FLOAT = 3;
 
     public static function valueMap($data,int $type)
     {
         switch ($type){
-            case self::COLUMN_TYPE_INT:{
+            case self::TYPE_INT:{
                 return (int)$data;
                 break;
             }
-            case self::COLUMN_TYPE_STRING:{
+            case self::TYPE_STRING:{
                 return (string)$data;
                 break;
             }
-            case  self::COLUMN_TYPE_FLOAT:{
+            case  self::TYPE_FLOAT:{
                 return (float)$data;
                 break;
             }
