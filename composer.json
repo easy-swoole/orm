@@ -19,7 +19,8 @@
   },
   "autoload": {
     "psr-4": {
-      "EasySwoole\\ORM\\": "src/"
+      "EasySwoole\\ORM\\": "src/",
+      "EasySwoole\\ORM\\Tests\\": "tests/"
     }
   }
 }
