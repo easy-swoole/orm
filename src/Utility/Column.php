@@ -1,7 +1,7 @@
 <?php
 
 
-namespace EasySwoole\TpORM\Utility;
+namespace EasySwoole\ORM\Utility;
 
 
 class Column

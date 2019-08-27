@@ -1,10 +1,10 @@
 <?php
 
 
-namespace EasySwoole\TpORM;
+namespace EasySwoole\ORM;
 
 
-use EasySwoole\TpORM\Characteristic\Base;
+use EasySwoole\ORM\Characteristic\Base;
 
 class Model
 {

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace EasySwoole\TpORM\Driver;
+namespace EasySwoole\ORM\Driver;
 
 
 class Pdo implements DriverInterface

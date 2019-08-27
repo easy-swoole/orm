@@ -1,10 +1,10 @@
 <?php
 
 
-namespace EasySwoole\TpORM\Characteristic;
+namespace EasySwoole\ORM\Characteristic;
 
 
-use EasySwoole\TpORM\Utility\Column;
+use EasySwoole\ORM\Utility\Column;
 
 trait Base
 {

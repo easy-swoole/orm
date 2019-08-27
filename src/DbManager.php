@@ -1,7 +1,7 @@
 <?php
 
 
-namespace EasySwoole\TpORM;
+namespace EasySwoole\ORM;
 
 
 class DbManager

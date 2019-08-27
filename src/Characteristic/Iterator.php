@@ -1,7 +1,7 @@
 <?php
 
 
-namespace EasySwoole\TpORM\Characteristic;
+namespace EasySwoole\ORM\Characteristic;
 
 
 trait Iterator
