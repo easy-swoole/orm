@@ -92,4 +92,29 @@ class QueryBuilderTest extends TestCase
         $this->assertEquals('SELECT  * FROM getTable  JOIN table2 on table2.col1 = getTable.col2 WHERE  table2.col1 = 2 ',$this->builder->getQuery());
         $this->assertEquals([2],$this->builder->getBindParams());
     }
+
+    function testUpdate()
+    {
+
+    }
+
+    function testWhereUpdate()
+    {
+
+    }
+
+    function testDelete()
+    {
+
+    }
+
+    function testWhereDelete()
+    {
+
+    }
+
+    function testInsert()
+    {
+
+    }
 }
