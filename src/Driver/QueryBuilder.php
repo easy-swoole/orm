@@ -28,17 +28,18 @@ class QueryBuilder
     protected $_forUpdate = false;
     protected $_lockInShareMode = false;
     protected $_subQueryAlias = '';
-    protected $prepareQuery = null;
-    protected $bindParams = [];
+    protected $lastPrepareQuery = null;
+    protected $lastBindParams = [];
+    protected $lastQueryOptions = [];
 
-    public function getPrepareQuery():?string
+    public function getLastPrepareQuery():?string
     {
-        return $this->prepareQuery;
+        return $this->lastPrepareQuery;
     }
 
-    public function getBindParams()
+    public function getLastBindParams()
     {
-        return $this->bindParams;
+        return $this->lastBindParams;
     }
 
     public function __construct($host = null)
@@ -67,9 +68,10 @@ class QueryBuilder
 
     public function reset()
     {
-        $this->prepareQuery = $this->_query;
-        $this->bindParams = $this->_bindParams;
-        array_shift($this->bindParams);
+        $this->lastPrepareQuery = $this->_query;
+        $this->lastBindParams = $this->_bindParams;
+        array_shift($this->lastBindParams);
+        $this->lastQueryOptions = $this->_queryOptions;
         $this->_where = [];
         $this->_having = [];
         $this->_join = [];
@@ -119,9 +121,9 @@ class QueryBuilder
         return $this;
     }
 
-    function getQueryOptions():array
+    function getLastQueryOptions():array
     {
-        return $this->_queryOptions;
+        return $this->lastQueryOptions;
     }
 
     public function withTotalCount(): QueryBuilder
