@@ -12,19 +12,6 @@ trait Base
     private $schemaInfo = [];
     private $strict = false;
 
-    function __construct(?array $data = null)
-    {
-        $this->initialize();
-        if($data){
-            $this->setData($data);
-        }
-    }
-
-    protected function initialize()
-    {
-
-    }
-
     protected function strictScheme(bool $strict = null)
     {
         if($strict !== null){
@@ -43,11 +30,6 @@ trait Base
             $this->data = [];
         }
         return $this->schemaInfo;
-    }
-
-    public static function create(array $data = null)
-    {
-        return new static($data);
     }
 
     public function setData(array $data,bool $clear = false)

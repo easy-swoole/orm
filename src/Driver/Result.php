@@ -7,7 +7,7 @@ namespace EasySwoole\ORM\Driver;
 class Result
 {
     private $lastInsertId;
-    private $data;
+    private $result;
     private $lastError;
     private $lastErrorNo;
 
@@ -62,16 +62,26 @@ class Result
     /**
      * @return mixed
      */
-    public function getData()
+    public function getResult()
     {
-        return $this->data;
+        return $this->result;
     }
 
     /**
-     * @param mixed $data
+     * @param mixed $result
      */
-    public function setData($data): void
+    public function setResult($result): void
     {
-        $this->data = $data;
+        $this->result = $result;
+    }
+
+    public function toArray()
+    {
+        return [
+            'lastInsertId'=>$this->lastInsertId,
+            'result'=>$this->result,
+            'lastError'=>$this->lastError,
+            'lastErrorNo'=>$this->lastErrorNo
+        ];
     }
 }

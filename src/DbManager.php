@@ -4,6 +4,8 @@
 namespace EasySwoole\ORM;
 
 
+use EasySwoole\ORM\Driver\DriverInterface;
+
 class DbManager
 {
     private static $instance;
@@ -14,5 +16,15 @@ class DbManager
             self::$instance = new static();
         }
         return self::$instance;
+    }
+
+    function addConnection(string $name = 'default')
+    {
+
+    }
+
+    function getConnection(string $name = 'default'):DriverInterface
+    {
+
     }
 }

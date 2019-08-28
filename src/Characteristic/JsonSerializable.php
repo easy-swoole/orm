@@ -6,7 +6,7 @@ namespace EasySwoole\ORM\Characteristic;
 
 trait JsonSerializable
 {
-    use Base;
+    private $data = [];
 
     public function jsonSerialize()
     {

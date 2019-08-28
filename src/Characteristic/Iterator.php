@@ -6,8 +6,10 @@ namespace EasySwoole\ORM\Characteristic;
 
 trait Iterator
 {
-    use Base;
+
     private $iteratorKey;
+    private $data = [];
+
     public function current()
     {
         return $this->data[$this->iteratorKey];
