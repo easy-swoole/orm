@@ -65,7 +65,7 @@ class QueryBuilder
         }
     }
 
-    protected function reset()
+    public function reset()
     {
         $this->prepareQuery = $this->_query;
         $this->bindParams = $this->_bindParams;
@@ -95,11 +95,11 @@ class QueryBuilder
 
     public function setQueryOption($options)
     {
-        $allowedOptions = Array('ALL', 'DISTINCT', 'DISTINCTROW', 'HIGH_PRIORITY', 'STRAIGHT_JOIN', 'SQL_SMALL_RESULT',
+        $allowedOptions = ['ALL', 'DISTINCT', 'DISTINCTROW', 'HIGH_PRIORITY', 'STRAIGHT_JOIN', 'SQL_SMALL_RESULT',
             'SQL_BIG_RESULT', 'SQL_BUFFER_RESULT', 'SQL_CACHE', 'SQL_NO_CACHE', 'SQL_CALC_FOUND_ROWS',
-            'LOW_PRIORITY', 'IGNORE', 'QUICK', 'MYSQLI_NESTJOIN', 'FOR UPDATE', 'LOCK IN SHARE MODE');
+            'LOW_PRIORITY', 'IGNORE', 'QUICK', 'MYSQLI_NESTJOIN', 'FOR UPDATE', 'LOCK IN SHARE MODE'];
         if (!is_array($options)) {
-            $options = Array($options);
+            $options = [$options];
         }
         foreach ($options as $option) {
             $option = strtoupper($option);
@@ -117,6 +117,11 @@ class QueryBuilder
             }
         }
         return $this;
+    }
+
+    function getQueryOptions():array
+    {
+        return $this->_queryOptions;
     }
 
     public function withTotalCount(): QueryBuilder
@@ -209,7 +214,7 @@ class QueryBuilder
         if (count($this->_having) == 0) {
             $cond = '';
         }
-        $this->_having[] = array($cond, $havingProp, $operator, $havingValue);
+        $this->_having[] = [$cond, $havingProp, $operator, $havingValue];
         return $this;
     }
 
@@ -220,7 +225,7 @@ class QueryBuilder
 
     public function join($joinTable, $joinCondition, $joinType = '')
     {
-        $allowedTypes = array('LEFT', 'RIGHT', 'OUTER', 'INNER', 'LEFT OUTER', 'RIGHT OUTER', 'NATURAL');
+        $allowedTypes = ['LEFT', 'RIGHT', 'OUTER', 'INNER', 'LEFT OUTER', 'RIGHT OUTER', 'NATURAL'];
         $joinType = strtoupper(trim($joinType));
         if ($joinType && !in_array($joinType, $allowedTypes)) {
             throw new Exception('Wrong JOIN type: ' . $joinType);
@@ -228,14 +233,14 @@ class QueryBuilder
         if (!is_object($joinTable)) {
             $joinTable = self::$prefix . $joinTable;
         }
-        $this->_join[] = Array($joinType, $joinTable, $joinCondition);
+        $this->_join[] = [$joinType, $joinTable, $joinCondition];
         return $this;
     }
 
 
     public function orderBy($orderByField, $orderbyDirection = "DESC", $customFieldsOrRegExp = null)
     {
-        $allowedDirection = Array("ASC", "DESC");
+        $allowedDirection = ["ASC", "DESC"];
         $orderbyDirection = strtoupper(trim($orderbyDirection));
         $orderByField = preg_replace("/[^ -a-z0-9\.\(\),_`\*\'\"]+/i", '', $orderByField);
         // Add table prefix to orderByField if needed.
@@ -339,11 +344,6 @@ class QueryBuilder
         array_push($this->_bindParams, $value);
     }
 
-    /**
-     * Helper function to add variables into bind parameters array in bulk
-     *
-     * @param array $values Variable with values
-     */
     protected function _bindParams($values)
     {
         foreach ($values as $value) {
@@ -351,16 +351,6 @@ class QueryBuilder
         }
     }
 
-    /**
-     * Helper function to add variables into bind parameters array and will return
-     * its SQL part of the query according to operator in ' $operator ?' or
-     * ' $operator ($subquery) ' formats
-     *
-     * @param string $operator
-     * @param mixed $value Variable with values
-     *
-     * @return string
-     */
     protected function _buildPair($operator, $value)
     {
         if (!is_object($value)) {
@@ -571,21 +561,6 @@ class QueryBuilder
         } else {
             $this->_query .= ' LIMIT ' . (int)$numRows;
         }
-    }
-
-    protected function refValues(array &$arr)
-    {
-        //Reference in the function arguments are required for HHVM to work
-        //https://github.com/facebook/hhvm/issues/5155
-        //Referenced data array is required by mysqli since PHP 5.3+
-        if (strnatcmp(phpversion(), '5.3') >= 0) {
-            $refs = array();
-            foreach ($arr as $key => $value) {
-                $refs[$key] = &$arr[$key];
-            }
-            return $refs;
-        }
-        return $arr;
     }
 
     protected function replacePlaceHolders($str, $vals)

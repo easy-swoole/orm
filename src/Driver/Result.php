@@ -11,6 +11,8 @@ class Result
     private $lastError;
     private $lastErrorNo;
     private $affectedRows;
+    private $totalCount = 0;
+
 
     /**
      * @return mixed
@@ -92,7 +94,21 @@ class Result
         $this->affectedRows = $affectedRows;
     }
 
+    /**
+     * @return int
+     */
+    public function getTotalCount(): int
+    {
+        return $this->totalCount;
+    }
 
+    /**
+     * @param int $totalCount
+     */
+    public function setTotalCount(int $totalCount): void
+    {
+        $this->totalCount = $totalCount;
+    }
 
     public function toArray()
     {

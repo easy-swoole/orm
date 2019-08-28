@@ -31,6 +31,10 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 
     protected $pk = null;
 
+    protected $limit = null;
+
+    private $withTotalCount = false;
+
     function __construct()
     {
         $this->queryBuilder = new QueryBuilder();
@@ -59,15 +63,32 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         return $ret;
     }
 
-
-    function find()
+    function find($data = null)
     {
-
+        if($data !== null && !empty($this->pk)){
+            $this->where($this->pk,$data);
+        }
+        $this->queryBuilder()->getOne($this->table());
+        return $this->execQueryBuilder();
     }
 
-    function limit()
+    function limit(int $one,?int $two = null)
     {
+        if($two !== null){
+            $this->limit = [$one,$two];
+        }else{
+            $this->limit = $one;
+        }
+        return $this;
+    }
 
+    function withTotalCount()
+    {
+        if(!$this->withTotalCount){
+            $this->queryBuilder()->withTotalCount();
+            $this->withTotalCount = true;
+        }
+        return $this;
     }
 
     function save()
@@ -83,10 +104,16 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
             if($ret->getLastErrorNo()){
                 throw new Exception($ret->getLastError());
             }else{
+                if($this->withTotalCount){
+                    $data = DbManager::getInstance()->getConnection($this->connection)->query('SELECT FOUND_ROWS() as count');
+                    if($data->getResult()){
+                        $ret->setTotalCount($data->getResult()[0]['count']);
+                    }
+                }
                 return $ret->getResult();
             }
-
         }
+        $this->reset();
         return null;
     }
 
@@ -123,24 +150,31 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         return $this;
     }
 
-    function get($numRows = null, $columns = '*')
+    function get($columns = '*')
     {
-        $this->queryBuilder()->get($this->table());
+        $this->queryBuilder()->get($this->table(),$this->limit,$columns);
         return $this->execQueryBuilder();
     }
 
-    function delete($numRows = null)
+    function delete()
     {
-        $this->queryBuilder()->delete($this->table(),$numRows);
+        $this->queryBuilder()->delete($this->table(),$this->limit);
         return $this->execQueryBuilder();
     }
 
-    function update(?int $numRows = null,?array $data = null,array $columns = [])
+    function update(?array $data = null,array $columns = [])
     {
         if(!$data){
             $data = $this->data;
         }
-        $this->queryBuilder->update($this->table(),$data,$numRows);
+        $this->queryBuilder->update($this->table(),$data,$this->limit);
         return $this->execQueryBuilder();
+    }
+
+    private function reset()
+    {
+        $this->limit = null;
+        $this->queryBuilder()->reset();
+        $this->withTotalCount = false;
     }
 }
