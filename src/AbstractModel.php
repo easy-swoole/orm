@@ -107,6 +107,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
             $data = $this->data;
         }
         $this->queryBuilder->update($this->table(),$data,$numRows);
+        return $this->exec();
     }
 
     function find()
