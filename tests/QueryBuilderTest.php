@@ -4,7 +4,7 @@
 namespace EasySwoole\ORM\Tests;
 
 
-use EasySwoole\ORM\Utility\QueryBuilder;
+use EasySwoole\ORM\Driver\QueryBuilder;
 use PHPUnit\Framework\TestCase;
 
 class QueryBuilderTest extends TestCase

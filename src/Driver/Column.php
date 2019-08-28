@@ -1,7 +1,7 @@
 <?php
 
 
-namespace EasySwoole\ORM\Utility;
+namespace EasySwoole\ORM\Driver;
 
 
 class Column

@@ -1,8 +1,10 @@
 <?php
 
 
-namespace EasySwoole\ORM\Utility;
+namespace EasySwoole\ORM\Driver;
 
+
+use EasySwoole\ORM\Exception\Exception;
 
 class QueryBuilder
 {
@@ -43,7 +45,7 @@ class QueryBuilder
     {
         $isSubQuery = false;
         $subQueryAlias = '';
-       
+
         if (is_array($host)) {
             foreach ($host as $key => $val) {
                 $$key = $val;
@@ -102,7 +104,7 @@ class QueryBuilder
         foreach ($options as $option) {
             $option = strtoupper($option);
             if (!in_array($option, $allowedOptions)) {
-                throw new \Exception('Wrong query option: ' . $option);
+                throw new Exception('Wrong query option: ' . $option);
             }
             if ($option == 'MYSQLI_NESTJOIN') {
                 $this->_nestJoin = true;
@@ -117,7 +119,7 @@ class QueryBuilder
         return $this;
     }
 
-    public function withTotalCount():QueryBuilder
+    public function withTotalCount(): QueryBuilder
     {
         $this->setQueryOption('SQL_CALC_FOUND_ROWS');
         return $this;
@@ -443,7 +445,7 @@ class QueryBuilder
                     }
                     break;
                 default:
-                    throw new \Exception("Wrong operation");
+                    throw new Exception("Wrong operation");
             }
         }
         $this->_query = rtrim($this->_query, ', ');
@@ -697,22 +699,6 @@ class QueryBuilder
         return new static(array('isSubQuery' => true,'subQueryAlias'=>$subQueryAlias));
     }
 
-    public function tableExists($tables)
-    {
-        $tables = !is_array($tables) ? Array($tables) : $tables;
-        $count = count($tables);
-        if ($count == 0) {
-            return false;
-        }
-        foreach ($tables as $i => $value)
-            $tables[$i] = self::$prefix . $value;
-        $db = isset($this->connectionsSettings[$this->defConnectionName]) ? $this->connectionsSettings[$this->defConnectionName]['db'] : null;
-        $this->where('table_schema', $db);
-        $this->where('table_name', $tables, 'in');
-        $this->get('information_schema.tables', $count);
-        return $this->count == $count;
-    }
-
     public function joinWhere($whereJoin, $whereProp, $whereValue = 'DBNULL', $operator = '=', $cond = 'AND')
     {
         $this->_joinAnd[self::$prefix . $whereJoin][] = Array($cond, $whereProp, $operator, $whereValue);
@@ -784,4 +770,3 @@ class QueryBuilder
         }
     }
 }
-
