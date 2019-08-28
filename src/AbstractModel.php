@@ -11,6 +11,10 @@ use EasySwoole\ORM\Characteristic\JsonSerializable;
 use EasySwoole\ORM\Driver\Result;
 use EasySwoole\ORM\Utility\QueryBuilder;
 
+/**
+ * Class AbstractModel
+ * @package EasySwoole\ORM
+ */
 abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 {
     use Base;
@@ -32,7 +36,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         $this->initialize();
     }
 
-    abstract function table():string ;
+    abstract protected function table():string ;
 
 
     protected function initialize()
@@ -56,7 +60,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         return $this;
     }
 
-    public function create(array $data = null)
+    public static function create(array $data = null)
     {
         $ret = new static();
         if($data){
@@ -137,22 +141,8 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 
     public static function __callStatic($name, $arguments)
     {
-        switch ($name){
-            case 'create':{
-                $ins = new static();
-//
-//                $ins->setData($arguments);
-                break;
-            }
-
-            case 'table':{
-                break;
-            }
-
-            case 'connect':{
-                break;
-            }
-        }
+        $ret = new static();
+        $ret->$name(...$arguments);
+        return $ret;
     }
-
 }
