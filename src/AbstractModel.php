@@ -9,7 +9,7 @@ use EasySwoole\ORM\Characteristic\Base;
 use EasySwoole\ORM\Characteristic\Iterator;
 use EasySwoole\ORM\Characteristic\JsonSerializable;
 use EasySwoole\ORM\Driver\Result;
-use EasySwoole\ORM\Utility\QueryBuilder;
+use EasySwoole\ORM\Driver\QueryBuilder;
 
 /**
  * Class AbstractModel
