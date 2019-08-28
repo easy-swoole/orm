@@ -24,13 +24,14 @@ class QueryBuilder
     protected $_isSubQuery = false;
     protected $_updateColumns = null;
     protected $_nestJoin = false;
-    private $_tableName = '';
+    protected $_tableName = '';
     protected $_forUpdate = false;
     protected $_lockInShareMode = false;
     protected $_subQueryAlias = '';
     protected $lastPrepareQuery = null;
     protected $lastBindParams = [];
     protected $lastQueryOptions = [];
+    protected $lastAlias = '';
 
     public function getLastPrepareQuery():?string
     {
@@ -157,12 +158,16 @@ class QueryBuilder
 
     public function insert($tableName, $insertData)
     {
-        return $this->_buildInsert($tableName, $insertData, 'INSERT');
+        $this->_buildInsert($tableName, $insertData, 'INSERT');
+        $this->reset();
+        return $this;
     }
 
     public function replace($tableName, $insertData)
     {
-        return $this->_buildInsert($tableName, $insertData, 'REPLACE');
+        $this->_buildInsert($tableName, $insertData, 'REPLACE');
+        $this->reset();
+        return $this;
     }
 
 
@@ -198,7 +203,7 @@ class QueryBuilder
         if (count($this->_where) == 0) {
             $cond = '';
         }
-        $this->_where[] = array($cond, $whereProp, $operator, $whereValue);
+        $this->_where[] = [$cond, $whereProp, $operator, $whereValue];
         return $this;
     }
 
@@ -372,7 +377,6 @@ class QueryBuilder
         }
         $this->_query = $operation . " " . implode(' ', $this->_queryOptions) . " INTO " . self::$prefix . $tableName;
         $this->_buildQuery(null, $insertData);
-        return true;
     }
 
     protected function _buildQuery($numRows = null, $tableData = null)
@@ -405,7 +409,6 @@ class QueryBuilder
                     $this->_query .= str_replace('.', '.`', $column) . "` = ";
                 }
             }
-            // Subquery value
             if ($value instanceof QueryBuilder && $value->isSubQuery()) {
                 $this->_query .= $this->_buildPair("", $value) . ", ";
                 continue;
@@ -592,7 +595,7 @@ class QueryBuilder
         return $newStr;
     }
 
-    public function getQuery()
+    public function getLastQuery()
     {
         return $this->_lastQuery;
     }
@@ -602,11 +605,11 @@ class QueryBuilder
         if (!$this->_isSubQuery) {
             return null;
         }
-        array_shift($this->_bindParams);
-        $val = Array('query' => $this->_query,
-            'params' => $this->_bindParams,
+        $val = [
+            'query' => $this->lastPrepareQuery,
+            'params' => $this->lastBindParams,
             'alias' => $this->_subQueryAlias
-        );
+        ];
         $this->reset();
         return $val;
     }
@@ -671,7 +674,7 @@ class QueryBuilder
         return array("[F]" => array($expr, $bindParams));
     }
 
-    public static function subQuery(string $subQueryAlias)
+    public static function subQuery(string $subQueryAlias = null)
     {
         return new static(array('isSubQuery' => true,'subQueryAlias'=>$subQueryAlias));
     }
