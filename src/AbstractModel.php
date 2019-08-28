@@ -182,6 +182,13 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         if(!$data){
             $data = $this->data;
         }
+        if($this->fields){
+            foreach ($data as $key => $val){
+                if(!in_array($key,$this->fields)){
+                    unset($data[$key]);
+                }
+            }
+        }
         $this->queryBuilder->update($this->table(),$data,$this->limit);
         return $this->execQueryBuilder();
     }
