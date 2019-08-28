@@ -189,8 +189,27 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
                 }
             }
         }
-        $this->queryBuilder->update($this->table(),$data,$this->limit);
-        return $this->execQueryBuilder();
+        $this->queryBuilder()->update($this->table(),$data,$this->limit);
+        $temp = $this->execQueryBuilder();
+        if($this->getQueryResult()->getAffectedRows()){
+            return $this->getQueryResult()->getAffectedRows();
+        }else{
+            return $temp;
+        }
+    }
+
+    public function insert(?array $data = null)
+    {
+        if(!$data){
+            $data = $this->data;
+        }
+        $this->queryBuilder()->insert($this->table(),$data);
+        $temp = $this->execQueryBuilder();
+        if($this->getQueryResult()->getLastInsertId()){
+            return $this->getQueryResult()->getLastInsertId();
+        }else{
+            return $temp;
+        }
     }
 
     private function reset()
