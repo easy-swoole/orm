@@ -34,6 +34,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     protected $limit = null;
 
     private $withTotalCount = false;
+    private $fields = null;
 
     function __construct()
     {
@@ -69,7 +70,13 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
             $this->where($this->pk,$data);
         }
         $this->queryBuilder()->getOne($this->table());
-        return $this->execQueryBuilder();
+        $data = [];
+        $ret = $this->execQueryBuilder();
+        if($ret){
+            $data = $ret[0];
+        }
+        $this->setData($data);
+        return $this;
     }
 
     function limit(int $one,?int $two = null)
@@ -91,9 +98,17 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         return $this;
     }
 
-    function save()
+    function save(?array $data = null)
     {
 
+    }
+
+    function field($fields)
+    {
+        if(!is_array($fields)){
+            $fields = [$fields];
+        }
+        $this->fields = $fields;
     }
 
     public function query(string $sql,array $bindParams = [])
@@ -176,5 +191,6 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         $this->limit = null;
         $this->queryBuilder()->reset();
         $this->withTotalCount = false;
+        $this->fields = null;
     }
 }

@@ -7,6 +7,7 @@ namespace EasySwoole\ORM\Characteristic;
 trait ArrayAccess
 {
     protected $data = [];
+    protected $strict = false;
     /*
      * ************ ArrayAccess *************
      */

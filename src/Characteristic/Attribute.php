@@ -4,7 +4,7 @@
 namespace EasySwoole\ORM\Characteristic;
 
 
-use EasySwoole\ORM\Utility\Column;
+use EasySwoole\ORM\Driver\Column;
 
 trait Attribute
 {

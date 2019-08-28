@@ -4,7 +4,7 @@
 namespace EasySwoole\ORM\Characteristic;
 
 
-use EasySwoole\ORM\Utility\Column;
+use EasySwoole\ORM\Driver\Column;
 
 trait Base
 {
@@ -37,7 +37,7 @@ trait Base
         if($clear){
             $this->data = [];
         }
-        if($this->strictScheme()){
+        if($this->strict){
             foreach ($data as $key => $val){
                 if(isset($this->schemaInfo[$key])){
                     $this->data[$key] = Column::valueMap($val,$this->schemaInfo[$key]);
