@@ -39,20 +39,9 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 
     abstract protected function table():string ;
 
-
     protected function initialize()
     {
 
-    }
-
-    protected function queryBuilder():QueryBuilder
-    {
-        return $this->queryBuilder;
-    }
-
-    protected function exec()
-    {
-        return $this->query($this->queryBuilder()->getPrepareQuery(),$this->queryBuilder()->getBindParams());
     }
 
     function connect(string $name)
@@ -70,6 +59,51 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         return $ret;
     }
 
+
+    function find()
+    {
+
+    }
+
+    function limit()
+    {
+
+    }
+
+    function save()
+    {
+
+    }
+
+    public function query(string $sql,array $bindParams = [])
+    {
+        $ret = DbManager::getInstance()->getConnection($this->connection)->query($sql,$bindParams);
+        if($ret){
+            $this->queryResult = $ret;
+            if($ret->getLastErrorNo()){
+                throw new Exception($ret->getLastError());
+            }else{
+                return $ret->getResult();
+            }
+
+        }
+        return null;
+    }
+
+    public function queryBuilder():QueryBuilder
+    {
+        return $this->queryBuilder;
+    }
+
+    public function execQueryBuilder()
+    {
+        return $this->query($this->queryBuilder()->getPrepareQuery(),$this->queryBuilder()->getBindParams());
+    }
+
+    public function getQueryResult():?Result
+    {
+        return $this->queryResult;
+    }
 
     function where($whereProp, $whereValue = 'DBNULL', $operator = '=', $cond = 'AND')
     {
@@ -92,13 +126,13 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     function get($numRows = null, $columns = '*')
     {
         $this->queryBuilder()->get($this->table());
-        return $this->exec();
+        return $this->execQueryBuilder();
     }
 
     function delete($numRows = null)
     {
         $this->queryBuilder()->delete($this->table(),$numRows);
-        return $this->exec();
+        return $this->execQueryBuilder();
     }
 
     function update(?int $numRows = null,?array $data = null,array $columns = [])
@@ -107,41 +141,6 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
             $data = $this->data;
         }
         $this->queryBuilder->update($this->table(),$data,$numRows);
-        return $this->exec();
-    }
-
-    function find()
-    {
-
-    }
-
-    function limit()
-    {
-
-    }
-
-    function save()
-    {
-
-    }
-
-    function query(string $sql,array $bindParams = [])
-    {
-        $ret = DbManager::getInstance()->getConnection($this->connection)->query($sql,$bindParams);
-        if($ret){
-            $this->queryResult = $ret;
-            if($ret->getLastErrorNo()){
-                throw new Exception($ret->getLastError());
-            }else{
-                return $ret->getResult();
-            }
-
-        }
-        return null;
-    }
-
-    function getQueryResult():?Result
-    {
-        return $this->queryResult;
+        return $this->execQueryBuilder();
     }
 }
