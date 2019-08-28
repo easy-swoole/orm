@@ -11,10 +11,16 @@ use Swoole\Coroutine;
 class MysqlDriver implements DriverInterface
 {
     private $config;
+    /*
+     * 用来确保一个协成内，获取的链接都是同一个
+     * 不用pool 管理器，因为存在多个链接
+     */
+    private $mysqlContext = [];
     /**
      * @var AbstractPool
      */
     private $pool;
+
     function __construct(MysqlConfig $config)
     {
         $this->config = $config;
@@ -26,17 +32,21 @@ class MysqlDriver implements DriverInterface
         if(!$this->pool){
             $this->pool = new MysqlPool($this->config);
         }
+        $cid = Coroutine::getCid();
+        if(!isset($this->mysqlContext[$cid])){
+            $this->mysqlContext[$cid] = $this->pool->getObj();;
+            Coroutine::defer(function ()use($cid){
+                $this->pool->recycleObj($this->mysqlContext[$cid]);
+            });
+        }
         /** @var MysqlObject $obj */
-        $obj = $this->pool->getObj();
+        $obj = $this->mysqlContext[$cid];
         if($obj){
             $stmt = $obj->prepare($prepareSql,$this->config->getTimeout());
             if($stmt){
                 $ret = $stmt->execute($bindParams);
                 $result->setResult($ret);
             }
-            Coroutine::defer(function ()use($obj){
-                $this->pool->recycleObj($obj);
-            });
             $result->setLastError($obj->error);
             $result->setLastErrorNo($obj->errno);
             $result->setLastInsertId($obj->insert_id);
