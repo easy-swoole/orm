@@ -8,9 +8,9 @@ use EasySwoole\ORM\Utility\Column;
 
 trait Base
 {
-    private $data = [];
-    private $schemaInfo = [];
-    private $strict = false;
+    protected $data = [];
+    protected $schemaInfo = [];
+    protected $strict = false;
 
     protected function strictScheme(bool $strict = null)
     {

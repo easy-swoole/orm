@@ -8,8 +8,8 @@ use EasySwoole\ORM\Utility\Column;
 
 trait Attribute
 {
-    private $data = [];
-    private $strict = false;
+    protected $data = [];
+    protected $strict = false;
 
     function __set($name, $value)
     {

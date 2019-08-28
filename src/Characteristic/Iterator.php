@@ -7,8 +7,8 @@ namespace EasySwoole\ORM\Characteristic;
 trait Iterator
 {
 
-    private $iteratorKey;
-    private $data = [];
+    protected $iteratorKey;
+    protected $data = [];
 
     public function current()
     {

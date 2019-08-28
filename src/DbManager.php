@@ -6,7 +6,7 @@ namespace EasySwoole\ORM;
 
 use EasySwoole\ORM\Driver\DriverInterface;
 
-class DbManager
+class 】、、、DbManager
 {
     private static $instance;
 
