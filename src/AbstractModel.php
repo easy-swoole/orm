@@ -10,6 +10,7 @@ use EasySwoole\ORM\Characteristic\Iterator;
 use EasySwoole\ORM\Characteristic\JsonSerializable;
 use EasySwoole\ORM\Driver\Result;
 use EasySwoole\ORM\Driver\QueryBuilder;
+use EasySwoole\ORM\Exception\Exception;
 
 /**
  * Class AbstractModel
@@ -126,12 +127,16 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     function query(string $sql,array $bindParams = [])
     {
         $ret = DbManager::getInstance()->getConnection($this->connection)->query($sql,$bindParams);
-        $this->queryResult = $ret;
         if($ret){
-            return $ret->getResult();
-        }else{
-            return null;
+            $this->queryResult = $ret;
+            if($ret->getLastErrorNo()){
+                throw new Exception($ret->getLastError());
+            }else{
+                return $ret->getResult();
+            }
+
         }
+        return null;
     }
 
     function getQueryResult():?Result
