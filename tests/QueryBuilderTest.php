@@ -95,26 +95,69 @@ class QueryBuilderTest extends TestCase
 
     function testUpdate()
     {
+        $this->builder->update('updateTable', ['a' => 1]);
+        $this->assertEquals('UPDATE updateTable SET `a` = ?', $this->builder->getPrepareQuery());
+        $this->assertEquals('UPDATE updateTable SET `a` = 1', $this->builder->getQuery());
+        $this->assertEquals([1], $this->builder->getBindParams());
+    }
 
+    function testLimitUpdate()
+    {
+        $this->builder->update('updateTable', ['a' => 1], 5);
+        $this->assertEquals('UPDATE updateTable SET `a` = ? LIMIT 5', $this->builder->getPrepareQuery());
+        $this->assertEquals('UPDATE updateTable SET `a` = 1 LIMIT 5', $this->builder->getQuery());
+        $this->assertEquals([1], $this->builder->getBindParams());
     }
 
     function testWhereUpdate()
     {
-
+        $this->builder->where('whereUpdate', 'whereValue')->update('updateTable', ['a' => 1]);
+        $this->assertEquals('UPDATE updateTable SET `a` = ? WHERE  whereUpdate = ? ', $this->builder->getPrepareQuery());
+        $this->assertEquals("UPDATE updateTable SET `a` = 1 WHERE  whereUpdate = 'whereValue' ", $this->builder->getQuery());
+        $this->assertEquals([1, 'whereValue'], $this->builder->getBindParams());
     }
+
+    /**
+     * @throws \Exception
+     */
+    function testLockWhereLimitUpdate()
+    {
+        $this->builder->setQueryOption("FOR UPDATE")->where('whereUpdate', 'whereValue')->update('updateTable', ['a' => 1], 2);
+        $this->assertEquals('UPDATE updateTable SET `a` = ? WHERE  whereUpdate = ?  LIMIT 2 FOR UPDATE', $this->builder->getPrepareQuery());
+        $this->assertEquals("UPDATE updateTable SET `a` = 1 WHERE  whereUpdate = 'whereValue'  LIMIT 2 FOR UPDATE", $this->builder->getQuery());
+        $this->assertEquals([1, 'whereValue'], $this->builder->getBindParams());
+    }
+
 
     function testDelete()
     {
+        $this->builder->delete('deleteTable');
+        $this->assertEquals('DELETE FROM deleteTable', $this->builder->getPrepareQuery());
+        $this->assertEquals('DELETE FROM deleteTable', $this->builder->getQuery());
+        $this->assertEquals([], $this->builder->getBindParams());
+    }
 
+    function testLimitDelete()
+    {
+        $this->builder->delete('deleteTable', 1);
+        $this->assertEquals('DELETE FROM deleteTable LIMIT 1', $this->builder->getPrepareQuery());
+        $this->assertEquals('DELETE FROM deleteTable LIMIT 1', $this->builder->getQuery());
+        $this->assertEquals([], $this->builder->getBindParams());
     }
 
     function testWhereDelete()
     {
-
+        $this->builder->where('whereDelete', 'whereValue')->delete('deleteTable');
+        $this->assertEquals('DELETE FROM deleteTable WHERE  whereDelete = ? ', $this->builder->getPrepareQuery());
+        $this->assertEquals("DELETE FROM deleteTable WHERE  whereDelete = 'whereValue' ", $this->builder->getQuery());
+        $this->assertEquals(['whereValue'], $this->builder->getBindParams());
     }
 
     function testInsert()
     {
-
+        $this->builder->insert('insertTable', ['a' => 1, 'b' => "b"]);
+        $this->assertEquals(null, $this->builder->getPrepareQuery());
+        $this->assertEquals("INSERT  INTO insertTable (`a`, `b`)  VALUES (1, 'b')", $this->builder->getQuery());
+        $this->assertEquals([], $this->builder->getBindParams());
     }
 }
