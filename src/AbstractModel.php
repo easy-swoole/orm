@@ -144,11 +144,4 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     {
         return $this->queryResult;
     }
-
-    public static function __callStatic($name, $arguments)
-    {
-        $ret = new static();
-        $ret->$name(...$arguments);
-        return $ret;
-    }
 }
