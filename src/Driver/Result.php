@@ -10,6 +10,7 @@ class Result
     private $result;
     private $lastError;
     private $lastErrorNo;
+    private $affectedRows;
 
     /**
      * @return mixed
@@ -75,13 +76,32 @@ class Result
         $this->result = $result;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getAffectedRows()
+    {
+        return $this->affectedRows;
+    }
+
+    /**
+     * @param mixed $affectedRows
+     */
+    public function setAffectedRows($affectedRows): void
+    {
+        $this->affectedRows = $affectedRows;
+    }
+
+
+
     public function toArray()
     {
         return [
             'lastInsertId'=>$this->lastInsertId,
             'result'=>$this->result,
             'lastError'=>$this->lastError,
-            'lastErrorNo'=>$this->lastErrorNo
+            'lastErrorNo'=>$this->lastErrorNo,
+            'affectedRows'=>$this->affectedRows
         ];
     }
 }
