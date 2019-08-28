@@ -117,7 +117,8 @@ class Result
             'result'=>$this->result,
             'lastError'=>$this->lastError,
             'lastErrorNo'=>$this->lastErrorNo,
-            'affectedRows'=>$this->affectedRows
+            'affectedRows'=>$this->affectedRows,
+            'totalCount'=>$this->totalCount
         ];
     }
 }
