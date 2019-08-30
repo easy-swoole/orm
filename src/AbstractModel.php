@@ -23,15 +23,15 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     use JsonSerializable;
     use ArrayAccess;
 
-    private $queryBuilder;
-
     protected $connection = 'default';
-
-    protected $queryResult;
 
     protected $pk = null;
 
-    protected $limit = null;
+    private $queryBuilder;
+
+    private $queryResult;
+
+    private $limit = null;
 
     private $withTotalCount = false;
 
