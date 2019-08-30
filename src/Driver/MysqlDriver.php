@@ -26,9 +26,53 @@ class MysqlDriver implements DriverInterface
         $this->config = $config;
     }
 
-    public function query(string $prepareSql, array $bindParams = []): ?Result
+    public function prepareQuery(string $prepareSql, array $bindParams = []): ?Result
     {
-        $result = new Result();
+
+        $obj = $this->getCon();
+        if($obj){
+            $result = new Result();
+            $stmt = $obj->prepare($prepareSql,$this->config->getTimeout());
+            if($stmt){
+                $ret = $stmt->execute($bindParams);
+                $result->setResult($ret);
+            }
+            $result->setLastError($obj->error);
+            $result->setLastErrorNo($obj->errno);
+            $result->setLastInsertId($obj->insert_id);
+            $result->setAffectedRows($obj->affected_rows);
+            return $result;
+        }else{
+            throw new Exception("mysql pool is empty");
+        }
+    }
+
+    public function rawQuery(string $query): ?Result
+    {
+        $obj = $this->getCon();
+        if($obj){
+            $result = new Result();
+            $ret = $obj->query($query,$this->config->getTimeout());
+            $result->setResult($ret);
+            $result->setLastError($obj->error);
+            $result->setLastErrorNo($obj->errno);
+            $result->setLastInsertId($obj->insert_id);
+            $result->setAffectedRows($obj->affected_rows);
+            return $result;
+        }else{
+            throw new Exception("mysql pool is empty");
+        }
+    }
+
+    public function destroyPool()
+    {
+        if($this->pool){
+            $this->pool->destroyPool();
+        }
+    }
+
+    private function getCon():?MysqlObject
+    {
         if(!$this->pool){
             $this->pool = new MysqlPool($this->config);
         }
@@ -40,27 +84,6 @@ class MysqlDriver implements DriverInterface
             });
         }
         /** @var MysqlObject $obj */
-        $obj = $this->mysqlContext[$cid];
-        if($obj){
-            $stmt = $obj->prepare($prepareSql,$this->config->getTimeout());
-            if($stmt){
-                $ret = $stmt->execute($bindParams);
-                $result->setResult($ret);
-            }
-            $result->setLastError($obj->error);
-            $result->setLastErrorNo($obj->errno);
-            $result->setLastInsertId($obj->insert_id);
-            $result->setAffectedRows($obj->affected_rows);
-        }else{
-            throw new Exception("mysql pool is empty");
-        }
-        return $result;
-    }
-
-    public function destroyPool()
-    {
-        if($this->pool){
-            $this->pool->destroyPool();
-        }
+        return $this->mysqlContext[$cid];
     }
 }

@@ -32,7 +32,7 @@ trait Base
         return $this->schemaInfo;
     }
 
-    public function setData(array $data,bool $clear = false)
+    public function data(array $data, bool $clear = false)
     {
         if($clear){
             $this->data = [];

@@ -34,6 +34,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     protected $limit = null;
 
     private $withTotalCount = false;
+
     private $fields = "*";
 
     function __construct()
@@ -59,7 +60,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     {
         $ret = new static();
         if($data){
-            $ret->setData($data,true);
+            $ret->data($data,true);
         }
         return $ret;
     }
@@ -75,7 +76,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         if($ret){
             $data = $ret[0];
         }
-        $this->setData($data);
+        $this->data($data);
         return $this;
     }
 
@@ -116,14 +117,14 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 
     public function query(string $sql,array $bindParams = [])
     {
-        $ret = DbManager::getInstance()->getConnection($this->connection)->query($sql,$bindParams);
+        $ret = DbManager::getInstance()->getConnection($this->connection)->prepareQuery($sql,$bindParams);
         if($ret){
             $this->queryResult = $ret;
             if($ret->getLastErrorNo()){
                 throw new Exception($ret->getLastError());
             }else{
                 if($this->withTotalCount){
-                    $data = DbManager::getInstance()->getConnection($this->connection)->query('SELECT FOUND_ROWS() as count');
+                    $data = DbManager::getInstance()->getConnection($this->connection)->prepareQuery('SELECT FOUND_ROWS() as count');
                     if($data->getResult()){
                         $ret->setTotalCount($data->getResult()[0]['count']);
                     }
