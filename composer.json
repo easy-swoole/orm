@@ -13,7 +13,8 @@
   ],
   "require": {
     "php": ">=7.1.0",
-    "easyswoole/component": "^1.9"
+    "easyswoole/component": "^1.9",
+    "easyswoole/mysqli": "2.x-dev"
   },
   "require-dev": {
     "easyswoole/phpunit": "^1.0",

@@ -4,12 +4,12 @@
 namespace EasySwoole\ORM;
 
 
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Characteristic\ArrayAccess;
 use EasySwoole\ORM\Characteristic\Base;
 use EasySwoole\ORM\Characteristic\Iterator;
 use EasySwoole\ORM\Characteristic\JsonSerializable;
 use EasySwoole\ORM\Driver\Result;
-use EasySwoole\ORM\Driver\QueryBuilder;
 use EasySwoole\ORM\Exception\Exception;
 
 /**
