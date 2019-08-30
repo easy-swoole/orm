@@ -26,7 +26,7 @@ class MysqlDriver implements DriverInterface
         $this->config = $config;
     }
 
-    public function prepareQuery(string $prepareSql, array $bindParams = []): ?Result
+    public function execPrepareQuery(string $prepareSql, array $bindParams = []): ?Result
     {
 
         $obj = $this->getCon();

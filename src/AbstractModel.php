@@ -117,14 +117,14 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 
     public function query(string $sql,array $bindParams = [])
     {
-        $ret = DbManager::getInstance()->getConnection($this->connection)->prepareQuery($sql,$bindParams);
+        $ret = DbManager::getInstance()->getConnection($this->connection)->execPrepareQuery($sql,$bindParams);
         if($ret){
             $this->queryResult = $ret;
             if($ret->getLastErrorNo()){
                 throw new Exception($ret->getLastError());
             }else{
                 if($this->withTotalCount){
-                    $data = DbManager::getInstance()->getConnection($this->connection)->prepareQuery('SELECT FOUND_ROWS() as count');
+                    $data = DbManager::getInstance()->getConnection($this->connection)->execPrepareQuery('SELECT FOUND_ROWS() as count');
                     if($data->getResult()){
                         $ret->setTotalCount($data->getResult()[0]['count']);
                     }
