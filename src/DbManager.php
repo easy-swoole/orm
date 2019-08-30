@@ -56,7 +56,7 @@ class DbManager
                 }
             }catch (\Throwable $exception){
                 $this->rollback();
-                return false;
+                throw $exception;
             }
             return true;
         }
@@ -68,54 +68,71 @@ class DbManager
         return true;
     }
 
-    function commit($atomic = false)
+    function commit(bool $atomic = false)
     {
         $cid = Coroutine::getCid();
         if(isset($this->transactionAtomicContext[$cid])){
             if($atomic == false || $this->transactionAtomicContext[$cid] == 1){
                 foreach ($this->transactionConContext[$cid] as $con){
-                    try{
-                        $this->getConnection($con)->rawQuery('rollback');
-                    }catch (\Throwable $exception){
-                        trigger_error($exception->getMessage());
+                    $ret = $this->getConnection($con)->rawQuery('commit');
+                    if($ret && $ret->getResult()){
+                        unset($this->transactionConContext[$cid][$con]);
                     }
                 }
-                unset($this->transactionAtomicContext[$cid]);
-                unset($this->transactionConContext[$cid]);;
+                if(!empty($this->transactionConContext[$cid])){
+                    unset($this->transactionAtomicContext[$cid]);
+                    unset($this->transactionConContext[$cid]);
+                    return true;
+                }else{
+                    return false;
+                }
             }else{
                 $this->transactionAtomicContext[$cid]--;
+                return true;
             }
-            return true;
         }else{
             return false;
         }
     }
 
-    function rollback($atomic = false):bool
+    function rollback(bool $atomic = false):bool
     {
         $cid = Coroutine::getCid();
         if(isset($this->transactionAtomicContext[$cid])){
             if($atomic == false || $this->transactionAtomicContext[$cid] == 1){
                 foreach ($this->transactionConContext[$cid] as $con){
-                    try{
-                        $this->getConnection($con)->rawQuery('rollback');
-                    }catch (\Throwable $exception){
-                        trigger_error($exception->getMessage());
+                    $ret = $this->getConnection($con)->rawQuery('rollback');
+                    if($ret && $ret->getResult()){
+                        unset($this->transactionConContext[$cid][$con]);
                     }
                 }
-                unset($this->transactionAtomicContext[$cid]);
-                unset($this->transactionConContext[$cid]);;
+                if(!empty($this->transactionConContext[$cid])){
+                    unset($this->transactionAtomicContext[$cid]);
+                    unset($this->transactionConContext[$cid]);
+                    return true;
+                }else{
+                    return false;
+                }
             }else{
                 $this->transactionAtomicContext[$cid]--;
+                return true;
             }
-            return true;
         }else{
             return false;
         }
     }
 
-    function transaction($call)
+    function transaction($call,$cons = ['default'])
     {
-
+        if($this->startTransaction(false,$cons)){
+            try{
+               return call_user_func($call);
+            }catch (\Throwable $exception){
+                throw $exception;
+            }finally{
+                $this->rollback();
+            }
+        }
+        return null;
     }
 }
