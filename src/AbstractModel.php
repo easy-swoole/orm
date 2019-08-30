@@ -115,16 +115,26 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         $this->fields = $fields;
     }
 
-    public function query(string $sql,array $bindParams = [])
+    public function queryBuilder():QueryBuilder
     {
-        $ret = DbManager::getInstance()->getConnection($this->connection)->execPrepareQuery($sql,$bindParams);
+        return $this->queryBuilder;
+    }
+
+    protected function execQueryBuilder()
+    {
+        return $this->query($this->queryBuilder()->getLastPrepareQuery(),$this->queryBuilder()->getLastBindParams());
+    }
+
+    protected function query(string $sql,array $bindParams = [])
+    {
+        $ret = DbManager::getInstance()->execPrepareQuery($sql,$bindParams,$this->connection);
         if($ret){
             $this->queryResult = $ret;
             if($ret->getLastErrorNo()){
                 throw new Exception($ret->getLastError());
             }else{
                 if($this->withTotalCount){
-                    $data = DbManager::getInstance()->getConnection($this->connection)->execPrepareQuery('SELECT FOUND_ROWS() as count');
+                    $data = DbManager::getInstance()->execPrepareQuery('SELECT FOUND_ROWS() as count',[],$this->connection);
                     if($data->getResult()){
                         $ret->setTotalCount($data->getResult()[0]['count']);
                     }
@@ -134,16 +144,6 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         }
         $this->reset();
         return null;
-    }
-
-    public function queryBuilder():QueryBuilder
-    {
-        return $this->queryBuilder;
-    }
-
-    public function execQueryBuilder()
-    {
-        return $this->query($this->queryBuilder()->getLastPrepareQuery(),$this->queryBuilder()->getLastBindParams());
     }
 
     public function getQueryResult():?Result

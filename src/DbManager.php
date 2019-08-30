@@ -5,6 +5,7 @@ namespace EasySwoole\ORM;
 
 
 use EasySwoole\ORM\Driver\DriverInterface;
+use EasySwoole\ORM\Driver\Result;
 use Swoole\Coroutine;
 
 class DbManager
@@ -14,6 +15,10 @@ class DbManager
     private $con = [];
     private $transactionAtomicContext = [];
     private $transactionConContext = [];
+    /** @var callable */
+    private $onQuery;
+    /** @var callable */
+    private $afterQeury;
 
     public static function getInstance():DbManager
     {
@@ -23,16 +28,16 @@ class DbManager
         return self::$instance;
     }
 
-    function addConnection(DriverInterface $driver,string $name = 'default')
+    function addConnection(DriverInterface $driver,string $conName = 'default')
     {
-        $this->con[$name] = $driver;
+        $this->con[$conName] = $driver;
         return $this;
     }
 
-    function getConnection(string $name = 'default'):?DriverInterface
+    function getConnection(string $conName = 'default'):?DriverInterface
     {
-        if(isset($this->con[$name])){
-            return $this->con[$name];
+        if(isset($this->con[$conName])){
+            return $this->con[$conName];
         }else{
             return null;
         }
@@ -46,7 +51,7 @@ class DbManager
                 $this->transactionAtomicContext[$cid] = 0;
                 $this->transactionConContext[$cid] = [];
                 foreach ($cons as $con){
-                    $ret = $this->getConnection($con)->rawQuery('start transaction');
+                    $ret = $this->rawQuery('start transaction',$con);
                     if(!$ret || $ret->getResult() != true){
                         $this->rollback();
                         break;
@@ -74,7 +79,7 @@ class DbManager
         if(isset($this->transactionAtomicContext[$cid])){
             if($atomic == false || $this->transactionAtomicContext[$cid] == 1){
                 foreach ($this->transactionConContext[$cid] as $con){
-                    $ret = $this->getConnection($con)->rawQuery('commit');
+                    $ret = $this->rawQuery('commit',$con);
                     if($ret && $ret->getResult()){
                         unset($this->transactionConContext[$cid][$con]);
                     }
@@ -101,7 +106,7 @@ class DbManager
         if(isset($this->transactionAtomicContext[$cid])){
             if($atomic == false || $this->transactionAtomicContext[$cid] == 1){
                 foreach ($this->transactionConContext[$cid] as $con){
-                    $ret = $this->getConnection($con)->rawQuery('rollback');
+                    $ret = $this->rawQuery('rollback',$con);
                     if($ret && $ret->getResult()){
                         unset($this->transactionConContext[$cid][$con]);
                     }
@@ -134,5 +139,15 @@ class DbManager
             }
         }
         return null;
+    }
+
+    public function execPrepareQuery(string $prepareSql, array $bindParams = [],string $conName = 'default'):?Result
+    {
+        return $this->getConnection($conName)->execPrepareQuery($prepareSql,$bindParams);
+    }
+
+    public function rawQuery(string $query,string $conName = 'default'):?Result
+    {
+        return $this->getConnection($conName)->rawQuery($query);
     }
 }
