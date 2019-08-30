@@ -34,7 +34,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     protected $limit = null;
 
     private $withTotalCount = false;
-    private $fields = null;
+    private $fields = "*";
 
     function __construct()
     {
@@ -100,7 +100,10 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 
     function save(?array $data = null)
     {
-
+        if(empty($data)){
+            $data = $this->data;
+        }
+        $this->insert($data);
     }
 
     function field($fields)
@@ -165,24 +168,30 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         return $this;
     }
 
-    function get($columns = '*')
+    function get($data = null)
     {
-        $this->queryBuilder()->get($this->table(),$this->limit,$columns);
+        if($data !== null && !empty($this->pk)){
+            $this->where($this->pk,$data);
+        }
+        $this->queryBuilder()->get($this->table(),$this->limit,$this->fields);
         return $this->execQueryBuilder();
     }
 
-    function delete()
+    function delete($data = null)
     {
+        if($data !== null && !empty($this->pk)){
+            $this->where($this->pk,$data);
+        }
         $this->queryBuilder()->delete($this->table(),$this->limit);
         return $this->execQueryBuilder();
     }
 
-    function update(?array $data = null,array $columns = [])
+    function update(?array $data = null)
     {
         if(!$data){
             $data = $this->data;
         }
-        if($this->fields){
+        if(is_array($this->fields)){
             foreach ($data as $key => $val){
                 if(!in_array($key,$this->fields)){
                     unset($data[$key]);
