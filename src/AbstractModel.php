@@ -43,15 +43,9 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     function __construct()
     {
         $this->queryBuilder = new QueryBuilder();
-        $this->initialize();
     }
 
     abstract protected function table():string ;
-
-    protected function initialize()
-    {
-
-    }
 
     function connect(string $name)
     {
@@ -116,37 +110,6 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
             $fields = [$fields];
         }
         $this->fields = $fields;
-    }
-
-    protected function queryBuilder():QueryBuilder
-    {
-        return $this->queryBuilder;
-    }
-
-    protected function execQueryBuilder()
-    {
-        return $this->query($this->queryBuilder()->getLastPrepareQuery(),$this->queryBuilder()->getLastBindParams());
-    }
-
-    protected function query(string $sql,array $bindParams = [])
-    {
-        $ret = DbManager::getInstance()->execPrepareQuery($sql,$bindParams,$this->connection);
-        if($ret){
-            $this->queryResult = $ret;
-            if($ret->getLastErrorNo()){
-                throw new Exception($ret->getLastError());
-            }else{
-                if($this->withTotalCount){
-                    $data = DbManager::getInstance()->execPrepareQuery('SELECT FOUND_ROWS() as count',[],$this->connection);
-                    if($data->getResult()){
-                        $ret->setTotalCount($data->getResult()[0]['count']);
-                    }
-                }
-                return $ret->getResult();
-            }
-        }
-        $this->reset();
-        return null;
     }
 
     public function getQueryResult():?Result
@@ -299,28 +262,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     }
 
 
-    /*
-     * BASE
-     */
-    protected function strictScheme(bool $strict = null)
-    {
-        if($strict !== null){
-            $this->strict = $strict;
-        }
-        return $this->strict;
-    }
 
-    protected function schemaInfo(array $info = null)
-    {
-        if($info){
-            /*
-             * 修改了scheme的时候，需要重置数据
-             */
-            $this->schemaInfo = $info;
-            $this->data = [];
-        }
-        return $this->schemaInfo;
-    }
 
 
 
@@ -379,7 +321,27 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         unset($this->data[$offset]);
     }
 
-    private function reset()
+    protected function strictScheme(bool $strict = null)
+    {
+        if($strict !== null){
+            $this->strict = $strict;
+        }
+        return $this->strict;
+    }
+
+    protected function schemaInfo(array $info = null)
+    {
+        if($info){
+            /*
+             * 修改了scheme的时候，需要重置数据
+             */
+            $this->schemaInfo = $info;
+            $this->data = [];
+        }
+        return $this->schemaInfo;
+    }
+
+    protected function reset()
     {
         $this->limit = null;
         $this->queryBuilder()->reset();
@@ -387,7 +349,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         $this->fields = null;
     }
 
-    private function valueMap($data,int $type)
+    protected function valueMap($data,int $type)
     {
         switch ($type){
             case self::TYPE_INT:{
@@ -406,5 +368,36 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
                 return $data;
             }
         }
+    }
+
+    protected function queryBuilder():QueryBuilder
+    {
+        return $this->queryBuilder;
+    }
+
+    protected function execQueryBuilder()
+    {
+        return $this->query($this->queryBuilder()->getLastPrepareQuery(),$this->queryBuilder()->getLastBindParams());
+    }
+
+    protected function query(string $sql,array $bindParams = [])
+    {
+        $ret = DbManager::getInstance()->execPrepareQuery($sql,$bindParams,$this->connection);
+        if($ret){
+            $this->queryResult = $ret;
+            if($ret->getLastErrorNo()){
+                throw new Exception($ret->getLastError());
+            }else{
+                if($this->withTotalCount){
+                    $data = DbManager::getInstance()->execPrepareQuery('SELECT FOUND_ROWS() as count',[],$this->connection);
+                    if($data->getResult()){
+                        $ret->setTotalCount($data->getResult()[0]['count']);
+                    }
+                }
+                return $ret->getResult();
+            }
+        }
+        $this->reset();
+        return null;
     }
 }
