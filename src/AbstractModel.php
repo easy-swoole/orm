@@ -215,8 +215,17 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         return $this->data;
     }
 
-    public function toArray():array
+    public function toArray($notNul = false):array
     {
+        if($notNul){
+            $temp = $this->data;
+            foreach ($temp as $key => $value){
+                if($value === null){
+                    unset($temp[$key]);
+                }
+            }
+            return $temp;
+        }
         return $this->data;
     }
 
