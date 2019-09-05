@@ -35,156 +35,6 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 
     private $fields = "*";
 
-    /*
-     * JsonSerializable
-     */
-    public function jsonSerialize()
-    {
-        return $this->data;
-    }
-
-    public function toArray():array
-    {
-        return $this->data;
-    }
-
-
-    /*
-     * Iterator
-     */
-
-    public function current()
-    {
-        return $this->data[$this->iteratorKey];
-    }
-
-    public function next()
-    {
-        $temp = array_keys($this->data);
-        while ($tempKey = array_shift($temp)){
-            if($tempKey === $this->iteratorKey){
-                $this->iteratorKey = array_shift($temp);
-                break;
-            }
-        }
-        return $this->iteratorKey;
-    }
-
-    public function key()
-    {
-        return $this->iteratorKey;
-    }
-
-    public function valid()
-    {
-        return isset($this->data[$this->iteratorKey]);
-    }
-
-    public function rewind()
-    {
-        $temp = array_keys($this->data);
-        $this->iteratorKey = array_shift($temp);
-    }
-
-
-    /*
-     * BASE
-     */
-    protected function strictScheme(bool $strict = null)
-    {
-        if($strict !== null){
-            $this->strict = $strict;
-        }
-        return $this->strict;
-    }
-
-    protected function schemaInfo(array $info = null)
-    {
-        if($info){
-            /*
-             * 修改了scheme的时候，需要重置数据
-             */
-            $this->schemaInfo = $info;
-            $this->data = [];
-        }
-        return $this->schemaInfo;
-    }
-
-    public function data(array $data, bool $clear = false)
-    {
-        if($clear){
-            $this->data = [];
-        }
-        if($this->strict){
-            foreach ($data as $key => $val){
-                if(isset($this->schemaInfo[$key])){
-                    $this->data[$key] = Column::valueMap($val,$this->schemaInfo[$key]);
-                }
-            }
-        }else{
-            foreach ($data as $key => $val){
-                $this->data[$key] = $val;
-            }
-        }
-    }
-
-
-    /*
-     * ************** Attribute ****************
-     */
-    function __set($name, $value)
-    {
-        if($this->strict){
-            if(isset($this->schemaInfo[$name])){
-                $this->data[$name] = Column::valueMap($value,$this->schemaInfo[$name]);
-            }
-        }else{
-            $this->data[$name] = $value;
-        }
-    }
-
-    function __get($name)
-    {
-        if(isset($this->data[$name])){
-            return $this->data[$name];
-        }
-        return null;
-    }
-
-    /*
-     * ************ ArrayAccess *************
-     */
-
-    public function offsetExists($offset)
-    {
-        return isset($this->data[$offset]);
-    }
-
-    public function offsetGet($offset)
-    {
-        if(isset($this->data[$offset])){
-            return $this->data[$offset];
-        }else{
-            return null;
-        }
-    }
-
-    public function offsetSet($offset, $value):bool
-    {
-        if(!in_array($offset,$this->schemaInfo)){
-            return false;
-        }
-        $this->data[$offset] = $value;
-        return true;
-    }
-
-    public function offsetUnset($offset)
-    {
-        unset($this->data[$offset]);
-    }
-
-
-
     function __construct()
     {
         $this->queryBuilder = new QueryBuilder();
@@ -369,6 +219,166 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
             return $temp;
         }
     }
+
+
+    public function data(array $data, bool $clear = false)
+    {
+        if($clear){
+            $this->data = [];
+        }
+        if($this->strict){
+            foreach ($data as $key => $val){
+                if(isset($this->schemaInfo[$key])){
+                    $this->data[$key] = Column::valueMap($val,$this->schemaInfo[$key]);
+                }
+            }
+        }else{
+            foreach ($data as $key => $val){
+                $this->data[$key] = $val;
+            }
+        }
+    }
+
+
+
+
+    /*
+     * JsonSerializable
+     */
+    public function jsonSerialize()
+    {
+        return $this->data;
+    }
+
+    public function toArray():array
+    {
+        return $this->data;
+    }
+
+
+    /*
+     * Iterator
+     */
+
+    public function current()
+    {
+        return $this->data[$this->iteratorKey];
+    }
+
+    public function next()
+    {
+        $temp = array_keys($this->data);
+        while ($tempKey = array_shift($temp)){
+            if($tempKey === $this->iteratorKey){
+                $this->iteratorKey = array_shift($temp);
+                break;
+            }
+        }
+        return $this->iteratorKey;
+    }
+
+    public function key()
+    {
+        return $this->iteratorKey;
+    }
+
+    public function valid()
+    {
+        return isset($this->data[$this->iteratorKey]);
+    }
+
+    public function rewind()
+    {
+        $temp = array_keys($this->data);
+        $this->iteratorKey = array_shift($temp);
+    }
+
+
+    /*
+     * BASE
+     */
+    protected function strictScheme(bool $strict = null)
+    {
+        if($strict !== null){
+            $this->strict = $strict;
+        }
+        return $this->strict;
+    }
+
+    protected function schemaInfo(array $info = null)
+    {
+        if($info){
+            /*
+             * 修改了scheme的时候，需要重置数据
+             */
+            $this->schemaInfo = $info;
+            $this->data = [];
+        }
+        return $this->schemaInfo;
+    }
+
+
+
+
+    /*
+     * ************** Attribute ****************
+     */
+    function __set($name, $value)
+    {
+        if($this->strict){
+            if(isset($this->schemaInfo[$name])){
+                $this->data[$name] = Column::valueMap($value,$this->schemaInfo[$name]);
+            }
+        }else{
+            $this->data[$name] = $value;
+        }
+    }
+
+    function __get($name)
+    {
+        if(isset($this->data[$name])){
+            return $this->data[$name];
+        }
+        return null;
+    }
+
+    /*
+     * ************ ArrayAccess *************
+     */
+
+    public function offsetExists($offset)
+    {
+        return isset($this->data[$offset]);
+    }
+
+    public function offsetGet($offset)
+    {
+        if(isset($this->data[$offset])){
+            return $this->data[$offset];
+        }else{
+            return null;
+        }
+    }
+
+    public function offsetSet($offset, $value):bool
+    {
+        if(!in_array($offset,$this->schemaInfo)){
+            return false;
+        }
+        $this->data[$offset] = $value;
+        return true;
+    }
+
+    public function offsetUnset($offset)
+    {
+        unset($this->data[$offset]);
+    }
+
+
+
+
+
+
 
     private function reset()
     {
