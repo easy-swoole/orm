@@ -123,7 +123,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         return $this->queryBuilder;
     }
 
-    protected function execQueryBuilder()
+    public function execQueryBuilder()
     {
         return $this->query($this->queryBuilder()->getLastPrepareQuery(),$this->queryBuilder()->getLastBindParams());
     }
