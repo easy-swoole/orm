@@ -118,7 +118,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         $this->fields = $fields;
     }
 
-    public function queryBuilder():QueryBuilder
+    protected function queryBuilder():QueryBuilder
     {
         return $this->queryBuilder;
     }
