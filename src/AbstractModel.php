@@ -15,6 +15,11 @@ use EasySwoole\ORM\Exception\Exception;
 abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 {
 
+    const TYPE_INT = 1;
+    const TYPE_STRING = 2;
+    const TYPE_FLOAT = 3;
+
+
     protected $data = [];
     protected $schemaInfo = [];
     protected $strict = false;
@@ -229,7 +234,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         if($this->strict){
             foreach ($data as $key => $val){
                 if(isset($this->schemaInfo[$key])){
-                    $this->data[$key] = Column::valueMap($val,$this->schemaInfo[$key]);
+                    $this->data[$key] = $this->valueMap($val,$this->schemaInfo[$key]);
                 }
             }
         }else{
@@ -327,7 +332,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     {
         if($this->strict){
             if(isset($this->schemaInfo[$name])){
-                $this->data[$name] = Column::valueMap($value,$this->schemaInfo[$name]);
+                $this->data[$name] = $this->valueMap($value,$this->schemaInfo[$name]);
             }
         }else{
             $this->data[$name] = $value;
@@ -374,17 +379,32 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         unset($this->data[$offset]);
     }
 
-
-
-
-
-
-
     private function reset()
     {
         $this->limit = null;
         $this->queryBuilder()->reset();
         $this->withTotalCount = false;
         $this->fields = null;
+    }
+
+    private function valueMap($data,int $type)
+    {
+        switch ($type){
+            case self::TYPE_INT:{
+                return (int)$data;
+                break;
+            }
+            case self::TYPE_STRING:{
+                return (string)$data;
+                break;
+            }
+            case  self::TYPE_FLOAT:{
+                return (float)$data;
+                break;
+            }
+            default:{
+                return $data;
+            }
+        }
     }
 }
