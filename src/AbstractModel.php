@@ -15,20 +15,18 @@ use EasySwoole\ORM\Exception\Exception;
 abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 {
 
-    const TYPE_INT = 1;
-    const TYPE_STRING = 2;
-    const TYPE_FLOAT = 3;
-
-
-    protected $data = [];
-    protected $schemaInfo = [];
-    protected $strict = false;
-
-    private $iteratorKey;
+    protected const TYPE_INT = 1;
+    protected const TYPE_STRING = 2;
+    protected const TYPE_FLOAT = 3;
+    protected const TYPE_RAW = -1;
 
     protected $connection = 'default';
 
     protected $pk = null;
+
+    private $data = [];
+
+    private $iteratorKey;
 
     private $queryBuilder;
 
@@ -43,7 +41,12 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     function __construct()
     {
         $this->queryBuilder = new QueryBuilder();
+        foreach ($this->schemaInfo() as $key => $value){
+            $this->data[$key] = null;
+        }
     }
+
+    abstract protected function schemaInfo():array ;
 
     abstract protected function table():string ;
 
@@ -194,21 +197,15 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
         if($clear){
             $this->data = [];
         }
-        if($this->strict){
-            foreach ($data as $key => $val){
-                if(isset($this->schemaInfo[$key])){
-                    $this->data[$key] = $this->valueMap($val,$this->schemaInfo[$key]);
-                }
-            }
-        }else{
-            foreach ($data as $key => $val){
-                $this->data[$key] = $val;
+
+        foreach ($this->schemaInfo() as $key => $vale){
+            if(isset($data[$key])){
+                $this->data[$key] = $this->valueMap($data[$key],$vale);
+            }else{
+                $this->data[$key] = null;
             }
         }
     }
-
-
-
 
     /*
      * JsonSerializable
@@ -262,22 +259,13 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     }
 
 
-
-
-
-
-
     /*
      * ************** Attribute ****************
      */
     function __set($name, $value)
     {
-        if($this->strict){
-            if(isset($this->schemaInfo[$name])){
-                $this->data[$name] = $this->valueMap($value,$this->schemaInfo[$name]);
-            }
-        }else{
-            $this->data[$name] = $value;
+        if(isset($this->schemaInfo()[$name])){
+            $this->data[$name] = $this->valueMap($value,$this->schemaInfo()[$name]);
         }
     }
 
@@ -309,7 +297,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
 
     public function offsetSet($offset, $value):bool
     {
-        if(!in_array($offset,$this->schemaInfo)){
+        if(!in_array($offset,$this->schemaInfo())){
             return false;
         }
         $this->data[$offset] = $value;
@@ -319,26 +307,6 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
     public function offsetUnset($offset)
     {
         unset($this->data[$offset]);
-    }
-
-    protected function strictScheme(bool $strict = null)
-    {
-        if($strict !== null){
-            $this->strict = $strict;
-        }
-        return $this->strict;
-    }
-
-    protected function schemaInfo(array $info = null)
-    {
-        if($info){
-            /*
-             * 修改了scheme的时候，需要重置数据
-             */
-            $this->schemaInfo = $info;
-            $this->data = [];
-        }
-        return $this->schemaInfo;
     }
 
     protected function reset()
@@ -364,6 +332,7 @@ abstract class AbstractModel implements \ArrayAccess,\Iterator,\JsonSerializable
                 return (float)$data;
                 break;
             }
+            case self::TYPE_RAW:
             default:{
                 return $data;
             }
