@@ -254,6 +254,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 删除表中的记录
      * @param $where
+     * @example Model::destroy(1)
      * @example Model::destroy('1,2,3')
      * @example Model::destroy([1,2,3])
      * @example Model::destroy([ 'whereProp' => 'whereVal' ])
