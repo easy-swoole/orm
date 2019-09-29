@@ -1,41 +1,29 @@
 <?php
 
-
 namespace EasySwoole\ORM\Tests;
 
-
 use EasySwoole\ORM\AbstractModel;
+use EasySwoole\ORM\Model\Schema\Table;
 
+/**
+ * 用于测试的用户模型
+ * Class UserModel
+ * @package EasySwoole\ORM\Tests
+ */
 class UserModel extends AbstractModel
 {
-
-    /*
-    * 用于测试
-    */
-    public $lastQuery;
-
-    protected $pk = 'userId';
-
-    protected function schemaInfo(): array
-    {
-        return [
-            'userId'=>self::TYPE_INT,
-            'userName'=>self::TYPE_STRING,
-            'userAccount'=>self::TYPE_STRING
-        ];
-    }
-
-    protected function table(): string
-    {
-        return 'user_list';
-    }
-
-    /*
-     * 用于测试
+    /**
+     * 表的定义
+     * @return Table
      */
-    protected function query(string $sql, array $bindParams = [])
+    protected function schemaInfo(): Table
     {
-        $this->lastQuery = $this->queryBuilder()->getLastQuery();
-        return null;
+        $table = new Table('dept_emp');
+        $table->colInt('emp_no')->setIsPrimaryKey(true);
+        $table->colChar('dept_no', 4);
+        $table->colDate('from_date');
+        $table->colDate('to_date');
+        return $table;
     }
+
 }

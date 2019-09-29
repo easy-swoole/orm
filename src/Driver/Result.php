@@ -113,12 +113,12 @@ class Result
     public function toArray()
     {
         return [
-            'lastInsertId'=>$this->lastInsertId,
-            'result'=>$this->result,
-            'lastError'=>$this->lastError,
-            'lastErrorNo'=>$this->lastErrorNo,
-            'affectedRows'=>$this->affectedRows,
-            'totalCount'=>$this->totalCount
+            'lastInsertId' => $this->lastInsertId,
+            'result'       => $this->result,
+            'lastError'    => $this->lastError,
+            'lastErrorNo'  => $this->lastErrorNo,
+            'affectedRows' => $this->affectedRows,
+            'totalCount'   => $this->totalCount
         ];
     }
 }

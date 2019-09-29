@@ -1,29 +1,36 @@
 {
-  "name": "easyswoole/orm",
-  "type": "library",
-  "description": "php stander lib",
-  "keywords" : ["swoole", "framework", "async","easyswoole"],
-  "homepage" : "https://www.easyswoole.com/",
-  "license" : "Apache-2.0",
-  "authors": [
-    {
-      "name": "YF",
-      "email": "291323003@qq.com"
+    "name": "easyswoole/orm",
+    "type": "library",
+    "description": "php stander lib",
+    "keywords": [
+        "swoole",
+        "framework",
+        "async",
+        "easyswoole"
+    ],
+    "homepage": "https://www.easyswoole.com/",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "YF",
+            "email": "291323003@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1.0",
+        "ext-json": "*",
+        "easyswoole/component": "^1.9",
+        "easyswoole/mysqli": "2.x-dev",
+        "easyswoole/ddl": "dev-master#a87231ab72f85aed6b3fdbfa7ede194af6344e63"
+    },
+    "require-dev": {
+        "easyswoole/phpunit": "^1.0",
+        "easyswoole/swoole-ide-helper": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "EasySwoole\\ORM\\": "src/",
+            "EasySwoole\\ORM\\Tests\\": "tests/"
+        }
     }
-  ],
-  "require": {
-    "php": ">=7.1.0",
-    "easyswoole/component": "^1.9",
-    "easyswoole/mysqli": "2.x-dev"
-  },
-  "require-dev": {
-    "easyswoole/phpunit": "^1.0",
-    "easyswoole/swoole-ide-helper": "^1.0"
-  },
-  "autoload": {
-    "psr-4": {
-      "EasySwoole\\ORM\\": "src/",
-      "EasySwoole\\ORM\\Tests\\": "tests/"
-    }
-  }
 }

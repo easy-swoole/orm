@@ -1,12 +1,14 @@
 <?php
 
-
 namespace EasySwoole\ORM\Driver;
-
 
 use EasySwoole\Component\Pool\PoolObjectInterface;
 use Swoole\Coroutine\MySQL;
 
+/**
+ * Class MysqlObject
+ * @package EasySwoole\ORM\Driver
+ */
 class MysqlObject extends MySQL implements PoolObjectInterface
 {
 
@@ -17,7 +19,7 @@ class MysqlObject extends MySQL implements PoolObjectInterface
 
     function objectRestore()
     {
-        if($this->connected){
+        if ($this->connected) {
             $this->close();
         }
     }
