@@ -18,6 +18,7 @@ class DbManager
     use Singleton;
 
     protected $config = [];
+    protected $transactionContext = [];
 
     function addConnection(Config $config):DbManager
     {
@@ -25,7 +26,32 @@ class DbManager
         return $this;
     }
 
-    function getConnection(string $connectionName = 'default',float $timeout = 5.0)
+    function getConnection(string $connectionName = 'default',float $timeout = null)
+    {
+
+    }
+
+    public function execQuery(string $prepareSql,array $bindParams = [],float $timeout = null):?Result
+    {
+
+    }
+
+    public function rawQuery(string $sql,float $timeout = null):?Result
+    {
+
+    }
+
+    public function startTransaction():bool
+    {
+
+    }
+
+    public function commit():bool
+    {
+
+    }
+
+    public function rollback():bool
     {
 
     }
