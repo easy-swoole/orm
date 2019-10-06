@@ -41,12 +41,15 @@ class DbManager
 
     }
 
-    public function startTransaction():bool
+    public function startTransaction($atomic = false):bool
     {
 
     }
 
-    public function commit():bool
+    /*
+     * 强制提交
+     */
+    public function commit($forceAtomic = false):bool
     {
 
     }
