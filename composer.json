@@ -21,7 +21,7 @@
         "ext-json": "*",
         "easyswoole/component": "^1.9",
         "easyswoole/mysqli": "2.x-dev",
-        "easyswoole/ddl": "dev-master#a87231ab72f85aed6b3fdbfa7ede194af6344e63"
+        "easyswoole/ddl": "^1.0"
     },
     "require-dev": {
         "easyswoole/phpunit": "^1.0",
@@ -29,7 +29,11 @@
     },
     "autoload": {
         "psr-4": {
-            "EasySwoole\\ORM\\": "src/",
+            "EasySwoole\\ORM\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
             "EasySwoole\\ORM\\Tests\\": "tests/"
         }
     }
