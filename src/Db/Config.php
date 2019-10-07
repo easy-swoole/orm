@@ -8,7 +8,6 @@ use EasySwoole\Component\Pool\PoolConf;
 
 class Config extends PoolConf
 {
-    protected $connectionName = 'default';
     protected $host;
     protected $user;
     protected $password;
@@ -162,21 +161,5 @@ class Config extends PoolConf
     public function setFetchMode(bool $fetch_mode): void
     {
         $this->fetch_mode = $fetch_mode;
-    }
-
-    /**
-     * @return string
-     */
-    public function getConnectionName(): string
-    {
-        return $this->connectionName;
-    }
-
-    /**
-     * @param string $connectionName
-     */
-    public function setConnectionName(string $connectionName): void
-    {
-        $this->connectionName = $connectionName;
     }
 }

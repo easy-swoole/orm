@@ -20,13 +20,13 @@ class DbManager
     protected $config = [];
     protected $transactionContext = [];
 
-    function addConnection(Config $config):DbManager
+    function addConnection(Config $config,string $connectionName = 'default'):DbManager
     {
-        $this->config[$config->getConnectionName()] = $config;
+        $this->config[$connectionName] = $config;
         return $this;
     }
 
-    function getConnection(string $connectionName = 'default',float $timeout = null)
+    function getConnection(float $timeout = null,string $connectionName = 'default')
     {
 
     }
@@ -41,7 +41,7 @@ class DbManager
 
     }
 
-    public function startTransaction($atomic = false):bool
+    public function startTransaction($atomic = false,$connectionNames = 'default'):bool
     {
 
     }
