@@ -4,12 +4,14 @@
 namespace EasySwoole\ORM\Db;
 
 
+use EasySwoole\Component\Pool\AbstractPool;
 use EasySwoole\Mysqli\Client;
 
 class MysqlConnection implements ConnectionInterface
 {
     /** @var Config */
     protected $config;
+    /** @var AbstractPool */
     protected $pool;
 
     function __construct(Config $config)
@@ -23,10 +25,20 @@ class MysqlConnection implements ConnectionInterface
         if($client){
             try{
                 $stmt = $client->mysqlClient()->prepare($prepareSql,$this->config->getTimeout());
+                $ret = null;
+                if($stmt){
+                    $ret = $stmt->execute($bindParams,$this->config->getTimeout());
+                }
             }catch (\Throwable $throwable){
+
+            }finally{
                 /*
                  * 如果发现是断线了的，回收链接
+                 * 2006  2013
                  */
+                if(in_array($client->mysqlClient()->errno,[2006,2013])){
+                    $this->pool->unsetObj($client);
+                }
             }
 
         }else{
