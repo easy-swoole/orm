@@ -7,10 +7,8 @@ use ArrayAccess;
 use EasySwoole\Component\Pool\Exception\PoolObjectNumError;
 use EasySwoole\DDL\Enum\DataType;
 use EasySwoole\Mysqli\QueryBuilder;
-use EasySwoole\ORM\Driver\DriverInterface;
-use EasySwoole\ORM\Driver\MysqlDriver;
 use EasySwoole\ORM\Exception\DriverNotFound;
-use EasySwoole\ORM\Model\Schema\Table;
+use EasySwoole\ORM\Utility\Schema\Table;
 use Exception;
 use JsonSerializable;
 use Throwable;
@@ -22,12 +20,9 @@ use Throwable;
  */
 abstract class AbstractModel implements ArrayAccess, JsonSerializable
 {
-    /**
-     * 当前连接的驱动类
-     * @var MysqlDriver
-     */
-    private $connectionDriver;
 
+    /** @var Table */
+    protected $schemaInfo;
     /**
      * 当前连接驱动类的名称
      * 继承后可以覆盖该成员以指定默认的驱动类
@@ -55,52 +50,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     abstract protected function schemaInfo(): Table;
 
-    /**
-     * AbstractModel constructor.
-     * @param array $data 模型的初始数据
-     * @param string $connectionName
-     * @throws DriverNotFound
-     * @throws Exception
-     */
-    function __construct(array $data = [], $connectionName = null)
+
+    function __construct(array $data = [])
     {
-        if ($connectionName) {
-            $this->connectionName = $connectionName;
-        }
-
-        $this->connectionDriver = DbManager::getInstance()->getConnection($this->connectionName);
-
-        // 先把当前的驱动取出到模型中以便后续进行操作
-        if (!$this->connectionDriver instanceof DriverInterface) {
-            $ex = new DriverNotFound('ORM Driver ' . $connectionName . ' not found.');
-            $ex->setDriverName($connectionName);
-            throw $ex;
-        }
-
-        // 记录当前模型的数据以及原始数据
+        $this->schemaInfo = $this->schemaInfo();
         $this->data = $this->originData = $this->_processDataFormat($data, true);
     }
 
-    /**
-     * 进行一次原生查询
-     * @param string $sql
-     * @param array $bindParams
-     * @param bool $returnResultObject
-     * @return Driver\Result|null
-     * @throws Exception
-     * @throws PoolObjectNumError
-     * @throws Throwable
-     */
-    public function query(string $sql, array $bindParams = [], $returnResultObject = false)
-    {
-        $queryResult = $this->connectionDriver->execPrepareQuery($sql, $bindParams);
-        if ($queryResult->getLastErrorNo()) {
-            throw new Exception($queryResult->getLastError(), $queryResult->getLastErrorNo());
-        } else {
-            $resultCollection = $queryResult->getResult();
-            return $returnResultObject ? $queryResult : $resultCollection;
-        }
-    }
 
     /**
      * 获取当前表的PK字段
@@ -108,7 +64,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function getTablePk()
     {
-        return $this->schemaInfo()->getPkFiledName();
+        return $this->schemaInfo->getPkFiledName();
     }
 
     /**
@@ -117,7 +73,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function getTableName()
     {
-        return $this->schemaInfo()->getTable();
+        return $this->schemaInfo->getTable();
     }
 
     /**
@@ -185,20 +141,28 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws DriverNotFound
      * @throws PoolObjectNumError
      * @throws Throwable
-     * @example Model::get(1)
-     * @example Model::get([ 'whereProp' => 'whereVal' ])
-     * @example Model::get(function( $Builder ){}) // auto limit 1
+     * @example AbstractModel::get(1)
+     * @example AbstractModel::get([ 'whereProp' => 'whereVal' ])
+     * @example AbstractModel::get(function( $Builder ){}) // auto limit 1
      */
     public static function get($where = null)
     {
         $modelInstance = new static;
+
         $builder = new QueryBuilder;
         $builder = $modelInstance->_processWhere($where, $builder);
-
         $builder->getOne($modelInstance->getTableName());
+
+
+
         $result = $modelInstance->query($builder->getLastPrepareQuery(), $builder->getLastBindParams(), true);
         $modelInstance->data($result->getResult());
         return $modelInstance;
+    }
+
+    protected function query()
+    {
+
     }
 
     /**
@@ -208,10 +172,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws DriverNotFound
      * @throws PoolObjectNumError
      * @throws Throwable
-     * @example Model::all('1,2,3')
-     * @example Model::all([1,2,3])
-     * @example Model::all([ 'whereProp' => 'whereVal' ])
-     * @example Model::all(function( $Builder ){})
+     * @example AbstractModel::all('1,2,3')
+     * @example AbstractModel::all([1,2,3])
+     * @example AbstractModel::all([ 'whereProp' => 'whereVal' ])
+     * @example AbstractModel::all(function( $Builder ){})
      */
     public static function all($where = null)
     {
@@ -234,7 +198,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 创建一条新的记录
      * @param array $data
-     * @example Model::create(['userName'=>'userName'])
+     * @example AbstractModel::create(['userName'=>'userName'])
      */
     public static function create(array $data = [])
     {
@@ -254,36 +218,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 删除表中的记录
      * @param $where
-     * @example Model::destroy(1)
-     * @example Model::destroy('1,2,3')
-     * @example Model::destroy([1,2,3])
-     * @example Model::destroy([ 'whereProp' => 'whereVal' ])
-     * @example Model::destroy(function( $Builder ){})
-     * @example Model::destroy(1)
+     * @example Utility::destroy(1)
+     * @example Utility::destroy('1,2,3')
+     * @example Utility::destroy([1,2,3])
+     * @example Utility::destroy([ 'whereProp' => 'whereVal' ])
+     * @example Utility::destroy(function( $Builder ){})
+     * @example Utility::destroy(1)
      */
     public static function destroy($where)
     {
         // TODO 没有条件不允许执行删除操作
     }
 
-    /**
-     * 执行一次直接查询
-     * 直接查询不会返回模型对象
-     * @param string $sql
-     * @param array $bindParams
-     * @param bool $returnResultObject
-     * @return Driver\Result|mixed|null
-     * @throws DriverNotFound
-     * @throws Exception
-     * @throws PoolObjectNumError
-     * @throws Throwable
-     */
-    public static function rawQuery(string $sql, array $bindParams = [], $returnResultObject = false)
-    {
-        $modelInstance = new static;
-        $queryResult = $modelInstance->query($sql, $bindParams, $returnResultObject);
-        return $queryResult;
-    }
 
     /**
      * 处理数据集的格式
@@ -338,7 +284,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $primaryKey = $this->getTablePk();
         if (is_int($whereProps)) {
             if (empty($primaryKey)) {
-                throw  new Exception('Table not have primary key, so can\'t use Model::get($pk)');
+                throw  new Exception('Table not have primary key, so can\'t use Utility::get($pk)');
             } else {
                 $builder->where($primaryKey, $whereProps);
             }

@@ -1,11 +1,11 @@
 <?php
 
-namespace EasySwoole\ORM\Model\Schema;
+namespace EasySwoole\ORM\Utility\Schema;
 
 /**
  * 数据表结构
  * Class Table
- * @package EasySwoole\ORM\Model\Schema
+ * @package EasySwoole\ORM\Utility\Schema
  */
 class Table extends \EasySwoole\DDL\Blueprint\Table
 {

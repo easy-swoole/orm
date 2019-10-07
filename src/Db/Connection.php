@@ -7,7 +7,7 @@ namespace EasySwoole\ORM\Db;
 use EasySwoole\Component\Pool\AbstractPool;
 use EasySwoole\Mysqli\Client;
 
-class MysqlConnection implements ConnectionInterface
+class Connection implements ConnectionInterface
 {
     /** @var Config */
     protected $config;

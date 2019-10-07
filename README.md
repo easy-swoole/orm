@@ -29,7 +29,7 @@ class UserModel extends AbstractModel
 {
     /**
      * 表的定义
-     * 此处需要返回一个 EasySwoole\ORM\Model\Schema\Table
+     * 此处需要返回一个 EasySwoole\ORM\Utility\Schema\Table
      * @return Table
      */
     protected function schemaInfo(): Table

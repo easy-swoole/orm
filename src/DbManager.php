@@ -5,8 +5,6 @@ namespace EasySwoole\ORM;
 use EasySwoole\Component\Singleton;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\ConnectionInterface;
-use EasySwoole\ORM\Driver\DriverInterface;
-use EasySwoole\ORM\Driver\Result;
 use Swoole\Coroutine;
 use Throwable;
 

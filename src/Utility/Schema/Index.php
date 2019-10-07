@@ -1,11 +1,11 @@
 <?php
 
-namespace EasySwoole\ORM\Model\Schema;
+namespace EasySwoole\ORM\Utility\Schema;
 
 /**
  * 索引结构
  * Class Index
- * @package EasySwoole\ORM\Model\Schema
+ * @package EasySwoole\ORM\Utility\Schema
  */
 class Index extends \EasySwoole\DDL\Blueprint\Index
 {

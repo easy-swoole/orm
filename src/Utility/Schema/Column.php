@@ -1,11 +1,11 @@
 <?php
 
-namespace EasySwoole\ORM\Model\Schema;
+namespace EasySwoole\ORM\Utility\Schema;
 
 /**
  * 字段结构
  * Class Column
- * @package EasySwoole\ORM\Model\Schema
+ * @package EasySwoole\ORM\Utility\Schema
  */
 class Column extends \EasySwoole\DDL\Blueprint\Column
 {
