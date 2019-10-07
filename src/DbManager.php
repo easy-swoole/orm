@@ -4,6 +4,7 @@ namespace EasySwoole\ORM;
 
 use EasySwoole\Component\Singleton;
 use EasySwoole\ORM\Db\Config;
+use EasySwoole\ORM\Db\ConnectionInterface;
 use EasySwoole\ORM\Driver\DriverInterface;
 use EasySwoole\ORM\Driver\Result;
 use Swoole\Coroutine;
@@ -17,28 +18,21 @@ class DbManager
 {
     use Singleton;
 
-    protected $config = [];
+    protected $connections = [];
     protected $transactionContext = [];
 
-    function addConnection(Config $config,string $connectionName = 'default'):DbManager
+    function addConnection(ConnectionInterface $connection,string $connectionName = 'default'):DbManager
     {
-        $this->config[$connectionName] = $config;
+        $this->connections[$connectionName] = $connection;
         return $this;
     }
 
-    function getConnection(float $timeout = null,string $connectionName = 'default')
+    function getConnection(string $connectionName = 'default'):?ConnectionInterface
     {
-
-    }
-
-    public function execQuery(string $prepareSql,array $bindParams = [],float $timeout = null):?Result
-    {
-
-    }
-
-    public function rawQuery(string $sql,float $timeout = null):?Result
-    {
-
+        if(isset($this->connections[$connectionName])){
+            return  $this->connections[$connectionName];
+        }
+        return null;
     }
 
     public function startTransaction($atomic = false,$connectionNames = 'default'):bool

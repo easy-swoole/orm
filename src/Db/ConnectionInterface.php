@@ -1,12 +1,10 @@
 <?php
 
-namespace EasySwoole\ORM\Driver;
 
-/**
- * Interface DriverInterface
- * @package EasySwoole\ORM\Driver
- */
-interface DriverInterface
+namespace EasySwoole\ORM\Db;
+
+
+interface ConnectionInterface
 {
     /**
      * Execute prepare query
@@ -24,4 +22,5 @@ interface DriverInterface
      * @return Result|null
      */
     public function rawQuery(string $query): ?Result;
+
 }

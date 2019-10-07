@@ -19,7 +19,7 @@
     "require": {
         "php": ">=7.1.0",
         "ext-json": "*",
-        "easyswoole/component": "^1.9",
+        "easyswoole/component": "^2.0",
         "easyswoole/mysqli": "2.x-dev",
         "easyswoole/ddl": "^1.0"
     },
