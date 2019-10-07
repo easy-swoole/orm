@@ -8,6 +8,7 @@ use EasySwoole\Component\Pool\Exception\PoolObjectNumError;
 use EasySwoole\DDL\Enum\DataType;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Exception\DriverNotFound;
+use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
 use Exception;
 use JsonSerializable;
@@ -50,30 +51,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     abstract protected function schemaInfo(): Table;
 
+    public function getSchemaInfo():Table
+    {
+        return $this->schemaInfo;
+    }
 
     function __construct(array $data = [])
     {
         $this->schemaInfo = $this->schemaInfo();
-        $this->data = $this->originData = $this->_processDataFormat($data, true);
-    }
-
-
-    /**
-     * 获取当前表的PK字段
-     * @return mixed|null
-     */
-    public function getTablePk()
-    {
-        return $this->schemaInfo->getPkFiledName();
-    }
-
-    /**
-     * 获取当前的表名称
-     * @return mixed
-     */
-    public function getTableName()
-    {
-        return $this->schemaInfo->getTable();
+        $this->data = $this->originData = PreProcess::dataFormat($data,$this,true);
     }
 
     /**
@@ -96,8 +82,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function setAttr($attrName, $attrValue)
     {
+
         $processData = $this->_processDataFormat([$attrName => $attrValue]);
-        if (array_key_exists($processData, $attrName)) {
+        if (array_key_exists($this->data, $attrName)) {
             $this->data[$attrValue] = $processData[$attrName];
         }
     }
@@ -138,30 +125,29 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 获取一条数据
      * @param $where
      * @return static
-     * @throws DriverNotFound
-     * @throws PoolObjectNumError
      * @throws Throwable
      * @example AbstractModel::get(1)
      * @example AbstractModel::get([ 'whereProp' => 'whereVal' ])
      * @example AbstractModel::get(function( $Builder ){}) // auto limit 1
      */
-    public static function get($where = null)
+    public function get($where = null)
     {
         $modelInstance = new static;
-
         $builder = new QueryBuilder;
-        $builder = $modelInstance->_processWhere($where, $builder);
+        $builder =  PreProcess::mappingWhere($builder,$where,$modelInstance);
         $builder->getOne($modelInstance->getTableName());
 
-
-
-        $result = $modelInstance->query($builder->getLastPrepareQuery(), $builder->getLastBindParams(), true);
-        $modelInstance->data($result->getResult());
         return $modelInstance;
     }
 
-    protected function query()
+    protected function query(QueryBuilder $builder)
     {
+        $con = DbManager::getInstance()->getConnection($this->connectionName);
+        if($con){
+            $ret = $con->execPrepareQuery($builder->getLastPrepareQuery(),$builder->getLastBindParams());
+        }else{
+
+        }
 
     }
 
@@ -195,14 +181,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $resultSet;
     }
 
-    /**
-     * 创建一条新的记录
-     * @param array $data
-     * @example AbstractModel::create(['userName'=>'userName'])
-     */
-    public static function create(array $data = [])
+    public static function create(array $data = []):AbstractModel
     {
         // TODO 转为模型的Save操作
+        return new static($data);
     }
 
     /**
@@ -231,84 +213,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
 
-    /**
-     * 处理数据集的格式
-     * 数据入模型之前 通过此方法处理字段格式 以及字段过滤
-     * @param array $data 需要设置的数据
-     * @param bool $isInitValue 初始化会将没传入的字段设置为null
-     * @return array
-     * @throws Exception
-     */
-    private function _processDataFormat(array $data, $isInitValue = false)
-    {
-        $tempData = [];
-        foreach ($this->schemaInfo()->getColumns() as $columnName => $column) {
-
-            if (isset($data[$columnName])) {
-                $tempData[$columnName] = $this->_processValueFormat($data[$columnName], $column->getColumnType());
-            } else {
-                $isInitValue && $tempData[$columnName] = null;
-            }
-
-        }
-
-        return $tempData;
-    }
-
-    /**
-     * 处理定义值的格式
-     * @param mixed $data
-     * @param integer $dataType
-     * @return float|int|mixed|string
-     * @throws Exception
-     */
-    private function _processValueFormat($data, $dataType)
-    {
-        if (DataType::typeIsTextual($dataType)) {
-            return strval($data);
-        } else {
-            return $data;
-        }
-    }
-
-    /**
-     * 快速处理Where参数以支持多种格式的条件
-     * @param mixed $whereProps
-     * @param QueryBuilder $builder
-     * @return QueryBuilder
-     * @throws Exception
-     */
-    public function _processWhere($whereProps, $builder)
-    {
-        // 处理查询条件
-        $primaryKey = $this->getTablePk();
-        if (is_int($whereProps)) {
-            if (empty($primaryKey)) {
-                throw  new Exception('Table not have primary key, so can\'t use Utility::get($pk)');
-            } else {
-                $builder->where($primaryKey, $whereProps);
-            }
-        } else if (is_string($whereProps)) {
-            $whereKeys = explode(',', $whereProps);
-            $builder->where($primaryKey, $whereKeys, 'IN');
-        } else if (is_array($whereProps)) {
-            // 如果不相等说明是一个键值数组 需要批量操作where
-            if (array_keys($whereProps) !== range(0, count($whereProps) - 1)) {
-                foreach ($whereProps as $whereFiled => $whereProp) {
-                    if (is_array($whereProp)) {
-                        $builder->where($whereFiled, ...$whereProps);
-                    } else {
-                        $builder->where($whereFiled, $whereProp);
-                    }
-                }
-            } else {  // 否则是一个索引数组 表示查询主键
-                $builder->where($primaryKey, $whereProps, 'IN');
-            }
-        } else if (is_callable($whereProps)) {
-            $whereProps($builder);
-        }
-        return $builder;
-    }
 
     /**
      * ArrayAccess Exists
