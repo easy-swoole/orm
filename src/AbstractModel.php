@@ -221,13 +221,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         // TODO 转为模型的Save操作 -> isUpdate
     }
-
-
-    public function destroy($where)
-    {
-        // TODO 没有条件不允许执行删除操作
-    }
-
     /**
      * ArrayAccess Exists
      * @param mixed $offset
