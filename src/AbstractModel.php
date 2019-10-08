@@ -132,15 +132,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->lastQueryResult()->getAffectedRows();
     }
 
-    public function save($notNul = false)
+    /*
+     * 等于insert
+     */
+    public function save($notNul = false):?int
     {
         $builder = new QueryBuilder();
         $primaryKey = $this->getSchemaInfo()->getPkFiledName();
         if(empty($primaryKey)){
             throw new Exception('save() needs primaryKey for model '.static::class);
         }
-        $pkVal = $this->getAttr($primaryKey);
-        $isInsert = false;
         $rawArray = $this->toArray($notNul);
         if(is_array($this->fields)){
             foreach ($rawArray as $key => $value){
@@ -149,16 +150,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 }
             }
         }
-        if($pkVal){
-            $builder->where($primaryKey,$pkVal)->update($this->getSchemaInfo()->getTable(),$rawArray);
-        }else{
-            $isInsert = true;
-            $builder->insert($this->getSchemaInfo()->getTable(),$rawArray);
+        $builder->insert($this->getSchemaInfo()->getTable(),$rawArray);
+        if($this->lastQueryResult()->getLastInsertId()){
+            $this->data[$primaryKey] = $this->lastQueryResult()->getLastInsertId();
+            $this->originData = $this->data;
+            return $this->lastQueryResult()->getLastInsertId();
         }
-        $ret = $this->query($builder);
-        if($isInsert){
-//            $this->data
-        }
+        return null;
     }
 
 
@@ -194,18 +192,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
     }
 
-    public static function all($where = null,$numRows = null)
+    public function all($where = null):array
     {
-        $modelInstance = new static;
         $builder = new QueryBuilder;
-        $builder = $modelInstance->_processWhere($where, $builder);
-
-        $builder->get($modelInstance->getTableName());
-        $results = $modelInstance->query($builder->getLastPrepareQuery(), $builder->getLastBindParams(), true);
-
+        $builder = PreProcess::mappingWhere($builder,$where,$this);
+        $builder->get($this->getSchemaInfo()->getTable(),$this->limit,$this->fields);
+        $results = $this->query($builder);
         $resultSet = [];
-        if ($results->getResult()) {
-            foreach ($results->getResult() as $result) {
+        if (is_array($results)) {
+            foreach ($results as $result) {
                 $resultSet[] = new static($result);
             }
         }
@@ -214,7 +209,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public static function create(array $data = []):AbstractModel
     {
-        // TODO 转为模型的Save操作
         return new static($data);
     }
 
@@ -223,18 +217,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @param array $data
      * @param array $where
      */
-    public static function update(array $data = [], array $where = [])
+    public function update(array $data = [], array $where = [])
     {
         // TODO 转为模型的Save操作 -> isUpdate
     }
 
 
-    public static function destroy($where)
+    public function destroy($where)
     {
         // TODO 没有条件不允许执行删除操作
     }
-
-
 
     /**
      * ArrayAccess Exists
