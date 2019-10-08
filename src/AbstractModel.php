@@ -143,13 +143,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             throw new Exception('save() needs primaryKey for model '.static::class);
         }
         $rawArray = $this->toArray($notNul);
-        if(is_array($this->fields)){
-            foreach ($rawArray as $key => $value){
-                if(in_array($key,$this->fields)){
-                    unset($rawArray[$key]);
-                }
-            }
-        }
         $builder->insert($this->getSchemaInfo()->getTable(),$rawArray);
         if($this->lastQueryResult()->getLastInsertId()){
             $this->data[$primaryKey] = $this->lastQueryResult()->getLastInsertId();
@@ -212,14 +205,24 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return new static($data);
     }
 
-    /**
-     * 更新当前记录
-     * @param array $data
-     * @param array $where
-     */
-    public function update(array $data = [], array $where = [])
+
+    public function update(array $data = [], $where = null)
     {
-        // TODO 转为模型的Save操作 -> isUpdate
+        if(empty($data)){
+            $data = $this->toArray();
+        }
+        $builder = new QueryBuilder();
+        if($where){
+            PreProcess::mappingWhere($builder,$where,$this);
+        }else{
+            $pk = $this->getSchemaInfo()->getPkFiledName();
+            if(isset($this->data[$pk])){
+                $pkVal = $this->data[$pk];
+                $builder->where($pk,$pkVal);
+            }else{
+                throw new Exception("update error,pkValue is require");
+            }
+        }
     }
     /**
      * ArrayAccess Exists
@@ -254,8 +257,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function toArray($notNul = false): array
     {
+        $temp = $this->data;
         if ($notNul) {
-            $temp = $this->data;
             foreach ($temp as $key => $value) {
                 if ($value === null) {
                     unset($temp[$key]);
@@ -263,7 +266,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             return $temp;
         }
-        return $this->data;
+        if(is_array($this->fields)){
+            foreach ($temp as $key => $value){
+                if(in_array($key,$this->fields)){
+                    unset($temp[$key]);
+                }
+            }
+        }
+        return $temp;
     }
 
     public function __toString()
