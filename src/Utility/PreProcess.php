@@ -15,7 +15,7 @@ class PreProcess
     public static function mappingWhere(QueryBuilder $builder, $whereVal, AbstractModel $model)
     {
         // 处理查询条件
-        $primaryKey = $model->getTablePk();
+        $primaryKey = $model->getSchemaInfo()->getPkFiledName();
         if (is_int($whereVal)) {
             if (empty($primaryKey)) {
                 throw new Exception('Table not have primary key, so can\'t use Model::get($pk)');
@@ -57,7 +57,7 @@ class PreProcess
         $tempData = [];
         foreach ($model->getSchemaInfo()->getColumns() as $columnName => $column) {
             if (isset($data[$columnName])) {
-                $tempData[$columnName] = self::dataValueFormat($data[$columnName], $column->getColumnType());
+                $tempData[$columnName] = self::dataValueFormat($data[$columnName], $column);
             } else {
                 $isInitValue && $tempData[$columnName] = null;
             }

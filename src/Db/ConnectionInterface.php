@@ -4,23 +4,9 @@
 namespace EasySwoole\ORM\Db;
 
 
+use EasySwoole\Mysqli\QueryBuilder;
+
 interface ConnectionInterface
 {
-    /**
-     * Execute prepare query
-     * 请确保同一协程下是用同一个连接执行的sql
-     * @param string $prepareSql
-     * @param array $bindParams
-     * @return Result|null
-     */
-    public function execPrepareQuery(string $prepareSql, array $bindParams = []): ?Result;
-
-    /**
-     * Execute unprepared query
-     * 请确保同一协程下是用同一个连接执行的sql
-     * @param string $query
-     * @return Result|null
-     */
-    public function rawQuery(string $query): ?Result;
-
+    public function query(QueryBuilder $builder,bool $rawQuery = false):Result;
 }
