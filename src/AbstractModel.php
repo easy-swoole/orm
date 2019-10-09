@@ -108,8 +108,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function setAttr($attrName, $attrValue):bool
     {
-        if(isset($this->getSchemaInfo()->getColumns()[$attrValue])){
-            $col = $this->getSchemaInfo()->getColumns()[$attrValue];
+        if(isset($this->getSchemaInfo()->getColumns()[$attrName])){
+            $col = $this->getSchemaInfo()->getColumns()[$attrName];
             $this->data[$attrName] = PreProcess::dataValueFormat($attrValue,$col);
             return true;
         }else{
@@ -123,10 +123,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
-    public function delete($where = null):?int
+    public function destroy($where = null):?int
     {
         $builder = new QueryBuilder();
-        $builder =  PreProcess::mappingWhere($builder,$where,$this);
+        $builder = PreProcess::mappingWhere($builder,$where,$this);
         $builder->delete($this->getSchemaInfo()->getTable(),$this->limit);
         $this->query($builder);
         return $this->lastQueryResult()->getAffectedRows();
@@ -144,22 +144,43 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         $rawArray = $this->toArray($notNul);
         $builder->insert($this->getSchemaInfo()->getTable(),$rawArray);
+        $this->query($builder);
+
+        if ($this->lastQueryResult()->getResult() === false){
+            return null;
+        }
+
         if($this->lastQueryResult()->getLastInsertId()){
             $this->data[$primaryKey] = $this->lastQueryResult()->getLastInsertId();
             $this->originData = $this->data;
             return $this->lastQueryResult()->getLastInsertId();
+        }else{
+            return $this->getAttr($primaryKey);
         }
         return null;
     }
 
-
+    /**
+     * 获取数据
+     * @param null $where
+     * @return AbstractModel|null
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function get($where = null)
     {
         $modelInstance = new static;
         $builder = new QueryBuilder;
         $builder =  PreProcess::mappingWhere($builder,$where,$modelInstance);
         $builder->getOne($modelInstance->getSchemaInfo()->getTable(),$this->fields);
-        $modelInstance->data($this->query($builder)[0]);
+
+        $res = $this->query($builder)[0];
+
+        if ($res === null){
+            return null;
+        }
+
+        $modelInstance->data($res);
         return $modelInstance;
     }
 
@@ -185,6 +206,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
     }
 
+    /**
+     * 批量查询
+     * @param null $where
+     * @return array
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function all($where = null):array
     {
         $builder = new QueryBuilder;
@@ -194,7 +222,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $resultSet = [];
         if (is_array($results)) {
             foreach ($results as $result) {
-                $resultSet[] = new static($result);
+                $resultSet[] = static::create($result);
             }
         }
         return $resultSet;
@@ -206,10 +234,22 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
 
+    /**
+     * 更新
+     * @param array $data
+     * @param null $where
+     * @return bool
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function update(array $data = [], $where = null)
     {
         if(empty($data)){
-            $data = $this->toArray();
+            // $data = $this->toArray();
+            $data = array_diff($this->data, $this->originData);
+            if (empty($data)){
+                return true;
+            }
         }
         $builder = new QueryBuilder();
         if($where){
@@ -223,7 +263,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 throw new Exception("update error,pkValue is require");
             }
         }
+        $builder->update($this->getSchemaInfo()->getTable(), $data);
+        $results = $this->query($builder);
+
+        return $results ? true : false;
     }
+
     /**
      * ArrayAccess Exists
      * @param mixed $offset

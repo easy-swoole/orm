@@ -5,9 +5,9 @@
  ./vendor/bin/co-phpunit tests
 ```
 
-样例数据库使用了mysql著名的employees样例库: https://github.com/datacharmer/test_db
+推荐使用mysql著名的employees样例库进行测试和学习mysql: https://github.com/datacharmer/test_db
 
-## 基础使用
+## 基础定义
 
 定义一个模型
 
@@ -18,7 +18,7 @@
 namespace EasySwoole\ORM\Tests;
 
 use EasySwoole\ORM\AbstractModel;
-use EasySwoole\ORM\Model\Schema\Table;
+use EasySwoole\ORM\Utility\Schema\Table;
 
 /**
  * 用于测试的用户模型
@@ -34,11 +34,10 @@ class UserModel extends AbstractModel
      */
     protected function schemaInfo(): Table
     {
-        $table = new Table('dept_emp');
-        $table->colInt('emp_no')->setIsPrimaryKey(true);
-        $table->colChar('dept_no', 4);
-        $table->colDate('from_date');
-        $table->colDate('to_date');
+        $table = new Table('siam');
+        $table->colInt('id')->setIsPrimaryKey(true);
+        $table->colChar('name', 255);
+        $table->colInt('age');
         return $table;
     }
 
@@ -46,7 +45,7 @@ class UserModel extends AbstractModel
 
 ```
 
-使用ORM
+## 开始使用
 
 ```php
 
@@ -54,73 +53,108 @@ class UserModel extends AbstractModel
 
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\DbManager;
-use EasySwoole\ORM\Driver\MysqlConfig;
-use EasySwoole\ORM\Driver\MysqlDriver;
 use EasySwoole\ORM\Tests\UserModel;
 use Swoole\Coroutine;
+use EasySwoole\ORM\Db\Connection;
+use EasySwoole\ORM\Db\Config;
 
 require_once 'vendor/autoload.php';
 
-$mysqlConf = [
-    'host'     => '127.0.0.1',
-    'port'     => '3306',
-    'user'     => 'root',
-    'password' => '',
-    'database' => 'employees',
-];
-
 // Add default connection
-DbManager::getInstance()->addConnection(new MysqlDriver(new MysqlConfig($mysqlConf)));
+$config = new Config();
+$config->setDatabase('easyswoole_orm');
+$config->setUser('root');
+$config->setPassword('');
+$config->setHost('127.0.0.1');
+
+DbManager::getInstance()->addConnection(new Connection($config));
 
 // Use connection in coroutine
 Coroutine::create(function () {
-
-    // 实例化使用
-    $model = new UserModel([
-        'emp_no'    => 10001,
-        'dept_no'   => 'd005',
-        'from_date' => '1986-06-26',
-        'to_date'   => '9999-01-01'
-    ]);
-    $model->setAttr('emp_no', 10002);
-    $model->emp_no = 10003;
-    $model->save(); // 未实现
-
-    // 静态获取(返回一个模型)
-    UserModel::get(1);
-    UserModel::get(['emp_no' => 10001]);
-
-    // 静态获取(多条/返回一个模型数组)
-    UserModel::all([10001, 10002, 10003]);
-    UserModel::all('10001,10002,10003');
-    UserModel::all(['emp_no' => 10001]);
-    UserModel::all(function (QueryBuilder $builder) {
-        $builder->where('emp_no', 1);
-    });
-
-    // 静态创建(返回一个模型/可以直接从返回模型的字段读取InsertId) 未实现
-    UserModel::create([
-        'dept_no'   => 'd005',
-        'from_date' => '1986-06-26',
-        'to_date'   => '9999-01-01'
-    ]);
-
-    // 静态更新(返回更新后的模型) 未实现
-    UserModel::update([
-        'dept_no'   => 'd005',
-        'from_date' => '1986-06-26',
-        'to_date'   => '9999-01-01'
-    ], ['emp_no' => 10001]);
-
-    // 静态删除(返回影响的记录数) 未实现
-    UserModel::destroy(10001);
-    UserModel::destroy('10001,10002,10003');
-    UserModel::destroy([10001, 10002, 10003]);
-    UserModel::destroy(['emp_no' => 10001]);
-    UserModel::destroy(function (QueryBuilder $builder) {
-        $builder->where('emp_no', 1);
-    });
-
+    // orm use code 
+    // swoole mysql must be use in coroutine env.
+    // if in onRequest ...method
+    // it will use coroutine automatic
 });
 
+```
+
+## 查
+```php
+<?php
+
+// 获取单条(返回一个模型)
+$res = UserModel::create()->get(10001);
+$res = UserModel::create()->get(['emp_no' => 10001]);
+var_dump($res); // 如果查询不到则为null
+// 不同获取字段方式
+var_dump($res->emp_no);
+var_dump($res['emp_no']);
+
+// 批量获取 返回一个数组  每一个元素都是一个模型对象
+$res = UserModel::create()->all([1, 3, 10003]);
+$res = UserModel::create()->all('1, 3, 10003');
+$res = UserModel::create()->all(['name' => 'siam']);
+$res = UserModel::create()->all(function (QueryBuilder $builder) {
+    $builder->where('name', 'siam');
+});
+var_dump($res);
+
+```
+
+## 改
+
+```php
+<?php
+
+// 可以直接静态更新
+$res = UserModel::create()->update([
+    'name' => 'new'
+], ['id' => 1]);
+
+// 根据模型对象进行更新（无需写更新条件）
+$model = UserModel::create()->get(1);
+
+// 不同设置新字段值的方式
+$res = $model->update([
+    'name' => 123,
+]);
+$model->name = 323;
+$model['name'] = 333;
+
+// 调用保存  返回bool 成功失败
+$res = $model->update();
+var_dump($res);
+```
+## 增
+
+```php
+<?php
+$model = new UserModel([
+    'name' => 'siam',
+    'age'  => 21,
+]);
+// 不同设置值的方式
+// $model->setAttr('id', 7);
+// $model->id = 10003;
+
+$res = $model->save();
+var_dump($res); // 返回自增id 或者主键的值  失败则返回null
+```
+
+## 删
+
+```php
+<?php
+// 删除(返回影响的记录数)
+// 不同方式
+$res = UserModel::create()->destroy(1);
+$res = UserModel::create()->destroy('2,4,5');
+$res = UserModel::create()->destroy([3, 7]);
+$res = UserModel::create()->destroy(['age' => 21]);
+$res = UserModel::create()->destroy(function (QueryBuilder $builder) {
+    $builder->where('id', 1);
+});
+
+var_dump($res);
 ```
