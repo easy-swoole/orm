@@ -158,3 +158,74 @@ $res = UserModel::create()->destroy(function (QueryBuilder $builder) {
 
 var_dump($res);
 ```
+
+## 获取器和修改器注意
+
+数据表的字段会自动转换为驼峰法
+
+## 修改器
+
+setter，修改器的作用是可以在数据赋值的时候自动进行转换处理，例如：
+
+```php
+class UserModel extends AbstractModel
+{
+    /**
+     * $value mixed 是原值
+     * $data  array 是当前model所有的值 
+     */
+    protected function setNameAttr($value, $data)
+    {
+        return $value."_加一个统一后缀";
+    }
+}
+```
+如下代码在设置保存的时候将会被修改内容
+```php
+$model = new UserModel([
+    'name' => 'siam',
+    'age'  => 21,
+]);
+$model->save();
+```
+
+## 获取器
+
+getter，获取器的作用是在获取数据的字段值后自动进行处理
+
+```php
+class UserModel extends AbstractModel
+{
+    /**
+     * $value mixed 是原值
+     * $data  array 是当前model所有的值 
+     */
+    protected function getIdAttr($value, $data)
+    {
+        // id = 1 管理员
+        if ($value == 1){
+            return '管理员';
+        }
+        return '普通账号';
+    }
+    
+    protected function getStatusAttr($value)
+    {
+        $status = [-1=>'删除',0=>'禁用',1=>'正常',2=>'待审核'];
+        return $status[$value];
+    }
+}
+```
+
+获取器还可以定义数据表中不存在的字段，例如：
+```php
+protected function getEasyswooleAttr($value,$data)
+{
+  return 'Easyswoole用户-'.$data['id'];
+}
+```
+那么在外部我们就可以使用这个easyswoole字段了
+```php
+$res = UserModel::create()->get(4);
+var_dump($res->easyswoole);
+```
