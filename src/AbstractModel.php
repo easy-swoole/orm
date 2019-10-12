@@ -9,6 +9,7 @@ use EasySwoole\ORM\Db\Result;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
+use EasySwoole\Spl\SplString;
 use JsonSerializable;
 
 /**
@@ -96,12 +97,19 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     function __construct(array $data = [])
     {
         $this->schemaInfo = $this->schemaInfo();
-        $this->data = $this->originData = PreProcess::dataFormat($data,$this,true);
+        $this->data($data);
+        // $this->data = $this->originData = PreProcess::dataFormat($data,$this,true);
     }
 
 
     public function getAttr($attrName)
     {
+        // 是否有获取器
+        $nameSpl  = new SplString($attrName);
+        $method   = 'get' . $nameSpl->studly()->__toString() . 'Attr';
+        if (method_exists($this, $method)) {
+            return $this->$method($this->data[$attrName] ?? null, $this->data);
+        }
         return $this->data[$attrName] ?? null;
     }
 
@@ -110,7 +118,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         if(isset($this->getSchemaInfo()->getColumns()[$attrName])){
             $col = $this->getSchemaInfo()->getColumns()[$attrName];
-            $this->data[$attrName] = PreProcess::dataValueFormat($attrValue,$col);
+            $attrValue = PreProcess::dataValueFormat($attrValue,$col);
+            // 是否有修改器
+            $nameSpl  = new SplString($attrName);
+            $method    = 'set' . $nameSpl->studly()->__toString() . 'Attr';
+            if (method_exists($this, $method)) {
+                $attrValue = $this->$method($attrValue, $this->data);
+            }
+            $this->data[$attrName] = $attrValue;
             return true;
         }else{
             return false;
@@ -119,7 +134,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function data(array $data)
     {
-        $this->data = $this->originData = PreProcess::dataFormat($data,$this,true);
+        foreach ($data as $key => $value){
+            $this->setAttr($key, $value);
+        }
+        $this->originData = $this->data;
         return $this;
     }
 
@@ -132,10 +150,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->lastQueryResult()->getAffectedRows();
     }
 
-    /*
-     * 等于insert
+    /**
+     * 保存 插入
+     * @param bool $notNul
+     * @throws Exception
+     * @throws \Throwable
+     * @return bool|int
      */
-    public function save($notNul = false):?int
+    public function save($notNul = false)
     {
         $builder = new QueryBuilder();
         $primaryKey = $this->getSchemaInfo()->getPkFiledName();
@@ -147,17 +169,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->query($builder);
 
         if ($this->lastQueryResult()->getResult() === false){
-            return null;
+            return false;
         }
 
         if($this->lastQueryResult()->getLastInsertId()){
             $this->data[$primaryKey] = $this->lastQueryResult()->getLastInsertId();
             $this->originData = $this->data;
             return $this->lastQueryResult()->getLastInsertId();
-        }else{
-            return $this->getAttr($primaryKey);
         }
-        return null;
+        return true;
     }
 
     /**
