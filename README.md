@@ -7,9 +7,27 @@
 
 推荐使用mysql著名的employees样例库进行测试和学习mysql: https://github.com/datacharmer/test_db
 
-## 基础定义
+## 注册链接信息
 
-定义一个模型
+添加数据库的连接信息，用于创建链接。
+
+```php
+use EasySwoole\ORM\DbManager;
+use EasySwoole\ORM\Db\Connection;
+use EasySwoole\ORM\Db\Config;
+
+$config = new Config();
+$config->setDatabase('easyswoole_orm');
+$config->setUser('root');
+$config->setPassword('');
+$config->setHost('127.0.0.1');
+
+DbManager::getInstance()->addConnection(new Connection($config));
+```
+
+## 模型定义
+
+定义一个模型基础的模型，只需要创建一个类，并且继承`EasySwoole\ORM\AbstractModel`即可
 
 ```php
 
@@ -27,6 +45,16 @@ use EasySwoole\ORM\Utility\Schema\Table;
  */
 class UserModel extends AbstractModel
 {
+}
+```
+
+## 定义表结构
+
+在模型类中，强制我们实现一个`function schemaInfo(): Table`方法，要求返回一个`EasySwoole\ORM\Utility\Schema\Table`类
+
+```php
+class UserModel extends AbstractModel
+{
     /**
      * 表的定义
      * 此处需要返回一个 EasySwoole\ORM\Utility\Schema\Table
@@ -40,92 +68,27 @@ class UserModel extends AbstractModel
         $table->colInt('age');
         return $table;
     }
-
 }
 
 ```
 
-## 开始使用
+### 表字段
+
+在Table中，有colX系列方法，用于表示表字段的类型，如以上示例的Int,Char
 
 ```php
-
-<?php
-
-use EasySwoole\Mysqli\QueryBuilder;
-use EasySwoole\ORM\DbManager;
-use EasySwoole\ORM\Tests\UserModel;
-use Swoole\Coroutine;
-use EasySwoole\ORM\Db\Connection;
-use EasySwoole\ORM\Db\Config;
-
-require_once 'vendor/autoload.php';
-
-// Add default connection
-$config = new Config();
-$config->setDatabase('easyswoole_orm');
-$config->setUser('root');
-$config->setPassword('');
-$config->setHost('127.0.0.1');
-
-DbManager::getInstance()->addConnection(new Connection($config));
-
-// Use connection in coroutine
-Coroutine::create(function () {
-    // orm use code 
-    // swoole mysql must be use in coroutine env.
-    // if in onRequest ...method
-    // it will use coroutine automatic
-});
-
+$table->colInt('id')；
+$table->colChar('name', 255);
 ```
 
-## 查
-```php
-<?php
+### 表主键
 
-// 获取单条(返回一个模型)
-$res = UserModel::create()->get(10001);
-$res = UserModel::create()->get(['emp_no' => 10001]);
-var_dump($res); // 如果查询不到则为null
-// 不同获取字段方式
-var_dump($res->emp_no);
-var_dump($res['emp_no']);
-
-// 批量获取 返回一个数组  每一个元素都是一个模型对象
-$res = UserModel::create()->all([1, 3, 10003]);
-$res = UserModel::create()->all('1, 3, 10003');
-$res = UserModel::create()->all(['name' => 'siam']);
-$res = UserModel::create()->all(function (QueryBuilder $builder) {
-    $builder->where('name', 'siam');
-});
-var_dump($res);
-
-```
-
-## 改
+如果需要将某个字段指定为主键 则用连贯操作方式，在后续继续指定即可。
 
 ```php
-<?php
-
-// 可以直接静态更新
-$res = UserModel::create()->update([
-    'name' => 'new'
-], ['id' => 1]);
-
-// 根据模型对象进行更新（无需写更新条件）
-$model = UserModel::create()->get(1);
-
-// 不同设置新字段值的方式
-$res = $model->update([
-    'name' => 123,
-]);
-$model->name = 323;
-$model['name'] = 333;
-
-// 调用保存  返回bool 成功失败
-$res = $model->update();
-var_dump($res);
+$table->colInt('id')->setIsPrimaryKey(true);
 ```
+
 ## 增
 
 ```php
@@ -187,6 +150,69 @@ $model = new UserModel([
     'age'  => 21,
 ]);
 $model->save();
+```
+
+
+## 改
+
+```php
+<?php
+
+// 可以直接静态更新
+$res = UserModel::create()->update([
+    'name' => 'new'
+], ['id' => 1]);
+
+// 根据模型对象进行更新（无需写更新条件）
+$model = UserModel::create()->get(1);
+
+// 不同设置新字段值的方式
+$res = $model->update([
+    'name' => 123,
+]);
+$model->name = 323;
+$model['name'] = 333;
+
+// 调用保存  返回bool 成功失败
+$res = $model->update();
+var_dump($res);
+```
+
+## 查
+```php
+<?php
+
+// 获取单条(返回一个模型)
+$res = UserModel::create()->get(10001);
+$res = UserModel::create()->get(['emp_no' => 10001]);
+var_dump($res); // 如果查询不到则为null
+// 不同获取字段方式
+var_dump($res->emp_no);
+var_dump($res['emp_no']);
+
+// 批量获取 返回一个数组  每一个元素都是一个模型对象
+$res = UserModel::create()->all([1, 3, 10003]);
+$res = UserModel::create()->all('1, 3, 10003');
+$res = UserModel::create()->all(['name' => 'siam']);
+$res = UserModel::create()->all(function (QueryBuilder $builder) {
+    $builder->where('name', 'siam');
+});
+var_dump($res);
+
+```
+
+### 复杂查询
+
+在以上查的示例中，我们可以看到最后一个是闭包方式，我们可以在其中使用QueryBuilder的任意连贯操作，来构建一个复杂的查询操作。
+
+支持方法列表查看Mysqli。
+
+```php
+$res = UserModel::create()->all(function (QueryBuilder $builder) {
+    $builder->where('name', 'siam');
+    $builder->order('id');
+    $builder->limit(10);
+});
 ```
 
 ## 获取器
