@@ -20,33 +20,37 @@ use JsonSerializable;
 abstract class AbstractModel implements ArrayAccess, JsonSerializable
 {
 
-    protected $lastQueryResult;
-    protected $lastQuery;
+    private $lastQueryResult;
+    private $lastQuery;
     private $limit = null;
     private $withTotalCount = false;
     private $fields = "*";
 
     /** @var Table */
-    protected $schemaInfo;
+    private $schemaInfo;
     /**
      * 当前连接驱动类的名称
      * 继承后可以覆盖该成员以指定默认的驱动类
      * @var string
      */
     protected $connectionName = 'default';
+    /*
+     * 临时设定的链接
+     */
+    private $tempConnectionName = null;
 
     /**
      * 当前的数据
      * @var array
      */
-    protected $data;
+    private $data;
 
     /**
      * 模型的原始数据
      * 未应用修改器和获取器之前的原始数据
      * @var array
      */
-    protected $originData;
+    private $originData;
 
     /**
      * 返回当前模型的结构信息
@@ -98,7 +102,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $this->schemaInfo = $this->schemaInfo();
         $this->data($data);
-        // $this->data = $this->originData = PreProcess::dataFormat($data,$this,true);
+    }
+
+    function connection(string $name,bool $isTemp = false):AbstractModel
+    {
+        if($isTemp){
+            $this->tempConnectionName = $name;
+        }else{
+            $this->connectionName = $name;
+        }
+        return $this;
     }
 
 
@@ -207,7 +220,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     protected function query(QueryBuilder $builder)
     {
         $this->lastQuery = $builder;
-        $con = DbManager::getInstance()->getConnection($this->connectionName);
+        if($this->tempConnectionName){
+            $con = DbManager::getInstance()->getConnection($this->tempConnectionName);
+        }else{
+            $con = DbManager::getInstance()->getConnection($this->connectionName);
+        }
         try{
             if($con){
                 if($this->withTotalCount){
@@ -361,5 +378,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->fields = '*';
         $this->limit = null;
         $this->withTotalCount = false;
+        $this->tempConnectionName = null;
     }
 }
