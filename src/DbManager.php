@@ -3,6 +3,7 @@
 namespace EasySwoole\ORM;
 
 use EasySwoole\Component\Singleton;
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\ConnectionInterface;
 use Swoole\Coroutine;
@@ -33,6 +34,11 @@ class DbManager
         return null;
     }
 
+    /**
+     * 开启事务
+     * @param string|array $connectionNames
+     * @return bool
+     */
     public function startTransaction($connectionNames = 'default'):bool
     {
         $successes = [];
@@ -40,43 +46,104 @@ class DbManager
             $connectionNames = [$connectionNames];
         }
         /*
-         * 1、 raw执行 start transaction
+         * 1、raw执行 start transaction
          * 2、若全部链接执行成功，则往transactionContext 标记对应协程的成功事务，并注册一个defer自动执行回滚,防止用户忘了提交导致死锁
          * 3、若部分链接成功，则成功链接执行rollback
          */
-        Coroutine::defer(function (){
-           $cid = Coroutine::getCid();
-           if(isset($this->transactionContext[$cid])){
-               $this->rollback();
-           }
-        });
+        $cid = Coroutine::getCid();
+        foreach ($connectionNames as $name) {
+            $con     = self::getConnection($name);
+            $builder = new QueryBuilder();
+            $builder->startTrans();
+            $res = $con->query($builder, TRUE);
 
-    }
+            if ($res->getResult() === true){
+                $successes[] = $name;
+                $this->transactionContext[$cid][] = $name;
+            }else{
+                $this->rollback();
+                return false;
+            }
+        }
 
-    public function commit():bool
-    {
         Coroutine::defer(function (){
             $cid = Coroutine::getCid();
             if(isset($this->transactionContext[$cid])){
-                /*
-                 * raw执行 commit
-                 */
-                unset($this->transactionContext[$cid]);
+                $this->rollback();
             }
         });
+        return true;
     }
 
-    public function rollback():bool
+    /**
+     * @param null $connectName
+     * @return bool
+     */
+    public function commit($connectName = NULL):bool
     {
-        Coroutine::defer(function (){
-            $cid = Coroutine::getCid();
-            if(isset($this->transactionContext[$cid])){
-                /*
-                 * raw执行 rollback
-                 */
-                unset($this->transactionContext[$cid]);
+        $cid = Coroutine::getCid();
+        if(isset($this->transactionContext[$cid])){
+            // 如果有指定
+            if ($connectName !== NULL){
+                $con     = self::getConnection($connectName);
+                $builder = new QueryBuilder();
+                $builder->commit();
+                $res = $con->query($builder, TRUE);
+                if ($res->getResult() !== true){
+                    $this->rollback();
+                    return false;
+                }
+                return true;
             }
-        });
+            foreach ($this->transactionContext[$cid] as $name){
+                $con     = self::getConnection($name);
+                $builder = new QueryBuilder();
+                $builder->commit();
+                $res = $con->query($builder, TRUE);
+                if ($res->getResult() !== true){
+                    $this->rollback();
+                    return false;
+                }
+            }
+            unset($this->transactionContext[$cid]);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @param null $connectName
+     * @return bool
+     */
+    public function rollback($connectName = NULL):bool
+    {
+        $cid = Coroutine::getCid();
+        if(isset($this->transactionContext[$cid])){
+            // 如果有指定
+            if ($connectName !== NULL){
+                $con     = self::getConnection($connectName);
+                $builder = new QueryBuilder();
+                $builder->rollback();
+                $res = $con->query($builder, TRUE);
+                if ($res->getResult() !== true){
+                    $this->rollback();
+                    return false;
+                }
+                return true;
+            }
+            foreach ($this->transactionContext[$cid] as $name){
+                $con     = self::getConnection($name);
+                $builder = new QueryBuilder();
+                $builder->rollback();
+                $res = $con->query($builder, TRUE);
+                if ($res->getResult() !== true){
+                    return false;
+                }
+            }
+            unset($this->transactionContext[$cid]);
+            return true;
+        }
+        return false;
     }
 
 }
