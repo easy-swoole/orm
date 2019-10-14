@@ -255,3 +255,30 @@ protected function getEasyswooleAttr($value,$data)
 $res = UserModel::create()->get(4);
 var_dump($res->easyswoole);
 ```
+
+
+## 事务
+
+### 开启事务
+传参说明
+
+| 参数名          | 是否必须 | 参数说明                                                     |
+| --------------- | -------- | ------------------------------------------------------------ |
+| connectionNames | 否       | string或者array<br/>在addConnection时指定。一般情况下无需特别设置 |
+
+
+```php
+DbManager::getInstance()->startTransaction($connectionNames = 'default');
+```
+
+### 提交事务
+
+```php
+DbManager::getInstance()->rollback();
+```
+
+### 回滚事务
+
+```php
+
+```
