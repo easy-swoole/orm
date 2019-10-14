@@ -41,7 +41,6 @@ class DbManager
      */
     public function startTransaction($connectionNames = 'default'):bool
     {
-        $successes = [];
         if(!is_array($connectionNames)){
             $connectionNames = [$connectionNames];
         }
@@ -58,7 +57,6 @@ class DbManager
             $res = $con->query($builder, TRUE);
 
             if ($res->getResult() === true){
-                $successes[] = $name;
                 $this->transactionContext[$cid][] = $name;
             }else{
                 $this->rollback();
@@ -93,6 +91,7 @@ class DbManager
                     $this->rollback();
                     return false;
                 }
+                $this->cleartTransactionContext($connectName);
                 return true;
             }
             foreach ($this->transactionContext[$cid] as $name){
@@ -105,7 +104,7 @@ class DbManager
                     return false;
                 }
             }
-            unset($this->transactionContext[$cid]);
+            $this->cleartTransactionContext();
             return true;
         }
         return false;
@@ -129,6 +128,7 @@ class DbManager
                     $this->rollback();
                     return false;
                 }
+                $this->cleartTransactionContext($connectName);
                 return true;
             }
             foreach ($this->transactionContext[$cid] as $name){
@@ -140,10 +140,31 @@ class DbManager
                     return false;
                 }
             }
-            unset($this->transactionContext[$cid]);
+            $this->cleartTransactionContext();
             return true;
         }
         return false;
+    }
+
+    protected function cleartTransactionContext($connectName = null)
+    {
+        $cid = Coroutine::getCid();
+        if (!isset($this->transactionContext[$cid])){
+            return false;
+        }
+
+        if ($connectName !== null){
+            foreach ($this->transactionContext[$cid] as $key => $name){
+                if ($name === $connectName){
+                    unset($this->transactionContext[$cid][$key]);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        unset($this->transactionContext[$cid]);
+        return true;
     }
 
 }
