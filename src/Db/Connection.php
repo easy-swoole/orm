@@ -70,4 +70,12 @@ class Connection implements ConnectionInterface
             throw new PoolEmpty("pool empty for host {$this->config->getHost()}");
         }
     }
+
+    public function destroyPool()
+    {
+        if($this->pool){
+            $this->pool->destroyPool();
+            $this->pool = null;
+        }
+    }
 }
