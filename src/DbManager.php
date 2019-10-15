@@ -34,6 +34,11 @@ class DbManager
         return null;
     }
 
+    function query(string $connectionName,QueryBuilder $builder)
+    {
+
+    }
+
     /**
      * 开启事务
      * @param string|array $connectionNames
@@ -91,7 +96,7 @@ class DbManager
                     $this->rollback();
                     return false;
                 }
-                $this->cleartTransactionContext($connectName);
+                $this->clearTransactionContext($connectName);
                 return true;
             }
             foreach ($this->transactionContext[$cid] as $name){
@@ -104,7 +109,7 @@ class DbManager
                     return false;
                 }
             }
-            $this->cleartTransactionContext();
+            $this->clearTransactionContext();
             return true;
         }
         return false;
@@ -128,7 +133,7 @@ class DbManager
                     $this->rollback();
                     return false;
                 }
-                $this->cleartTransactionContext($connectName);
+                $this->clearTransactionContext($connectName);
                 return true;
             }
             foreach ($this->transactionContext[$cid] as $name){
@@ -140,13 +145,13 @@ class DbManager
                     return false;
                 }
             }
-            $this->cleartTransactionContext();
+            $this->clearTransactionContext();
             return true;
         }
         return false;
     }
 
-    protected function cleartTransactionContext($connectName = null)
+    protected function clearTransactionContext($connectName = null)
     {
         $cid = Coroutine::getCid();
         if (!isset($this->transactionContext[$cid])){
