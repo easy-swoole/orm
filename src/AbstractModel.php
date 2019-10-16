@@ -226,7 +226,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $modelInstance;
     }
 
-    protected function query(QueryBuilder $builder)
+    protected function query(QueryBuilder $builder,bool $raw = false)
     {
         $start = microtime(true);
         $this->lastQuery = clone $builder;
@@ -239,7 +239,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             if($this->withTotalCount){
                 $builder->withTotalCount();
             }
-            $ret = DbManager::getInstance()->query($connectionName,$builder);
+            $ret = DbManager::getInstance()->query($connectionName,$builder,$raw);
             if($this->onQuery){
                 $temp = clone $builder;
                 call_user_func($this->onQuery,$ret,$temp,$start);
