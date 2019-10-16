@@ -4,11 +4,11 @@
 namespace EasySwoole\ORM\Db;
 
 
-use EasySwoole\Component\Pool\AbstractPool;
-use EasySwoole\Component\Pool\Exception\PoolEmpty;
 use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Exception\Exception;
+use EasySwoole\Pool\AbstractPool;
+use EasySwoole\Pool\Exception\PoolEmpty;
 
 class Connection implements ConnectionInterface
 {
@@ -41,11 +41,6 @@ class Connection implements ConnectionInterface
             $result->setLastErrorNo($client->mysqlClient()->errno);
             $result->setLastInsertId($client->mysqlClient()->insert_id);
             $result->setAffectedRows($client->mysqlClient()->affected_rows);
-            $builder->reset();
-            if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
-                $count = $client->mysqlClient()->query('SELECT FOUND_ROWS() as count',$this->config->getTimeout());
-                $result->setTotalCount($count[0]['count']);
-            }
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{

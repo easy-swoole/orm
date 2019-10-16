@@ -4,9 +4,9 @@
 namespace EasySwoole\ORM\Db;
 
 
-use EasySwoole\Component\Pool\AbstractPool;
 use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\Config as MysqlConfig;
+use EasySwoole\Pool\AbstractPool;
 
 class Pool extends AbstractPool
 {

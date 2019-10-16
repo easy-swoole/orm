@@ -4,9 +4,7 @@
 namespace EasySwoole\ORM\Db;
 
 
-use EasySwoole\Component\Pool\PoolConf;
-
-class Config extends PoolConf
+class Config extends \EasySwoole\Pool\Config
 {
     protected $host;
     protected $user;

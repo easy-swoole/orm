@@ -220,23 +220,19 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     protected function query(QueryBuilder $builder)
     {
-        $this->lastQuery = $builder;
+        $this->lastQuery = clone $builder;
         if($this->tempConnectionName){
-            $con = DbManager::getInstance()->getConnection($this->tempConnectionName);
+            $connectionName = $this->tempConnectionName;
         }else{
-            $con = DbManager::getInstance()->getConnection($this->connectionName);
+            $connectionName = $this->connectionName;
         }
         try{
-            if($con){
-                if($this->withTotalCount){
-                    $builder->withTotalCount();
-                }
-                $ret = $con->query($builder);
-                $this->lastQueryResult = $ret;
-                return $ret->getResult();
-            }else{
-                throw new Exception("connection : {$this->connectionName} not register");
+            if($this->withTotalCount){
+                $builder->withTotalCount();
             }
+            $ret = DbManager::getInstance()->query($connectionName,$builder);
+            $builder->reset();
+            $this->lastQueryResult = $ret;
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{

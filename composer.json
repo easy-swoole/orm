@@ -21,7 +21,8 @@
         "ext-json": "*",
         "easyswoole/component": "^2.0",
         "easyswoole/mysqli": "^2.0",
-        "easyswoole/ddl": "^1.0"
+        "easyswoole/ddl": "^1.0",
+        "easyswoole/pool": "^1.0"
     },
     "require-dev": {
         "easyswoole/phpunit": "^1.0",

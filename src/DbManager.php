@@ -4,10 +4,10 @@ namespace EasySwoole\ORM;
 
 use EasySwoole\Component\Singleton;
 use EasySwoole\Mysqli\QueryBuilder;
-use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\ConnectionInterface;
+use EasySwoole\ORM\Db\Result;
+use EasySwoole\ORM\Exception\Exception;
 use Swoole\Coroutine;
-use Throwable;
 
 /**
  * Class DbManager
@@ -34,9 +34,21 @@ class DbManager
         return null;
     }
 
-    function query(string $connectionName,QueryBuilder $builder)
+    function query(string $connectionName,QueryBuilder $builder,bool $raw = false):Result
     {
-
+        $con = $this->getConnection($connectionName);
+        if($con){
+            $ret = $con->query($builder,$raw);
+            if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
+                $temp = new QueryBuilder();
+                $temp->raw('SELECT FOUND_ROWS() as count');
+                $count = $con->query($builder);
+                $ret->setTotalCount($count->getResult()[0]['count']);
+            }
+            return $ret;
+        }else{
+            throw new Exception("connection : {$connectionName} not register");
+        }
     }
 
     /**
