@@ -19,6 +19,13 @@ class DbManager
 
     protected $connections = [];
     protected $transactionContext = [];
+    protected $onQuery;
+
+    public function onQuery(callable $call):DbManager
+    {
+        $this->onQuery = $call;
+        return $this;
+    }
 
     function addConnection(ConnectionInterface $connection,string $connectionName = 'default'):DbManager
     {
@@ -36,6 +43,7 @@ class DbManager
 
     function query(string $connectionName,QueryBuilder $builder,bool $raw = false):Result
     {
+        $start = microtime(true);
         $con = $this->getConnection($connectionName);
         if($con){
             $ret = $con->query($builder,$raw);
@@ -43,7 +51,14 @@ class DbManager
                 $temp = new QueryBuilder();
                 $temp->raw('SELECT FOUND_ROWS() as count');
                 $count = $con->query($builder);
+                if($this->onQuery){
+                    call_user_func($this->onQuery,$count,$temp,$start);
+                }
                 $ret->setTotalCount($count->getResult()[0]['count']);
+            }
+            if($this->onQuery){
+                $temp = clone $builder;
+                call_user_func($this->onQuery,$ret,$temp,$start);
             }
             return $ret;
         }else{
@@ -51,11 +66,6 @@ class DbManager
         }
     }
 
-    /**
-     * 开启事务
-     * @param string|array $connectionNames
-     * @return bool
-     */
     public function startTransaction($connectionNames = 'default'):bool
     {
         if(!is_array($connectionNames)){
@@ -68,11 +78,9 @@ class DbManager
          */
         $cid = Coroutine::getCid();
         foreach ($connectionNames as $name) {
-            $con     = self::getConnection($name);
             $builder = new QueryBuilder();
             $builder->startTrans();
-            $res = $con->query($builder, TRUE);
-
+            $res = $this->query($name,$builder,true);
             if ($res->getResult() === true){
                 $this->transactionContext[$cid][] = $name;
             }else{
@@ -90,20 +98,15 @@ class DbManager
         return true;
     }
 
-    /**
-     * @param null $connectName
-     * @return bool
-     */
     public function commit($connectName = NULL):bool
     {
         $cid = Coroutine::getCid();
         if(isset($this->transactionContext[$cid])){
             // 如果有指定
             if ($connectName !== NULL){
-                $con     = self::getConnection($connectName);
                 $builder = new QueryBuilder();
                 $builder->commit();
-                $res = $con->query($builder, TRUE);
+                $res = $this->query($connectName,$builder,true);
                 if ($res->getResult() !== true){
                     $this->rollback();
                     return false;
@@ -112,10 +115,9 @@ class DbManager
                 return true;
             }
             foreach ($this->transactionContext[$cid] as $name){
-                $con     = self::getConnection($name);
                 $builder = new QueryBuilder();
                 $builder->commit();
-                $res = $con->query($builder, TRUE);
+                $res = $this->query($name,$builder, true);
                 if ($res->getResult() !== true){
                     $this->rollback();
                     return false;
@@ -127,32 +129,26 @@ class DbManager
         return false;
     }
 
-    /**
-     * @param null $connectName
-     * @return bool
-     */
+
     public function rollback($connectName = NULL):bool
     {
         $cid = Coroutine::getCid();
         if(isset($this->transactionContext[$cid])){
             // 如果有指定
             if ($connectName !== NULL){
-                $con     = self::getConnection($connectName);
                 $builder = new QueryBuilder();
                 $builder->rollback();
-                $res = $con->query($builder, TRUE);
+                $res = $this->query($connectName,$builder, true);
                 if ($res->getResult() !== true){
-                    $this->rollback();
                     return false;
                 }
                 $this->clearTransactionContext($connectName);
                 return true;
             }
             foreach ($this->transactionContext[$cid] as $name){
-                $con     = self::getConnection($name);
                 $builder = new QueryBuilder();
                 $builder->rollback();
-                $res = $con->query($builder, TRUE);
+                $res = $this->query($name,$builder, true);
                 if ($res->getResult() !== true){
                     return false;
                 }

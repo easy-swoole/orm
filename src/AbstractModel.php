@@ -52,6 +52,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     private $originData;
 
+    private $onQuery;
+
     /**
      * 返回当前模型的结构信息
      * 请为当前模型编写正确的结构
@@ -62,6 +64,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function getSchemaInfo():Table
     {
         return $this->schemaInfo;
+    }
+
+    public function onQuery(callable $call):AbstractModel
+    {
+        $this->onQuery = $call;
+        return $this;
     }
 
     public function lastQueryResult():?Result
@@ -220,6 +228,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     protected function query(QueryBuilder $builder)
     {
+        $start = microtime(true);
         $this->lastQuery = clone $builder;
         if($this->tempConnectionName){
             $connectionName = $this->tempConnectionName;
@@ -231,6 +240,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $builder->withTotalCount();
             }
             $ret = DbManager::getInstance()->query($connectionName,$builder);
+            if($this->onQuery){
+                $temp = clone $builder;
+                call_user_func($this->onQuery,$ret,$temp,$start);
+            }
             $builder->reset();
             $this->lastQueryResult = $ret;
         }catch (\Throwable $throwable){
@@ -243,6 +256,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 批量查询
      * @param null $where
+     * @param bool $returnAsArray
      * @return array
      * @throws Exception
      * @throws \Throwable

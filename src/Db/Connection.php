@@ -56,10 +56,8 @@ class Connection implements ConnectionInterface
 
     private function getClient():Client
     {
-        if(!$this->pool){
-            $this->pool = new Pool($this->config);
-        }
-        $client = $this->pool->defer($this->config->getTimeout());
+        $pool = $this->getPool();
+        $client = $pool->defer($this->config->getTimeout());
         if($client){
             return $client;
         }else{
@@ -67,11 +65,11 @@ class Connection implements ConnectionInterface
         }
     }
 
-    public function destroyPool()
+    public function getPool():Pool
     {
-        if($this->pool){
-            $this->pool->destroyPool();
-            $this->pool = null;
+        if(!$this->pool){
+            $this->pool = new Pool($this->config);
         }
+        return $this->pool;
     }
 }
