@@ -251,7 +251,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws Exception
      * @throws \Throwable
      */
-    public function all($where = null):array
+    public function all($where = null, bool $returnAsArray = false):array
     {
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder,$where,$this);
@@ -260,7 +260,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $resultSet = [];
         if (is_array($results)) {
             foreach ($results as $result) {
-                $resultSet[] = static::create($result);
+                if($returnAsArray){
+                    $resultSet[] = $result;
+                }else{
+                    $resultSet[] = static::create($result);
+                }
             }
         }
         return $resultSet;
