@@ -246,6 +246,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             $builder->reset();
             $this->lastQueryResult = $ret;
+            return $ret->getResult();
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{
