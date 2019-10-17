@@ -47,7 +47,7 @@ class DbManager
         $con = $this->getConnection($connectionName);
         if($con){
             $ret = $con->query($builder,$raw);
-            if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
+            if(in_array('SQL_CALC_FOUND_ROWS',$builder->getQueryOptions())){
                 $temp = new QueryBuilder();
                 $temp->raw('SELECT FOUND_ROWS() as count');
                 $count = $con->query($builder);
