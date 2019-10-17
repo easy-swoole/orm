@@ -50,7 +50,7 @@ class DbManager
             if(in_array('SQL_CALC_FOUND_ROWS',$builder->getQueryOptions())){
                 $temp = new QueryBuilder();
                 $temp->raw('SELECT FOUND_ROWS() as count');
-                $count = $con->query($builder);
+                $count = $con->query($temp,true);
                 if($this->onQuery){
                     call_user_func($this->onQuery,$count,$temp,$start);
                 }
