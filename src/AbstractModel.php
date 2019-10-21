@@ -371,7 +371,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->tempConnectionName = null;
     }
 
-    protected function join(string $class,callable $where = null)
+    protected function joinOne(string $class,callable $where = null)
     {
         if(!isset($this->_joinMap[$class])){
             $ref = new \ReflectionClass($class);
@@ -387,6 +387,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     $targetTable = $ins->getSchemaInfo()->getTable();
                     $currentTable = $this->getSchemaInfo()->getTable();
                     $builder->join($targetTable,"{$targetTable}.{$joinPk} = {$currentTable}.{$pk}");
+                    $builder->getOne($currentTable);
                     $result = $this->query($builder);
                     $this->data($result);
                     $ins->data($result);
@@ -399,6 +400,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
         }
         return $this->_joinMap[$class];
+    }
+
+    protected function join(string $class,callable $where = null)
+    {
+
     }
 
     protected function query(QueryBuilder $builder,bool $raw = false)
