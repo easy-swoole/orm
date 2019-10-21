@@ -25,6 +25,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $limit = null;
     private $withTotalCount = false;
     private $fields = "*";
+    private $_joinMap = [];
 
     /** @var Table */
     private $schemaInfo;
@@ -226,33 +227,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $modelInstance;
     }
 
-    protected function query(QueryBuilder $builder,bool $raw = false)
-    {
-        $start = microtime(true);
-        $this->lastQuery = clone $builder;
-        if($this->tempConnectionName){
-            $connectionName = $this->tempConnectionName;
-        }else{
-            $connectionName = $this->connectionName;
-        }
-        try{
-            if($this->withTotalCount){
-                $builder->withTotalCount();
-            }
-            $ret = DbManager::getInstance()->query($connectionName,$builder,$raw);
-            if($this->onQuery){
-                $temp = clone $builder;
-                call_user_func($this->onQuery,$ret,$temp,$start);
-            }
-            $builder->reset();
-            $this->lastQueryResult = $ret;
-            return $ret->getResult();
-        }catch (\Throwable $throwable){
-            throw $throwable;
-        }finally{
-            $this->reset();
-        }
-    }
 
     /**
      * 批量查询
@@ -395,5 +369,63 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->limit = null;
         $this->withTotalCount = false;
         $this->tempConnectionName = null;
+    }
+
+    protected function join(string $class,callable $where = null)
+    {
+        if(!isset($this->_joinMap[$class])){
+            $ref = new \ReflectionClass($class);
+            if($ref->isSubclassOf(AbstractModel::class)){
+                /** @var AbstractModel $ins */
+                $ins = $ref->newInstance();
+                $builder = new QueryBuilder();
+                if($where){
+                    call_user_func($where,$builder);
+                }else{
+                    $pk = $this->getSchemaInfo()->getPkFiledName();
+                    $joinPk = $ins->getSchemaInfo()->getPkFiledName();
+                    $targetTable = $ins->getSchemaInfo()->getTable();
+                    $currentTable = $this->getSchemaInfo()->getTable();
+                    $builder->join($targetTable,"{$targetTable}.{$joinPk} = {$currentTable}.{$pk}");
+                    $result = $this->query($builder);
+                    $this->data($result);
+                    $ins->data($result);
+                    $this->_joinMap[$class] = $ins;
+                }
+            }else{
+                /*
+                 * 抛出异常
+                 */
+            }
+        }
+        return $this->_joinMap[$class];
+    }
+
+    protected function query(QueryBuilder $builder,bool $raw = false)
+    {
+        $start = microtime(true);
+        $this->lastQuery = clone $builder;
+        if($this->tempConnectionName){
+            $connectionName = $this->tempConnectionName;
+        }else{
+            $connectionName = $this->connectionName;
+        }
+        try{
+            if($this->withTotalCount){
+                $builder->withTotalCount();
+            }
+            $ret = DbManager::getInstance()->query($connectionName,$builder,$raw);
+            if($this->onQuery){
+                $temp = clone $builder;
+                call_user_func($this->onQuery,$ret,$temp,$start);
+            }
+            $builder->reset();
+            $this->lastQueryResult = $ret;
+            return $ret->getResult();
+        }catch (\Throwable $throwable){
+            throw $throwable;
+        }finally{
+            $this->reset();
+        }
     }
 }
