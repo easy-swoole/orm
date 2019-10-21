@@ -46,19 +46,25 @@ class DbManager
         $start = microtime(true);
         $con = $this->getConnection($connectionName);
         if($con){
-            $ret = $con->query($builder,$raw);
-            if(in_array('SQL_CALC_FOUND_ROWS',$builder->getQueryOptions())){
-                $temp = new QueryBuilder();
-                $temp->raw('SELECT FOUND_ROWS() as count');
-                $count = $con->query($temp,true);
-                if($this->onQuery){
-                    call_user_func($this->onQuery,$count,$temp,$start);
+            $ret = null;
+            try{
+                $ret = $con->query($builder,$raw);
+                if(in_array('SQL_CALC_FOUND_ROWS',$builder->getQueryOptions())){
+                    $temp = new QueryBuilder();
+                    $temp->raw('SELECT FOUND_ROWS() as count');
+                    $count = $con->query($temp,true);
+                    if($this->onQuery){
+                        call_user_func($this->onQuery,$count,$temp,$start);
+                    }
+                    $ret->setTotalCount($count->getResult()[0]['count']);
                 }
-                $ret->setTotalCount($count->getResult()[0]['count']);
-            }
-            if($this->onQuery){
-                $temp = clone $builder;
-                call_user_func($this->onQuery,$ret,$temp,$start);
+            }catch (\Throwable $exception){
+                throw $exception;
+            }finally{
+                if($this->onQuery){
+                    $temp = clone $builder;
+                    call_user_func($this->onQuery,$ret,$temp,$start);
+                }
             }
             return $ret;
         }else{

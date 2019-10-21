@@ -526,14 +526,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $connectionName = $this->connectionName;
         }
         try{
+            $ret = null;
             if($this->withTotalCount){
                 $builder->withTotalCount();
             }
             $ret = DbManager::getInstance()->query($connectionName,$builder,$raw);
-            if($this->onQuery){
-                $temp = clone $builder;
-                call_user_func($this->onQuery,$ret,$temp,$start);
-            }
             $builder->reset();
             $this->lastQueryResult = $ret;
             return $ret->getResult();
@@ -541,6 +538,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             throw $throwable;
         }finally{
             $this->reset();
+            if($this->onQuery){
+                $temp = clone $builder;
+                call_user_func($this->onQuery,$ret,$temp,$start);
+            }
         }
     }
 }
