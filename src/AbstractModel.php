@@ -133,6 +133,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if (method_exists($this, $method)) {
             return $this->$method($this->data[$attrName] ?? null, $this->data);
         }
+        // 判断是否有关联查询
+        if (method_exists($this, $attrName)){
+            return $this->$attrName();
+        }
         return $this->data[$attrName] ?? null;
     }
 
@@ -164,9 +168,30 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
-    public function destroy($where = null):?int
+    /**
+     * @param null $where
+     * @param bool $allow 是否允许没有主键删除
+     * @return int|null
+     * @throws Exception
+     * @throws \Throwable
+     */
+    public function destroy($where = null, $allow = false):?int
     {
         $builder = new QueryBuilder();
+        $primaryKey = $this->getSchemaInfo()->getPkFiledName();
+
+        if (is_null($where) && $allow == false) {
+            if (empty($primaryKey)) {
+                throw new Exception('Table not have primary key, so can\'t use Model::get($pk)');
+            } else {
+                $whereVal = $this->getAttr($primaryKey);
+                if (empty($whereVal)){
+                    throw new Exception('Table not have primary value');
+                }
+                $builder->where($primaryKey, $whereVal);
+            }
+        }
+
         $builder = PreProcess::mappingWhere($builder,$where,$this);
         $builder->delete($this->getSchemaInfo()->getTable(),$this->limit);
         $this->query($builder);
@@ -371,40 +396,124 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->tempConnectionName = null;
     }
 
-    protected function joinOne(string $class,callable $where = null)
+    /**
+     * @param string $class
+     * @param callable|null $where
+     * @param null $pk
+     * @param null $joinPk
+     * @param string $joinType
+     * @return mixed|null
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    protected function hasOne(string $class,callable $where = null,$pk = null, $joinPk = null, $joinType = '')
     {
-        if(!isset($this->_joinMap[$class])){
-            $ref = new \ReflectionClass($class);
-            if($ref->isSubclassOf(AbstractModel::class)){
-                /** @var AbstractModel $ins */
-                $ins = $ref->newInstance();
-                $builder = new QueryBuilder();
-                if($where){
-                    call_user_func($where,$builder);
-                }else{
-                    $pk = $this->getSchemaInfo()->getPkFiledName();
-                    $joinPk = $ins->getSchemaInfo()->getPkFiledName();
-                    $targetTable = $ins->getSchemaInfo()->getTable();
-                    $currentTable = $this->getSchemaInfo()->getTable();
-                    $builder->join($targetTable,"{$targetTable}.{$joinPk} = {$currentTable}.{$pk}");
-                    $builder->getOne($currentTable);
-                    $result = $this->query($builder);
-                    $this->data($result);
-                    $ins->data($result);
-                    $this->_joinMap[$class] = $ins;
-                }
-            }else{
-                /*
-                 * 抛出异常
-                 */
-            }
+        if(isset($this->_joinMap[$class])){
+            return $this->_joinMap[$class];
         }
-        return $this->_joinMap[$class];
+
+        $ref = new \ReflectionClass($class);
+
+        if(!$ref->isSubclassOf(AbstractModel::class)){
+            throw new Exception("relation class must be subclass of AbstractModel");
+        }
+
+        /** @var AbstractModel $ins */
+        $ins = $ref->newInstance();
+        $builder = new QueryBuilder();
+
+        if ($pk === null){
+            $pk = $this->getSchemaInfo()->getPkFiledName();
+        }
+        if ($joinPk === null){
+            $joinPk = $ins->getSchemaInfo()->getPkFiledName();
+        }
+
+        $targetTable  = $ins->getSchemaInfo()->getTable();
+        $currentTable = $this->getSchemaInfo()->getTable();
+        // 支持复杂的构造
+        if($where){
+            $builder = call_user_func($where,$builder);
+            $builder->getOne($targetTable);
+        }else{
+            $builder->join($targetTable,"{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
+                ->where("{$currentTable}.{$pk}", $this->$pk);
+            $builder->getOne($currentTable);
+        }
+
+        $result = $this->query($builder);
+        if ($result){
+            $this->data($result[0]);
+            $ins->data($result[0]);
+            $this->_joinMap[$class] = $ins;
+
+            return $this->_joinMap[$class];
+        }
+        return null;
+
     }
 
-    protected function join(string $class,callable $where = null)
+    /**
+     * 一对多关联
+     * @param string $class
+     * @param callable|null $where
+     * @param null $pk
+     * @param null $joinPk
+     * @param string $joinType
+     * @return mixed|null
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    protected function hasMany(string $class,callable $where = null,$pk = null, $joinPk = null, $joinType = '')
     {
+        if(isset($this->_joinMap[$class])){
+            return $this->_joinMap[$class];
+        }
 
+        $ref = new \ReflectionClass($class);
+
+        if(!$ref->isSubclassOf(AbstractModel::class)){
+            throw new Exception("relation class must be subclass of AbstractModel");
+        }
+
+        /** @var AbstractModel $ins */
+        $ins = $ref->newInstance();
+        $builder = new QueryBuilder();
+
+        if ($pk === null){
+            $pk = $this->getSchemaInfo()->getPkFiledName();
+        }
+        if ($joinPk === null){
+            $joinPk = $ins->getSchemaInfo()->getPkFiledName();
+        }
+
+        $targetTable  = $ins->getSchemaInfo()->getTable();
+        $currentTable = $this->getSchemaInfo()->getTable();
+        // 支持复杂的构造
+        if($where){
+            $builder = call_user_func($where,$builder);
+            $builder->get($targetTable);
+        }else{
+            $builder->join($targetTable,"{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
+                ->where("{$currentTable}.{$pk}", $this->$pk);
+            $builder->get($currentTable);
+        }
+
+        $result = $this->query($builder);
+        if ($result){
+            $return = [];
+            foreach ($result as $one){
+                $return[] = ($ref->newInstance())->data($one);
+            }
+            $this->_joinMap[$class] = $return;
+
+            return $this->_joinMap[$class];
+        }
+        return null;
     }
 
     protected function query(QueryBuilder $builder,bool $raw = false)
