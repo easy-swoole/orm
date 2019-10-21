@@ -241,14 +241,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder = new QueryBuilder;
         $builder =  PreProcess::mappingWhere($builder,$where,$modelInstance);
         $builder->getOne($modelInstance->getSchemaInfo()->getTable(),$this->fields);
-
-        $res = $this->query($builder)[0];
-
-        if ($res === null){
+        $res = $this->query($builder);
+        if (empty($res)){
             return null;
         }
-
-        $modelInstance->data($res);
+        $modelInstance->data($res[0]);
         return $modelInstance;
     }
 
