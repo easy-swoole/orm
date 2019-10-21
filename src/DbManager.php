@@ -79,7 +79,7 @@ class DbManager
         $cid = Coroutine::getCid();
         foreach ($connectionNames as $name) {
             $builder = new QueryBuilder();
-            $builder->startTrans();
+            $builder->starTtransaction();
             $res = $this->query($name,$builder,true);
             if ($res->getResult() === true){
                 $this->transactionContext[$cid][] = $name;
