@@ -527,7 +527,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             if($this->withTotalCount){
                 $builder->withTotalCount();
             }
-            $ret = DbManager::getInstance()->query($connectionName,$builder,$raw);
+            $ret = DbManager::getInstance()->query($builder,$raw,$connectionName);
             $builder->reset();
             $this->lastQueryResult = $ret;
             return $ret->getResult();

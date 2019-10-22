@@ -41,7 +41,7 @@ class DbManager
         return null;
     }
 
-    function query(string $connectionName,QueryBuilder $builder,bool $raw = false):Result
+    function query(QueryBuilder $builder,bool $raw = false,string $connectionName = 'default'):Result
     {
         $start = microtime(true);
         $con = $this->getConnection($connectionName);
@@ -86,7 +86,7 @@ class DbManager
         foreach ($connectionNames as $name) {
             $builder = new QueryBuilder();
             $builder->starTtransaction();
-            $res = $this->query($name,$builder,true);
+            $res = $this->query($builder,true,$name);
             if ($res->getResult() === true){
                 $this->transactionContext[$cid][] = $name;
             }else{
@@ -112,7 +112,7 @@ class DbManager
             if ($connectName !== NULL){
                 $builder = new QueryBuilder();
                 $builder->commit();
-                $res = $this->query($connectName,$builder,true);
+                $res = $this->query($builder,true,$connectName);
                 if ($res->getResult() !== true){
                     $this->rollback();
                     return false;
@@ -123,7 +123,7 @@ class DbManager
             foreach ($this->transactionContext[$cid] as $name){
                 $builder = new QueryBuilder();
                 $builder->commit();
-                $res = $this->query($name,$builder, true);
+                $res = $this->query($builder, true,$name);
                 if ($res->getResult() !== true){
                     $this->rollback();
                     return false;
@@ -144,7 +144,7 @@ class DbManager
             if ($connectName !== NULL){
                 $builder = new QueryBuilder();
                 $builder->rollback();
-                $res = $this->query($connectName,$builder, true);
+                $res = $this->query($builder, true,$connectName);
                 if ($res->getResult() !== true){
                     return false;
                 }
@@ -154,7 +154,7 @@ class DbManager
             foreach ($this->transactionContext[$cid] as $name){
                 $builder = new QueryBuilder();
                 $builder->rollback();
-                $res = $this->query($name,$builder, true);
+                $res = $this->query($builder, true,$name);
                 if ($res->getResult() !== true){
                     return false;
                 }
