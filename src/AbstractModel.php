@@ -9,7 +9,9 @@ use EasySwoole\ORM\Db\Result;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
+use EasySwoole\ORM\Utility\TableObjectGeneration;
 use EasySwoole\Spl\SplString;
+use EasySwoole\Utility\Str;
 use JsonSerializable;
 
 /**
@@ -27,8 +29,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $fields = "*";
     private $_joinMap = [];
 
+    protected $tableName = '';
+
     /** @var Table */
-    private $schemaInfo;
+    private static $schemaInfo;
     /**
      * 当前连接驱动类的名称
      * 继承后可以覆盖该成员以指定默认的驱动类
@@ -55,39 +59,53 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     private $onQuery;
 
-    /**
-     * 返回当前模型的结构信息
-     * 请为当前模型编写正确的结构
-     * @return Table
-     */
-    abstract protected function schemaInfo(): Table;
 
-    public function getSchemaInfo():Table
+    /**
+     * getSchemaInfo
+     * @param bool $isCache
+     * @return Table
+     * @author Tioncico
+     * Time: 15:21
+     */
+    public function getSchemaInfo(bool $isCache = true): Table
     {
-        return $this->schemaInfo;
+        if (self::$schemaInfo instanceof Table && $isCache == true) {
+            return self::$schemaInfo;
+        }
+
+        if ($this->tempConnectionName) {
+            $connectionName = $this->tempConnectionName;
+        } else {
+            $connectionName = $this->connectionName;
+        }
+        $tableObjectGeneration = new TableObjectGeneration(DbManager::getInstance()->getConnection($connectionName),$this->tableName);
+        $schemaInfo = $tableObjectGeneration->generationTable();
+        self::$schemaInfo = $schemaInfo;
+
+        return self::$schemaInfo;
     }
 
-    public function onQuery(callable $call):AbstractModel
+    public function onQuery(callable $call): AbstractModel
     {
         $this->onQuery = $call;
         return $this;
     }
 
-    public function lastQueryResult():?Result
+    public function lastQueryResult(): ?Result
     {
         return $this->lastQueryResult;
     }
 
-    public function lastQuery():?QueryBuilder
+    public function lastQuery(): ?QueryBuilder
     {
         return $this->lastQuery;
     }
 
-    function limit(int $one,?int $two = null)
+    function limit(int $one, ?int $two = null)
     {
-        if($two !== null){
-            $this->limit = [$one,$two];
-        }else{
+        if ($two !== null) {
+            $this->limit = [$one, $two];
+        } else {
             $this->limit = $one;
         }
         return $this;
@@ -101,7 +119,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     function field($fields)
     {
-        if(!is_array($fields)){
+        if (!is_array($fields)) {
             $fields = [$fields];
         }
         $this->fields = $fields;
@@ -110,58 +128,70 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     function __construct(array $data = [])
     {
-        $this->schemaInfo = $this->schemaInfo();
         $this->data($data);
+        //初始化表名
+        $this->tableNameInit();
     }
 
-    function connection(string $name,bool $isTemp = false):AbstractModel
+    protected function tableNameInit(){
+        if (empty($this->tableName)){
+            //切割当前类名
+            $className = array_pop(explode('\\',get_called_class()));
+            //去掉Model
+            $tableName = str_replace('Model','',$className);
+            //驼峰转下划线
+            $tableName = Str::snake($tableName);
+            $this->tableName = $tableName;
+        }
+    }
+
+    function connection(string $name, bool $isTemp = false): AbstractModel
     {
-        if($isTemp){
+        if ($isTemp) {
             $this->tempConnectionName = $name;
-        }else{
+        } else {
             $this->connectionName = $name;
         }
         return $this;
     }
 
-
     public function getAttr($attrName)
     {
         // 是否有获取器
-        $nameSpl  = new SplString($attrName);
-        $method   = 'get' . $nameSpl->studly()->__toString() . 'Attr';
+        $nameSpl = new SplString($attrName);
+        $method = 'get' . $nameSpl->studly()->__toString() . 'Attr';
         if (method_exists($this, $method)) {
             return $this->$method($this->data[$attrName] ?? null, $this->data);
         }
         // 判断是否有关联查询
-        if (method_exists($this, $attrName)){
+        if (method_exists($this, $attrName)) {
             return $this->$attrName();
         }
         return $this->data[$attrName] ?? null;
     }
 
 
-    public function setAttr($attrName, $attrValue):bool
+    public function setAttr($attrName, $attrValue): bool
     {
-        if(isset($this->getSchemaInfo()->getColumns()[$attrName])){
+        if (isset($this->getSchemaInfo()->getColumns()[$attrName])) {
             $col = $this->getSchemaInfo()->getColumns()[$attrName];
-            $attrValue = PreProcess::dataValueFormat($attrValue,$col);
+            $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             // 是否有修改器
-            $nameSpl  = new SplString($attrName);
-            $method    = 'set' . $nameSpl->studly()->__toString() . 'Attr';
+            $nameSpl = new SplString($attrName);
+            $method = 'set' . $nameSpl->studly()->__toString() . 'Attr';
             if (method_exists($this, $method)) {
                 $attrValue = $this->$method($attrValue, $this->data);
             }
             $this->data[$attrName] = $attrValue;
             return true;
-        }else{
+        } else {
             return false;
         }
     }
 
     public function data(array $data)
     {
-        foreach ($data as $key => $value){
+        foreach ($data as $key => $value) {
             $this->setAttr($key, $value);
         }
         $this->originData = $this->data;
@@ -175,7 +205,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws Exception
      * @throws \Throwable
      */
-    public function destroy($where = null, $allow = false):?int
+    public function destroy($where = null, $allow = false): ?int
     {
         $builder = new QueryBuilder();
         $primaryKey = $this->getSchemaInfo()->getPkFiledName();
@@ -185,15 +215,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 throw new Exception('Table not have primary key, so can\'t use Model::get($pk)');
             } else {
                 $whereVal = $this->getAttr($primaryKey);
-                if (empty($whereVal)){
+                if (empty($whereVal)) {
                     throw new Exception('Table not have primary value');
                 }
                 $builder->where($primaryKey, $whereVal);
             }
         }
 
-        $builder = PreProcess::mappingWhere($builder,$where,$this);
-        $builder->delete($this->getSchemaInfo()->getTable(),$this->limit);
+        $builder = PreProcess::mappingWhere($builder, $where, $this);
+        $builder->delete($this->getSchemaInfo()->getTable(), $this->limit);
         $this->query($builder);
         return $this->lastQueryResult()->getAffectedRows();
     }
@@ -209,18 +239,17 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $builder = new QueryBuilder();
         $primaryKey = $this->getSchemaInfo()->getPkFiledName();
-        if(empty($primaryKey)){
-            throw new Exception('save() needs primaryKey for model '.static::class);
+        if (empty($primaryKey)) {
+            throw new Exception('save() needs primaryKey for model ' . static::class);
         }
         $rawArray = $this->toArray($notNul);
-        $builder->insert($this->getSchemaInfo()->getTable(),$rawArray);
+        $builder->insert($this->getSchemaInfo()->getTable(), $rawArray);
         $this->query($builder);
-
-        if ($this->lastQueryResult()->getResult() === false){
+        if ($this->lastQueryResult()->getResult() === false) {
             return false;
         }
 
-        if($this->lastQueryResult()->getLastInsertId()){
+        if ($this->lastQueryResult()->getLastInsertId()) {
             $this->data[$primaryKey] = $this->lastQueryResult()->getLastInsertId();
             $this->originData = $this->data;
             return $this->lastQueryResult()->getLastInsertId();
@@ -239,10 +268,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $modelInstance = new static;
         $builder = new QueryBuilder;
-        $builder =  PreProcess::mappingWhere($builder,$where,$modelInstance);
-        $builder->getOne($modelInstance->getSchemaInfo()->getTable(),$this->fields);
+        $builder = PreProcess::mappingWhere($builder, $where, $modelInstance);
+        $builder->getOne($modelInstance->getSchemaInfo()->getTable(), $this->fields);
         $res = $this->query($builder);
-        if (empty($res)){
+        if (empty($res)) {
             return null;
         }
         $modelInstance->data($res[0]);
@@ -258,18 +287,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws Exception
      * @throws \Throwable
      */
-    public function all($where = null, bool $returnAsArray = false):array
+    public function all($where = null, bool $returnAsArray = false): array
     {
         $builder = new QueryBuilder;
-        $builder = PreProcess::mappingWhere($builder,$where,$this);
-        $builder->get($this->getSchemaInfo()->getTable(),$this->limit,$this->fields);
+        $builder = PreProcess::mappingWhere($builder, $where, $this);
+        $builder->get($this->getSchemaInfo()->getTable(), $this->limit, $this->fields);
         $results = $this->query($builder);
         $resultSet = [];
         if (is_array($results)) {
             foreach ($results as $result) {
-                if($returnAsArray){
+                if ($returnAsArray) {
                     $resultSet[] = $result;
-                }else{
+                } else {
                     $resultSet[] = static::create($result);
                 }
             }
@@ -277,7 +306,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $resultSet;
     }
 
-    public static function create(array $data = []):AbstractModel
+    public static function create(array $data = []): AbstractModel
     {
         return new static($data);
     }
@@ -286,29 +315,29 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 更新
      * @param array $data
-     * @param null $where
+     * @param null  $where
      * @return bool
      * @throws Exception
      * @throws \Throwable
      */
     public function update(array $data = [], $where = null)
     {
-        if(empty($data)){
+        if (empty($data)) {
             // $data = $this->toArray();
             $data = array_diff($this->data, $this->originData);
-            if (empty($data)){
+            if (empty($data)) {
                 return true;
             }
         }
         $builder = new QueryBuilder();
-        if($where){
-            PreProcess::mappingWhere($builder,$where,$this);
-        }else{
+        if ($where) {
+            PreProcess::mappingWhere($builder, $where, $this);
+        } else {
             $pk = $this->getSchemaInfo()->getPkFiledName();
-            if(isset($this->data[$pk])){
+            if (isset($this->data[$pk])) {
                 $pkVal = $this->data[$pk];
-                $builder->where($pk,$pkVal);
-            }else{
+                $builder->where($pk, $pkVal);
+            } else {
                 throw new Exception("update error,pkValue is require");
             }
         }
@@ -360,9 +389,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             return $temp;
         }
-        if(is_array($this->fields)){
-            foreach ($temp as $key => $value){
-                if(in_array($key,$this->fields)){
+        if (is_array($this->fields)) {
+            foreach ($temp as $key => $value) {
+                if (in_array($key, $this->fields)) {
                     unset($temp[$key]);
                 }
             }
@@ -394,26 +423,26 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * @param string $class
+     * @param string        $class
      * @param callable|null $where
-     * @param null $pk
-     * @param null $joinPk
-     * @param string $joinType
+     * @param null          $pk
+     * @param null          $joinPk
+     * @param string        $joinType
      * @return mixed|null
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    protected function hasOne(string $class,callable $where = null,$pk = null, $joinPk = null, $joinType = '')
+    protected function hasOne(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
     {
-        if(isset($this->_joinMap[$class])){
+        if (isset($this->_joinMap[$class])) {
             return $this->_joinMap[$class];
         }
 
         $ref = new \ReflectionClass($class);
 
-        if(!$ref->isSubclassOf(AbstractModel::class)){
+        if (!$ref->isSubclassOf(AbstractModel::class)) {
             throw new Exception("relation class must be subclass of AbstractModel");
         }
 
@@ -421,27 +450,27 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $ins = $ref->newInstance();
         $builder = new QueryBuilder();
 
-        if ($pk === null){
+        if ($pk === null) {
             $pk = $this->getSchemaInfo()->getPkFiledName();
         }
-        if ($joinPk === null){
+        if ($joinPk === null) {
             $joinPk = $ins->getSchemaInfo()->getPkFiledName();
         }
 
-        $targetTable  = $ins->getSchemaInfo()->getTable();
+        $targetTable = $ins->getSchemaInfo()->getTable();
         $currentTable = $this->getSchemaInfo()->getTable();
         // 支持复杂的构造
-        if($where){
-            $builder = call_user_func($where,$builder);
+        if ($where) {
+            $builder = call_user_func($where, $builder);
             $builder->getOne($targetTable);
-        }else{
-            $builder->join($targetTable,"{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
+        } else {
+            $builder->join($targetTable, "{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
                 ->where("{$currentTable}.{$pk}", $this->$pk);
             $builder->getOne($currentTable);
         }
 
         $result = $this->query($builder);
-        if ($result){
+        if ($result) {
             $this->data($result[0]);
             $ins->data($result[0]);
             $this->_joinMap[$class] = $ins;
@@ -454,26 +483,26 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * 一对多关联
-     * @param string $class
+     * @param string        $class
      * @param callable|null $where
-     * @param null $pk
-     * @param null $joinPk
-     * @param string $joinType
+     * @param null          $pk
+     * @param null          $joinPk
+     * @param string        $joinType
      * @return mixed|null
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    protected function hasMany(string $class,callable $where = null,$pk = null, $joinPk = null, $joinType = '')
+    protected function hasMany(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
     {
-        if(isset($this->_joinMap[$class])){
+        if (isset($this->_joinMap[$class])) {
             return $this->_joinMap[$class];
         }
 
         $ref = new \ReflectionClass($class);
 
-        if(!$ref->isSubclassOf(AbstractModel::class)){
+        if (!$ref->isSubclassOf(AbstractModel::class)) {
             throw new Exception("relation class must be subclass of AbstractModel");
         }
 
@@ -481,29 +510,29 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $ins = $ref->newInstance();
         $builder = new QueryBuilder();
 
-        if ($pk === null){
+        if ($pk === null) {
             $pk = $this->getSchemaInfo()->getPkFiledName();
         }
-        if ($joinPk === null){
+        if ($joinPk === null) {
             $joinPk = $ins->getSchemaInfo()->getPkFiledName();
         }
 
-        $targetTable  = $ins->getSchemaInfo()->getTable();
+        $targetTable = $ins->getSchemaInfo()->getTable();
         $currentTable = $this->getSchemaInfo()->getTable();
         // 支持复杂的构造
-        if($where){
-            $builder = call_user_func($where,$builder);
+        if ($where) {
+            $builder = call_user_func($where, $builder);
             $builder->get($targetTable);
-        }else{
-            $builder->join($targetTable,"{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
+        } else {
+            $builder->join($targetTable, "{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
                 ->where("{$currentTable}.{$pk}", $this->$pk);
             $builder->get($currentTable);
         }
 
         $result = $this->query($builder);
-        if ($result){
+        if ($result) {
             $return = [];
-            foreach ($result as $one){
+            foreach ($result as $one) {
                 $return[] = ($ref->newInstance())->data($one);
             }
             $this->_joinMap[$class] = $return;
@@ -513,31 +542,31 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return null;
     }
 
-    protected function query(QueryBuilder $builder,bool $raw = false)
+    protected function query(QueryBuilder $builder, bool $raw = false)
     {
         $start = microtime(true);
         $this->lastQuery = clone $builder;
-        if($this->tempConnectionName){
+        if ($this->tempConnectionName) {
             $connectionName = $this->tempConnectionName;
-        }else{
+        } else {
             $connectionName = $this->connectionName;
         }
-        try{
+        try {
             $ret = null;
-            if($this->withTotalCount){
+            if ($this->withTotalCount) {
                 $builder->withTotalCount();
             }
-            $ret = DbManager::getInstance()->query($builder,$raw,$connectionName);
+            $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
             $builder->reset();
             $this->lastQueryResult = $ret;
             return $ret->getResult();
-        }catch (\Throwable $throwable){
+        } catch (\Throwable $throwable) {
             throw $throwable;
-        }finally{
+        } finally {
             $this->reset();
-            if($this->onQuery){
+            if ($this->onQuery) {
                 $temp = clone $builder;
-                call_user_func($this->onQuery,$ret,$temp,$start);
+                call_user_func($this->onQuery, $ret, $temp, $start);
             }
         }
     }
