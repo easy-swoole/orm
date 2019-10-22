@@ -8,10 +8,9 @@
 
 namespace EasySwoole\ORM\Utility;
 
-use EasySwoole\DDL\Blueprint\Column;
+use EasySwoole\ORM\Utility\Schema\Column;
 use EasySwoole\Mysqli\QueryBuilder;
-use EasySwoole\ORM\Db\Connection;
-use EasySwoole\ORM\DbManager;
+use EasySwoole\ORM\Db\ConnectionInterface;
 use EasySwoole\ORM\Utility\Schema\Table;
 
 /**
@@ -19,13 +18,13 @@ use EasySwoole\ORM\Utility\Schema\Table;
  * Class getTableObject
  * @package EasySwoole\ORM\Utility
  */
-class tableObjectGeneration
+class TableObjectGeneration
 {
     protected $tableName;
     protected $connection;
     protected $tableColumns;
 
-    public function __construct(Connection $connection, $tableName)
+    public function __construct(ConnectionInterface $connection, $tableName)
     {
         $this->tableName = $tableName;
         $this->connection = $connection;
@@ -38,7 +37,6 @@ class tableObjectGeneration
         $query->raw("show full columns from {$this->tableName}");
         $data = $this->connection->query($query);
         $this->tableColumns = $data->getResult();
-        $this->generationTable();
         return $data->getResult();
     }
 
