@@ -54,19 +54,30 @@ class TableObjectGeneration
 
     protected function getTableColumn($column):Column
     {
-        $tmpIndex = strpos($column['Type'],'(');
+        $columnTypeArr = explode(' ',$column['Type']);
+        $tmpIndex = strpos($columnTypeArr[0],'(');
         if($tmpIndex!==false){
-            $type = substr($column['Type'],0,$tmpIndex);
-            $limit = substr($column['Type'],$tmpIndex+1,-1);
+            $type = substr($columnTypeArr[0],0,$tmpIndex);
+            $limit = substr($columnTypeArr[0],$tmpIndex+1,strpos($columnTypeArr[0],')')-$tmpIndex-1);
         }else{
-            $type = $column['Type'];
+            $type = $columnTypeArr[0];
             $limit = null;
         }
         $columnObj = new Column($column['Field'],$type);
 
+        //是否无符号
+        if (in_array('unsigned',$columnTypeArr)){
+            $columnObj->setIsUnsigned();
+        }
+
         //长度限制
         if ($limit!==null){
-            $columnObj->setColumnLimit($limit);
+            $limitArr = explode(',',$limit);
+            if (isset($limitArr[1])){
+                $columnObj->setColumnLimit($limitArr);
+            }else{
+                $columnObj->setColumnLimit($limitArr[0]);
+            }
         }
         //是否为主键
         if ($column['Key']=='PRI'){
