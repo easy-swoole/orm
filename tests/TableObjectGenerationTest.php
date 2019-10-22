@@ -38,7 +38,7 @@ class TableObjectGenerationTest extends TestCase
         $connection = new Connection($config);
         $this->connection = $connection;
         $this->generation = new TableObjectGeneration($connection, $this->tableName);
-//        $this->createTestTable();
+        $this->createTestTable();
     }
 
     function createTestTable()
@@ -55,6 +55,7 @@ class TableObjectGenerationTest extends TestCase
         $tableDDL->colTinyInt('age',1);
         $tableDDL->colDateTime('addTime');
         $tableDDL->colTinyInt('state',1);
+        $tableDDL->setIfNotExists();
         $sql = $tableDDL->__createDDL();
         $query->raw($sql);
         $data = $this->connection->query($query);
@@ -64,7 +65,6 @@ class TableObjectGenerationTest extends TestCase
     function testGetTableInfo()
     {
         $data = $this->generation->getTableColumnsInfo();
-        var_dump($data);
         $this->assertIsArray($data);
     }
 
