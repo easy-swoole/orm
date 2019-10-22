@@ -27,6 +27,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $limit = null;
     private $withTotalCount = false;
     private $fields = "*";
+    private $order = null;
     private $_joinMap = [];
 
     protected $tableName = '';
@@ -88,6 +89,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function onQuery(callable $call): AbstractModel
     {
         $this->onQuery = $call;
+        return $this;
+    }
+
+    public function order(...$args):AbstractModel
+    {
+        $this->order = $args;
         return $this;
     }
 
@@ -420,6 +427,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->limit = null;
         $this->withTotalCount = false;
         $this->tempConnectionName = null;
+        $this->order = null;
     }
 
     /**
@@ -555,6 +563,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $ret = null;
             if ($this->withTotalCount) {
                 $builder->withTotalCount();
+            }
+            if($this->order){
+                $builder->orderBy(...$this->order);
             }
             $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
             $builder->reset();
