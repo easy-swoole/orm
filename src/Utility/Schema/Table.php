@@ -11,6 +11,17 @@ class Table extends \EasySwoole\DDL\Blueprint\Table
 {
 
     /**
+     * 注入自定义的column
+     * addColumn
+     * @param \EasySwoole\DDL\Blueprint\Column $column
+     * @author Tioncico
+     * Time: 15:01
+     */
+    function addColumn(\EasySwoole\DDL\Blueprint\Column $column){
+        $this->columns[$column->getColumnName()] = $column;
+    }
+
+    /**
      * 返回自定义的Column
      * 以便扩展该类的处理方法
      * @param string $columnName
