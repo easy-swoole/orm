@@ -33,7 +33,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     protected $tableName = '';
 
     /** @var Table */
-    private static $schemaInfo;
+    private static $schemaInfoList;
     /**
      * 当前连接驱动类的名称
      * 继承后可以覆盖该成员以指定默认的驱动类
@@ -70,8 +70,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function getSchemaInfo(bool $isCache = true): Table
     {
-        if (self::$schemaInfo instanceof Table && $isCache == true) {
-            return self::$schemaInfo;
+        if (isset(self::$schemaInfoList[$this->tableName]) && self::$schemaInfoList[$this->tableName] instanceof Table && $isCache == true) {
+            return self::$schemaInfoList[$this->tableName];
         }
 
         if ($this->tempConnectionName) {
@@ -79,12 +79,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         } else {
             $connectionName = $this->connectionName;
         }
-        $tableObjectGeneration = new TableObjectGeneration(DbManager::getInstance()->getConnection($connectionName),$this->tableName);
+        $tableObjectGeneration = new TableObjectGeneration(DbManager::getInstance()->getConnection($connectionName), $this->tableName);
         $schemaInfo = $tableObjectGeneration->generationTable();
-        self::$schemaInfo = $schemaInfo;
+        self::$schemaInfoList[$this->tableName] = $schemaInfo;
 
-        return self::$schemaInfo;
+        return self::$schemaInfoList[$this->tableName];
     }
+
 
     public function onQuery(callable $call): AbstractModel
     {
@@ -92,7 +93,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
-    public function order(...$args):AbstractModel
+    public function order(...$args): AbstractModel
     {
         $this->order = $args;
         return $this;
@@ -135,17 +136,20 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     function __construct(array $data = [])
     {
-        $this->data($data);
         //初始化表名
         $this->tableNameInit();
+        $this->data($data);
     }
 
-    protected function tableNameInit(){
-        if (empty($this->tableName)){
+    protected function tableNameInit()
+    {
+        if (empty($this->tableName)) {
+            $className = get_called_class();
+            $classNameArr = explode('\\', $className);
             //切割当前类名
-            $className = array_pop(explode('\\',get_called_class()));
+            $className = $classNameArr[count($classNameArr) - 1];
             //去掉Model
-            $tableName = str_replace('Model','',$className);
+            $tableName = str_replace('Model', '', $className);
             //驼峰转下划线
             $tableName = Str::snake($tableName);
             $this->tableName = $tableName;
@@ -564,7 +568,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             if ($this->withTotalCount) {
                 $builder->withTotalCount();
             }
-            if($this->order){
+            if ($this->order) {
                 $builder->orderBy(...$this->order);
             }
             $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
