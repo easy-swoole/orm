@@ -136,9 +136,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     function __construct(array $data = [])
     {
-        $this->data($data);
         //初始化表名
         $this->tableNameInit();
+        $this->data($data);
     }
 
     protected function tableNameInit()
