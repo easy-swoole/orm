@@ -23,7 +23,7 @@ class ModelTest extends TestCase
      */
     protected $connection;
 
-    protected $tableName = 'test_user';
+    protected $tableName = 'test_user_model';
 
     protected function setUp()
     {
