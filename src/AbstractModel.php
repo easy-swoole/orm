@@ -465,13 +465,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         // 支持复杂的构造
         if ($where) {
             $builder = call_user_func($where, $builder);
+            $this->preHandleQueryBuilder($builder);
             $builder->getOne($targetTable);
         } else {
             $builder->join($targetTable, "{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
                 ->where("{$currentTable}.{$pk}", $this->$pk);
+            $this->preHandleQueryBuilder($builder);
             $builder->getOne($currentTable);
         }
-        $this->preHandleQueryBuilder($builder);
         $result = $this->query($builder);
         if ($result) {
             $this->data($result[0]);
@@ -525,13 +526,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         // 支持复杂的构造
         if ($where) {
             $builder = call_user_func($where, $builder);
+            $this->preHandleQueryBuilder($builder);
             $builder->get($targetTable);
         } else {
             $builder->join($targetTable, "{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
                 ->where("{$currentTable}.{$pk}", $this->$pk);
+            $this->preHandleQueryBuilder($builder);
             $builder->get($currentTable);
         }
-        $this->preHandleQueryBuilder($builder);
         $result = $this->query($builder);
         if ($result) {
             $return = [];
@@ -586,7 +588,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
     }
 
-    private function preHandleQueryBuilder(QueryBuilder $builder)
+    protected function preHandleQueryBuilder(QueryBuilder $builder)
     {
         if ($this->withTotalCount) {
             $builder->withTotalCount();
