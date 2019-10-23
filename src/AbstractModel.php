@@ -24,14 +24,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     private $lastQueryResult;
     private $lastQuery;
-    private $limit = null;
-    private $withTotalCount = false;
+    /* 快速支持连贯操作 */
     private $fields = "*";
-    private $order = null;
+    private $limit  = NULL;
+    private $withTotalCount = FALSE;
+    private $order  = NULL;
+    private $where  = [];
+    private $join   = NULL;
+    private $group  = NULL;
+    /** @var array 关联模型数据 */
     private $_joinMap = [];
-
+    /** @var string 表名 */
     protected $tableName = '';
-
     /** @var Table */
     private static $schemaInfoList;
     /**
@@ -44,20 +48,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 临时设定的链接
      */
     private $tempConnectionName = null;
-
     /**
      * 当前的数据
      * @var array
      */
     private $data;
-
     /**
      * 模型的原始数据
      * 未应用修改器和获取器之前的原始数据
      * @var array
      */
     private $originData;
-
+    /* 回调事件 */
     private $onQuery;
 
 
@@ -87,29 +89,28 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
 
-    public function onQuery(callable $call): AbstractModel
+    /*  ==============    回调事件    ==================   */
+    public function onQuery(callable $call)
     {
         $this->onQuery = $call;
         return $this;
     }
-
-    public function order(...$args): AbstractModel
+    /*  ==============    快速支持连贯操作    ==================   */
+    /**
+     * @param mixed ...$args
+     * @return AbstractModel
+     */
+    public function order(...$args)
     {
         $this->order = $args;
         return $this;
     }
-
-    public function lastQueryResult(): ?Result
-    {
-        return $this->lastQueryResult;
-    }
-
-    public function lastQuery(): ?QueryBuilder
-    {
-        return $this->lastQuery;
-    }
-
-    function limit(int $one, ?int $two = null)
+    /**
+     * @param int $one
+     * @param int|null $two
+     * @return $this
+     */
+    public function limit(int $one, ?int $two = null)
     {
         if ($two !== null) {
             $this->limit = [$one, $two];
@@ -118,20 +119,106 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         return $this;
     }
-
-    function withTotalCount()
-    {
-        $this->withTotalCount = true;
-        return $this;
-    }
-
-    function field($fields)
+    /**
+     * @param $fields
+     * @return $this
+     */
+    public function field($fields)
     {
         if (!is_array($fields)) {
             $fields = [$fields];
         }
         $this->fields = $fields;
         return $this;
+    }
+    /**
+     * @return $this
+     */
+    public function withTotalCount()
+    {
+        $this->withTotalCount = true;
+        return $this;
+    }
+    /**
+     * @param $where
+     * @return $this
+     */
+    public function where($where)
+    {
+        $this->where[] = $where;
+        return $this;
+    }
+    /**
+     * @param string $group
+     * @return $this
+     */
+    public function group(string $group)
+    {
+        $this->group = $group;
+        return $this;
+    }
+    /**
+     * @param $joinTable
+     * @param $joinCondition
+     * @param string $joinType
+     * @return $this
+     */
+    public function join($joinTable, $joinCondition, $joinType = '')
+    {
+        $this->join[] = [$joinTable, $joinCondition, $joinType];
+        return $this;
+    }
+
+    public function max($field)
+    {
+        return $this->queryPolymerization('max', $field);
+    }
+
+    public function min($field)
+    {
+        return $this->queryPolymerization('min', $field);
+    }
+
+    public function count($field = null)
+    {
+        return $this->queryPolymerization('count', $field);
+    }
+
+    public function avg($field)
+    {
+        return $this->queryPolymerization('avg', $field);
+    }
+
+    public function sum($field)
+    {
+        return $this->queryPolymerization('sum', $field);
+    }
+
+    protected function queryPolymerization($type, $field = null)
+    {
+        if ($field === null){
+            $field = $this->schemaInfo()->getPkFiledName();
+        }
+        $fields = "$type(`{$field}`)";
+        $this->fields = $fields;
+        $this->limit = 1;
+        $res = $this->all(null, true);
+
+        if (!empty($res[0][$fields])){
+            return $res[0][$fields];
+        }
+
+        return null;
+    }
+
+    /*  ==============    Builder 和 Result    ==================   */
+    public function lastQueryResult(): ?Result
+    {
+        return $this->lastQueryResult;
+    }
+    public function lastQuery(): ?QueryBuilder
+    {
+        return $this->lastQuery;
     }
 
     function __construct(array $data = [])
@@ -275,6 +362,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             return null;
         }
         $modelInstance->data($res[0]);
+        $modelInstance->lastQuery = $this->lastQuery();
         return $modelInstance;
     }
 
@@ -305,6 +393,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
         }
         return $resultSet;
+    }
+
+    /**
+     * 批量查询 不映射对象  返回数组
+     * @param null $where
+     * @return array
+     * @throws Exception
+     * @throws \Throwable
+     */
+    public function select($where = null):array
+    {
+        return $this->all($where, true);
     }
 
     public static function create(array $data = []): AbstractModel
@@ -581,20 +681,42 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             //切割当前类名
             $className = $classNameArr[count($classNameArr) - 1];
             //去掉Model
-            $tableName = str_replace('Model', '', $className);
+            // $tableName = str_replace('Model', '', $className);
+            $tableName = $className;
             //驼峰转下划线
             $tableName = Str::snake($tableName);
             $this->tableName = $tableName;
         }
     }
 
+    /**
+     * 连贯操作预处理
+     * @param QueryBuilder $builder
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     */
     protected function preHandleQueryBuilder(QueryBuilder $builder)
     {
+        // 快速连贯操作
         if ($this->withTotalCount) {
             $builder->withTotalCount();
         }
         if ($this->order) {
             $builder->orderBy(...$this->order);
+        }
+        if ($this->where) {
+            $whereModel = new static();
+            foreach ($this->where as $whereOne){
+                $builder = PreProcess::mappingWhere($builder, $whereOne, $whereModel);
+            }
+        }
+        if($this->group){
+            $builder->groupBy($this->group);
+        }
+        if($this->join){
+            foreach ($this->join as $joinOne) {
+                $builder->join($joinOne[0], $joinOne[1], $joinOne[2]);
+            }
         }
     }
 }
