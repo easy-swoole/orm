@@ -63,7 +63,7 @@ class UserListModelTest extends TestCase
     function testGetSchemaInfo()
     {
         $testUserModel = new TestUserListModel();
-        $schemaInfo = $testUserModel->getSchemaInfo();
+        $schemaInfo = $testUserModel->schemaInfo();
         $this->assertTrue($schemaInfo instanceof Table);
     }
 

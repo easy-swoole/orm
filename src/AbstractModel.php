@@ -16,7 +16,7 @@ use JsonSerializable;
 
 /**
  * 抽象模型
- * Class AbstractModel
+ * Class AbstractMode
  * @package EasySwoole\ORM
  */
 abstract class AbstractModel implements ArrayAccess, JsonSerializable
@@ -68,7 +68,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @author Tioncico
      * Time: 15:21
      */
-    public function getSchemaInfo(bool $isCache = true): Table
+    public function schemaInfo(bool $isCache = true): Table
     {
         if (isset(self::$schemaInfoList[$this->tableName]) && self::$schemaInfoList[$this->tableName] instanceof Table && $isCache == true) {
             return self::$schemaInfoList[$this->tableName];
@@ -141,20 +141,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->data($data);
     }
 
-    protected function tableNameInit()
-    {
-        if (empty($this->tableName)) {
-            $className = get_called_class();
-            $classNameArr = explode('\\', $className);
-            //切割当前类名
-            $className = $classNameArr[count($classNameArr) - 1];
-            //去掉Model
-            $tableName = str_replace('Model', '', $className);
-            //驼峰转下划线
-            $tableName = Str::snake($tableName);
-            $this->tableName = $tableName;
-        }
-    }
 
     function connection(string $name, bool $isTemp = false): AbstractModel
     {
@@ -184,8 +170,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function setAttr($attrName, $attrValue): bool
     {
-        if (isset($this->getSchemaInfo()->getColumns()[$attrName])) {
-            $col = $this->getSchemaInfo()->getColumns()[$attrName];
+        if (isset($this->schemaInfo()->getColumns()[$attrName])) {
+            $col = $this->schemaInfo()->getColumns()[$attrName];
             $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             // 是否有修改器
             $nameSpl = new SplString($attrName);
@@ -219,7 +205,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function destroy($where = null, $allow = false): ?int
     {
         $builder = new QueryBuilder();
-        $primaryKey = $this->getSchemaInfo()->getPkFiledName();
+        $primaryKey = $this->schemaInfo()->getPkFiledName();
 
         if (is_null($where) && $allow == false) {
             if (empty($primaryKey)) {
@@ -234,7 +220,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         $builder = PreProcess::mappingWhere($builder, $where, $this);
-        $builder->delete($this->getSchemaInfo()->getTable(), $this->limit);
+        $builder->delete($this->schemaInfo()->getTable(), $this->limit);
         $this->query($builder);
         return $this->lastQueryResult()->getAffectedRows();
     }
@@ -249,12 +235,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function save($notNul = false)
     {
         $builder = new QueryBuilder();
-        $primaryKey = $this->getSchemaInfo()->getPkFiledName();
+        $primaryKey = $this->schemaInfo()->getPkFiledName();
         if (empty($primaryKey)) {
             throw new Exception('save() needs primaryKey for model ' . static::class);
         }
         $rawArray = $this->toArray($notNul);
-        $builder->insert($this->getSchemaInfo()->getTable(), $rawArray);
+        $builder->insert($this->schemaInfo()->getTable(), $rawArray);
         $this->query($builder);
         if ($this->lastQueryResult()->getResult() === false) {
             return false;
@@ -280,7 +266,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $modelInstance = new static;
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $modelInstance);
-        $builder->getOne($modelInstance->getSchemaInfo()->getTable(), $this->fields);
+        $builder->getOne($modelInstance->schemaInfo()->getTable(), $this->fields);
         $res = $this->query($builder);
         if (empty($res)) {
             return null;
@@ -302,7 +288,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $this);
-        $builder->get($this->getSchemaInfo()->getTable(), $this->limit, $this->fields);
+        $builder->get($this->schemaInfo()->getTable(), $this->limit, $this->fields);
         $results = $this->query($builder);
         $resultSet = [];
         if (is_array($results)) {
@@ -344,7 +330,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($where) {
             PreProcess::mappingWhere($builder, $where, $this);
         } else {
-            $pk = $this->getSchemaInfo()->getPkFiledName();
+            $pk = $this->schemaInfo()->getPkFiledName();
             if (isset($this->data[$pk])) {
                 $pkVal = $this->data[$pk];
                 $builder->where($pk, $pkVal);
@@ -352,7 +338,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 throw new Exception("update error,pkValue is require");
             }
         }
-        $builder->update($this->getSchemaInfo()->getTable(), $data);
+        $builder->update($this->schemaInfo()->getTable(), $data);
         $results = $this->query($builder);
 
         return $results ? true : false;
@@ -463,14 +449,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder = new QueryBuilder();
 
         if ($pk === null) {
-            $pk = $this->getSchemaInfo()->getPkFiledName();
+            $pk = $this->schemaInfo()->getPkFiledName();
         }
         if ($joinPk === null) {
-            $joinPk = $ins->getSchemaInfo()->getPkFiledName();
+            $joinPk = $ins->schemaInfo()->getPkFiledName();
         }
 
-        $targetTable = $ins->getSchemaInfo()->getTable();
-        $currentTable = $this->getSchemaInfo()->getTable();
+        $targetTable = $ins->schemaInfo()->getTable();
+        $currentTable = $this->schemaInfo()->getTable();
         // 支持复杂的构造
         if ($where) {
             $builder = call_user_func($where, $builder);
@@ -523,14 +509,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder = new QueryBuilder();
 
         if ($pk === null) {
-            $pk = $this->getSchemaInfo()->getPkFiledName();
+            $pk = $this->schemaInfo()->getPkFiledName();
         }
         if ($joinPk === null) {
-            $joinPk = $ins->getSchemaInfo()->getPkFiledName();
+            $joinPk = $ins->schemaInfo()->getPkFiledName();
         }
 
-        $targetTable = $ins->getSchemaInfo()->getTable();
-        $currentTable = $this->getSchemaInfo()->getTable();
+        $targetTable = $ins->schemaInfo()->getTable();
+        $currentTable = $this->schemaInfo()->getTable();
         // 支持复杂的构造
         if ($where) {
             $builder = call_user_func($where, $builder);
@@ -583,6 +569,21 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $temp = clone $builder;
                 call_user_func($this->onQuery, $ret, $temp, $start);
             }
+        }
+    }
+
+    protected function tableNameInit()
+    {
+        if (empty($this->tableName)) {
+            $className = get_called_class();
+            $classNameArr = explode('\\', $className);
+            //切割当前类名
+            $className = $classNameArr[count($classNameArr) - 1];
+            //去掉Model
+            $tableName = str_replace('Model', '', $className);
+            //驼峰转下划线
+            $tableName = Str::snake($tableName);
+            $this->tableName = $tableName;
         }
     }
 }
