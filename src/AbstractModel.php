@@ -518,11 +518,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     protected function reset()
     {
-        $this->fields = '*';
-        $this->limit = null;
-        $this->withTotalCount = false;
         $this->tempConnectionName = null;
-        $this->order = null;
+
+        $this->fields = "*";
+        $this->limit  = NULL;
+        $this->withTotalCount = FALSE;
+        $this->order  = NULL;
+        $this->where  = [];
+        $this->join   = NULL;
+        $this->group  = NULL;
     }
 
     /**
