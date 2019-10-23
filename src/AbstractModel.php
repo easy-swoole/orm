@@ -219,7 +219,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
         }
 
-        $builder = PreProcess::mappingWhere($builder, $where, $this);
+        PreProcess::mappingWhere($builder, $where, $this);
+        $this->preHandleQueryBuilder($builder);
         $builder->delete($this->schemaInfo()->getTable(), $this->limit);
         $this->query($builder);
         return $this->lastQueryResult()->getAffectedRows();
@@ -241,6 +242,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         $rawArray = $this->toArray($notNul);
         $builder->insert($this->schemaInfo()->getTable(), $rawArray);
+        $this->preHandleQueryBuilder($builder);
         $this->query($builder);
         if ($this->lastQueryResult()->getResult() === false) {
             return false;
@@ -266,6 +268,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $modelInstance = new static;
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $modelInstance);
+        $this->preHandleQueryBuilder($builder);
         $builder->getOne($modelInstance->schemaInfo()->getTable(), $this->fields);
         $res = $this->query($builder);
         if (empty($res)) {
@@ -288,6 +291,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $this);
+        $this->preHandleQueryBuilder($builder);
         $builder->get($this->schemaInfo()->getTable(), $this->limit, $this->fields);
         $results = $this->query($builder);
         $resultSet = [];
@@ -338,6 +342,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 throw new Exception("update error,pkValue is require");
             }
         }
+        $this->preHandleQueryBuilder($builder);
         $builder->update($this->schemaInfo()->getTable(), $data);
         $results = $this->query($builder);
 
@@ -466,7 +471,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 ->where("{$currentTable}.{$pk}", $this->$pk);
             $builder->getOne($currentTable);
         }
-
+        $this->preHandleQueryBuilder($builder);
         $result = $this->query($builder);
         if ($result) {
             $this->data($result[0]);
@@ -526,7 +531,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 ->where("{$currentTable}.{$pk}", $this->$pk);
             $builder->get($currentTable);
         }
-
+        $this->preHandleQueryBuilder($builder);
         $result = $this->query($builder);
         if ($result) {
             $return = [];
@@ -551,12 +556,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         try {
             $ret = null;
-            if ($this->withTotalCount) {
-                $builder->withTotalCount();
-            }
-            if ($this->order) {
-                $builder->orderBy(...$this->order);
-            }
             $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
             $builder->reset();
             $this->lastQueryResult = $ret;
@@ -584,6 +583,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             //驼峰转下划线
             $tableName = Str::snake($tableName);
             $this->tableName = $tableName;
+        }
+    }
+
+    private function preHandleQueryBuilder(QueryBuilder $builder)
+    {
+        if ($this->withTotalCount) {
+            $builder->withTotalCount();
+        }
+        if ($this->order) {
+            $builder->orderBy(...$this->order);
         }
     }
 }
