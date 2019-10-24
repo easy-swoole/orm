@@ -475,9 +475,17 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->setAttr($offset, null);
     }
 
+    /**
+     * json序列化方法
+     * @return array|mixed
+     */
     public function jsonSerialize()
     {
-        return $this->data;
+        $return = [];
+        foreach ($this->data as $key => $data){
+            $return[$key] = $this->getAttr($key);
+        }
+        return $return;
     }
 
     public function toArray($notNul = false): array
