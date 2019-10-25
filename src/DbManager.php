@@ -49,7 +49,7 @@ class DbManager
             $ret = null;
             try{
                 $ret = $con->query($builder,$raw);
-                if(in_array('SQL_CALC_FOUND_ROWS',$builder->getQueryOptions())){
+                if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
                     $temp = new QueryBuilder();
                     $temp->raw('SELECT FOUND_ROWS() as count');
                     $count = $con->query($temp,true);
