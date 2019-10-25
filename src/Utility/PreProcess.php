@@ -30,7 +30,7 @@ class PreProcess
             if (array_keys($whereVal) !== range(0, count($whereVal) - 1)) {
                 foreach ($whereVal as $whereFiled => $whereProp) {
                     if (is_array($whereProp)) {
-                        $builder->where($whereFiled, ...$whereVal);
+                        $builder->where($whereFiled, ...$whereProp);
                     } else {
                         $builder->where($whereFiled, $whereProp);
                     }
