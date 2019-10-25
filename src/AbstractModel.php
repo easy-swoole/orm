@@ -193,23 +193,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->queryPolymerization('sum', $field);
     }
 
-    protected function queryPolymerization($type, $field = null)
-    {
-        if ($field === null){
-            $field = $this->schemaInfo()->getPkFiledName();
-        }
-        $fields = "$type(`{$field}`)";
-        $this->fields = $fields;
-        $this->limit = 1;
-        $res = $this->all(null, true);
-
-        if (!empty($res[0][$fields])){
-            return $res[0][$fields];
-        }
-
-        return null;
-    }
-
     /*  ==============    Builder 和 Result    ==================   */
     public function lastQueryResult(): ?Result
     {
@@ -725,5 +708,22 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $builder->join($joinOne[0], $joinOne[1], $joinOne[2]);
             }
         }
+    }
+
+    private function queryPolymerization($type, $field = null)
+    {
+        if ($field === null){
+            $field = $this->schemaInfo()->getPkFiledName();
+        }
+        $fields = "$type(`{$field}`)";
+        $this->fields = $fields;
+        $this->limit = 1;
+        $res = $this->all(null, true);
+
+        if (!empty($res[0][$fields])){
+            return $res[0][$fields];
+        }
+
+        return null;
     }
 }
