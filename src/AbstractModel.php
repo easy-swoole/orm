@@ -10,7 +10,6 @@ use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
-use EasySwoole\Spl\SplString;
 use EasySwoole\Utility\Str;
 use JsonSerializable;
 
@@ -241,9 +240,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function getAttr($attrName)
     {
-        // 是否有获取器
-        $nameSpl = new SplString($attrName);
-        $method = 'get' . $nameSpl->studly()->__toString() . 'Attr';
+        $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $this->__toString() ) ) ) . 'Attr';
         if (method_exists($this, $method)) {
             return $this->$method($this->data[$attrName] ?? null, $this->data);
         }
@@ -260,9 +257,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if (isset($this->schemaInfo()->getColumns()[$attrName])) {
             $col = $this->schemaInfo()->getColumns()[$attrName];
             $attrValue = PreProcess::dataValueFormat($attrValue, $col);
-            // 是否有修改器
-            $nameSpl = new SplString($attrName);
-            $method = 'set' . $nameSpl->studly()->__toString() . 'Attr';
+            $method = 'set' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $this->__toString() ) ) ) . 'Attr';
             if (method_exists($this, $method)) {
                 $attrValue = $this->$method($attrValue, $this->data);
             }
