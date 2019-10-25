@@ -138,6 +138,37 @@ class CoherentTest extends TestCase
         $this->assertEquals($sum, 100+18+19);
     }
 
+    public function testWhereUpdate()
+    {
+        $res = TestUserListModel::create()->where(['age' => 18])->update([
+            'name' => 'Siam18'
+        ]);
+
+        $user = TestUserListModel::create()->where(['age'  =>  18])->get();
+        $this->assertEquals($user->name, 'Siam18');
+
+        $res = TestUserListModel::create()->where(['age' =>  18])->update([
+            'name' => 'Siam'
+        ]);
+    }
+
+    public function testAllUpdate()
+    {
+        $res = TestUserListModel::create()->update([
+            'name' => 'Siam'
+        ], null, true);
+        $this->assertEquals($res, true);
+    }
+
+    public function testWhereDelete()
+    {
+        $res = TestUserListModel::create()->where([
+            'name' => 'Siam'
+        ])->destroy();
+
+        $this->assertEquals($res, true);
+    }
+
     public function testDeleteAll()
     {
         $res = TestUserListModel::create()->destroy(null, true);

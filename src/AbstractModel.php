@@ -223,7 +223,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function getAttr($attrName)
     {
-        $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $this->__toString() ) ) ) . 'Attr';
+        $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
         if (method_exists($this, $method)) {
             return $this->$method($this->data[$attrName] ?? null, $this->data);
         }
@@ -274,13 +274,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         if (is_null($where) && $allow == false) {
             if (empty($primaryKey)) {
-                throw new Exception('Table not have primary key, so can\'t use Model::get($pk)');
+                throw new Exception('Table not have primary key, so can\'t use Model::destroy($pk)');
             } else {
                 $whereVal = $this->getAttr($primaryKey);
                 if (empty($whereVal)) {
-                    throw new Exception('Table not have primary value');
+                    if (empty($this->where)){
+                        throw new Exception('Table not have primary value');
+                    }
+                }else{
+                    $builder->where($primaryKey, $whereVal);
                 }
-                $builder->where($primaryKey, $whereVal);
             }
         }
 
@@ -399,7 +402,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws Exception
      * @throws \Throwable
      */
-    public function update(array $data = [], $where = null)
+    public function update(array $data = [], $where = null, $allow = false)
     {
         if (empty($data)) {
             // $data = $this->toArray();
@@ -411,13 +414,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder = new QueryBuilder();
         if ($where) {
             PreProcess::mappingWhere($builder, $where, $this);
-        } else {
+        } else if (!$allow) {
             $pk = $this->schemaInfo()->getPkFiledName();
             if (isset($this->data[$pk])) {
                 $pkVal = $this->data[$pk];
                 $builder->where($pk, $pkVal);
             } else {
-                throw new Exception("update error,pkValue is require");
+                if (empty($this->where)){
+                    throw new Exception("update error,pkValue is require");
+                }
             }
         }
         $this->preHandleQueryBuilder($builder);
