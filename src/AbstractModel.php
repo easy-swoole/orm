@@ -31,6 +31,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $where  = [];
     private $join   = NULL;
     private $group  = NULL;
+    private $alias  = NULL;
     /** @var array 关联模型数据 */
     private $_joinMap = [];
     /** @var string 表名 */
@@ -52,6 +53,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @var array
      */
     private $data;
+    /**
+     * 附加数据
+     * @var array
+     */
+    private $_joinData = [];
     /**
      * 模型的原始数据
      * 未应用修改器和获取器之前的原始数据
@@ -168,6 +174,23 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
+    public function alias($alias)
+    {
+        $this->alias = $alias;
+        return $this;
+    }
+
+    public function getTableName()
+    {
+        $table = $this->schemaInfo()->getTable();
+        if ($this->alias !== NULL){
+            $table .= " AS `{$this->alias}`";
+        }
+        return $table;
+    }
+
+    /*  ==============    聚合查询    ==================   */
+
     public function max($field)
     {
         return $this->queryPolymerization('max', $field);
@@ -231,6 +254,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if (method_exists($this, $attrName)) {
             return $this->$attrName();
         }
+        // 是否是附加字段
+        if (isset($this->_joinData[$attrName])){
+            return $this->_joinData[$attrName];
+        }
         return $this->data[$attrName] ?? null;
     }
 
@@ -240,13 +267,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if (isset($this->schemaInfo()->getColumns()[$attrName])) {
             $col = $this->schemaInfo()->getColumns()[$attrName];
             $attrValue = PreProcess::dataValueFormat($attrValue, $col);
-            $method = 'set' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $this->__toString() ) ) ) . 'Attr';
+            $method = 'set' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
             if (method_exists($this, $method)) {
                 $attrValue = $this->$method($attrValue, $this->data);
             }
             $this->data[$attrName] = $attrValue;
             return true;
         } else {
+            $this->_joinData[$attrName] = $attrValue;
             return false;
         }
     }
@@ -327,20 +355,25 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 获取数据
      * @param null $where
+     * @param bool $returnAsArray
      * @return AbstractModel|null
      * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
-    public function get($where = null)
+    public function get($where = null, bool $returnAsArray = false)
     {
         $modelInstance = new static;
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $modelInstance);
         $this->preHandleQueryBuilder($builder);
-        $builder->getOne($modelInstance->schemaInfo()->getTable(), $this->fields);
+        $builder->getOne($this->getTableName(), $this->fields);
         $res = $this->query($builder);
         if (empty($res)) {
             return null;
+        }
+        if ($returnAsArray){
+            return $res[0];
         }
         $modelInstance->data($res[0]);
         $modelInstance->lastQuery = $this->lastQuery();
@@ -361,7 +394,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $this);
         $this->preHandleQueryBuilder($builder);
-        $builder->get($this->schemaInfo()->getTable(), $this->limit, $this->fields);
+        $builder->get($this->getTableName(), $this->limit, $this->fields);
         $results = $this->query($builder);
         $resultSet = [];
         if (is_array($results)) {
@@ -386,6 +419,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function select($where = null):array
     {
         return $this->all($where, true);
+    }
+
+    public function findAll($where = null):array
+    {
+        return $this->select($where);
+    }
+
+    public function findOne($where = null)
+    {
+        return $this->get($where, true);
     }
 
     public static function create(array $data = []): AbstractModel
@@ -468,6 +511,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         foreach ($this->data as $key => $data){
             $return[$key] = $this->getAttr($key);
         }
+        foreach ($this->_joinData as $key => $data)
+        {
+            $return[$key] = $data;
+        }
         return $return;
     }
 
@@ -480,6 +527,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     unset($temp[$key]);
                 }
             }
+            $temp = array_merge($temp, $this->_joinData ?? []);
             return $temp;
         }
         if (is_array($this->fields)) {
@@ -489,12 +537,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 }
             }
         }
+        $temp = array_merge($temp, $this->_joinData ?? []);
         return $temp;
     }
 
     public function __toString()
     {
-        return json_encode($this->data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $data = array_merge($this->data, $this->_joinData ?? []);
+        return json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     function __set($name, $value)

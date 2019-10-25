@@ -100,13 +100,34 @@ class CoherentTest extends TestCase
     public function testSelect()
     {
         $groupDivField = TestUserListModel::create()->field('sum(age), `name`')->group('name')->select();
-
         $this->assertNotEmpty($groupDivField[0]['sum(age)']);
+    }
+
+    public function testJoinData()
+    {
+        $res = TestUserListModel::create()->field('sum(age) as siam, `name`')->group('name')->all();
+        $this->assertNotEmpty($res[0]->siam);
+        $this->assertNotEmpty($res[0]['siam']);
+    }
+
+    public function testFind()
+    {
+        $groupDivField = TestUserListModel::create()->field('sum(age), `name`')->group('name')->findAll();
+        $this->assertNotEmpty($groupDivField[0]['sum(age)']);
+
+        $groupDivField = TestUserListModel::create()->field('sum(age), `name`')->group('name')->findOne();
+        $this->assertNotEmpty($groupDivField['sum(age)']);
     }
 
     public function testJoin()
     {
 
+    }
+
+    public function testAlias()
+    {
+        $res = TestUserListModel::create()->alias('siam')->where(['siam.name' => '仙士可'])->all();
+        $this->assertEquals($res[0]->name, '仙士可');
     }
 
     public function testMax()
