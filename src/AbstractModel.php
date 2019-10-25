@@ -575,6 +575,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->where  = [];
         $this->join   = null;
         $this->group  = null;
+        $this->alias = null;
     }
 
     /**
