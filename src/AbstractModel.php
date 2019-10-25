@@ -182,6 +182,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function getTableName()
     {
+        // 是否有表前缀
+        $table = $this->schemaInfo()->getTable();
+        return $table;
+    }
+
+    private function parseTableName()
+    {
+        // 是否有表前缀
         $table = $this->schemaInfo()->getTable();
         if ($this->alias !== NULL){
             $table .= " AS `{$this->alias}`";
@@ -367,7 +375,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $modelInstance);
         $this->preHandleQueryBuilder($builder);
-        $builder->getOne($this->getTableName(), $this->fields);
+        $builder->getOne($this->parseTableName(), $this->fields);
         $res = $this->query($builder);
         if (empty($res)) {
             return null;
@@ -394,7 +402,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $this);
         $this->preHandleQueryBuilder($builder);
-        $builder->get($this->getTableName(), $this->limit, $this->fields);
+        $builder->get($this->parseTableName(), $this->limit, $this->fields);
         $results = $this->query($builder);
         $resultSet = [];
         if (is_array($results)) {
