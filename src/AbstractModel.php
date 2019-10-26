@@ -565,6 +565,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->getAttr($name);
     }
 
+    function func(callable $call)
+    {
+        $builder = new QueryBuilder();
+        $isRaw = (bool)call_user_func($call,$builder);
+        return $this->query($builder,$isRaw);
+    }
+
     protected function reset()
     {
         $this->tempConnectionName = null;
