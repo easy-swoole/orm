@@ -567,6 +567,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->getAttr($name);
     }
 
+    public function __isset($name)
+    {
+        return ($this->getAttr($name) !== null);
+    }
+
     function func(callable $call)
     {
         $builder = new QueryBuilder();
