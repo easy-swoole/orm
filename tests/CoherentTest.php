@@ -8,9 +8,6 @@
 
 namespace EasySwoole\ORM\Tests;
 
-
-
-namespace EasySwoole\ORM\Tests;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
