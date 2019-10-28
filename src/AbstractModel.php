@@ -477,6 +477,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
         }
         $this->preHandleQueryBuilder($builder);
+        // 合并时间戳字段
+        // $data = $this->preHandleTimeStamp($data);
         $builder->update($this->schemaInfo()->getTable(), $data);
         $results = $this->query($builder);
 
@@ -788,5 +790,48 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         return null;
+    }
+
+    /**
+     * 处理时间戳
+     * @param $data
+     * @return mixed
+     */
+    private function preHandleTimeStamp($data, $doType = 'insert')
+    {
+        if ($this->autoTimeStamp !== null){
+            return $data;
+        }
+        $type = 'int';
+        switch ($this->autoTimeStamp){
+            case true:
+                break;
+            case 'datetime':
+                $type = 'datetime';
+                break;
+        }
+
+        switch ($doType){
+            case 'insert':
+                $this->setAttr($this->createTime, $this->parseTimeStamp(time(), $type));
+                $this->setAttr($this->updateTime, $this->parseTimeStamp(time(), $type));
+                break;
+            default:
+                $this->setAttr($this->updateTime, $this->parseTimeStamp(time(), $type));
+                break;
+        }
+
+    }
+
+    private function parseTimeStamp(int $timestamp, $type = 'int')
+    {
+        switch ($type){
+            case 'int':
+                return $timestamp;
+                break;
+            case 'datetime':
+                return date('Y-m-d H:i:s', $timestamp);
+                break;
+        }
     }
 }
