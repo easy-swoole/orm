@@ -333,18 +333,19 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 保存 插入
      * @param bool $notNul
+     * @param bool $strict
      * @throws Exception
      * @throws \Throwable
      * @return bool|int
      */
-    public function save($notNul = false)
+    public function save($notNul = false, $strict = true)
     {
         $builder = new QueryBuilder();
         $primaryKey = $this->schemaInfo()->getPkFiledName();
         if (empty($primaryKey)) {
             throw new Exception('save() needs primaryKey for model ' . static::class);
         }
-        $rawArray = $this->toArray($notNul);
+        $rawArray = $this->toArray($notNul, $strict);
         $builder->insert($this->schemaInfo()->getTable(), $rawArray);
         $this->preHandleQueryBuilder($builder);
         $this->query($builder);
@@ -528,7 +529,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $return;
     }
 
-    public function toArray($notNul = false): array
+    public function toArray($notNul = false, $strict = true): array
     {
         $temp = $this->data ?? [];
         if ($notNul) {
@@ -537,7 +538,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     unset($temp[$key]);
                 }
             }
-            $temp = array_merge($temp, $this->_joinData ?? []);
+            if (!$strict) {
+                $temp = array_merge($temp, $this->_joinData ?? []);
+            }
             return $temp;
         }
         if (is_array($this->fields)) {
@@ -547,7 +550,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 }
             }
         }
-        $temp = array_merge($temp, $this->_joinData ?? []);
+        if (!$strict) {
+            $temp = array_merge($temp, $this->_joinData ?? []);
+        }
         return $temp;
     }
 
