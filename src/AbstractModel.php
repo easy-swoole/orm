@@ -530,7 +530,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function toArray($notNul = false): array
     {
-        $temp = $this->data;
+        $temp = $this->data ?? [];
         if ($notNul) {
             foreach ($temp as $key => $value) {
                 if ($value === null) {
