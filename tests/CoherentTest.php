@@ -8,6 +8,7 @@
 
 namespace EasySwoole\ORM\Tests;
 
+use EasySwoole\Mysqli\Exception\Exception;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
@@ -191,6 +192,16 @@ class CoherentTest extends TestCase
         ])->destroy();
 
         $this->assertEquals($res, true);
+    }
+
+    public function testTempTableName()
+    {
+        $model = TestUserListModel::create();
+        $res = $model->tableName('test_user_model', true)->get();
+        $this->assertEquals($model->lastQuery()->getLastQuery(), "SELECT  * FROM test_user_model LIMIT 1");
+
+        $res2 = $model->get();
+        $this->assertEquals($model->lastQuery()->getLastQuery(), "SELECT  * FROM user_test_list LIMIT 1");
     }
 
     public function testDeleteAll()
