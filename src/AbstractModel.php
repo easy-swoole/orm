@@ -66,6 +66,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $originData;
     /* 回调事件 */
     private $onQuery;
+    /** @var string 临时表名 */
+    private $tempTableName = null;
 
 
     /**
@@ -183,14 +185,29 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function getTableName()
     {
         // 是否有表前缀
-        $table = $this->schemaInfo()->getTable();
+
+        if($this->tempTableName !== null){
+            $table = $this->tempTableName;
+            $this->tempTableName = null;
+        }else{
+            $table = $this->schemaInfo()->getTable();
+        }
         return $table;
+    }
+
+    public function tableName(string $name, bool $is_temp = false)
+    {
+        if ($is_temp){
+            $this->tempTableName = $name;
+        }else{
+            $this->tableName = $name;
+        }
+        return $this;
     }
 
     private function parseTableName()
     {
-        // 是否有表前缀
-        $table = $this->schemaInfo()->getTable();
+        $table = $this->getTableName();
         if ($this->alias !== NULL){
             $table .= " AS `{$this->alias}`";
         }
@@ -331,7 +348,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         PreProcess::mappingWhere($builder, $where, $this);
         $this->preHandleQueryBuilder($builder);
-        $builder->delete($this->schemaInfo()->getTable(), $this->limit);
+        $builder->delete($this->getTableName(), $this->limit);
         $this->query($builder);
         return $this->lastQueryResult()->getAffectedRows();
     }
@@ -352,7 +369,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             throw new Exception('save() needs primaryKey for model ' . static::class);
         }
         $rawArray = $this->toArray($notNul, $strict);
-        $builder->insert($this->schemaInfo()->getTable(), $rawArray);
+        $builder->insert($this->getTableName(), $rawArray);
         $this->preHandleQueryBuilder($builder);
         $this->query($builder);
         if ($this->lastQueryResult()->getResult() === false) {
@@ -455,9 +472,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 更新
      * @param array $data
-     * @param null  $where
+     * @param null $where
+     * @param bool $allow 是否允许无条件更新
      * @return bool
      * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
     public function update(array $data = [], $where = null, $allow = false)
@@ -486,7 +505,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->preHandleQueryBuilder($builder);
         // 合并时间戳字段
         // $data = $this->preHandleTimeStamp($data);
-        $builder->update($this->schemaInfo()->getTable(), $data);
+        $builder->update($this->getTableName(), $data);
         $results = $this->query($builder);
 
         return $results ? true : false;
@@ -600,7 +619,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->where  = [];
         $this->join   = null;
         $this->group  = null;
-        $this->alias = null;
+        $this->alias  = null;
     }
 
     /**
