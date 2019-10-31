@@ -339,18 +339,19 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 保存 插入
      * @param bool $notNul
+     * @param bool $strict
      * @throws Exception
      * @throws \Throwable
      * @return bool|int
      */
-    public function save($notNul = false)
+    public function save($notNul = false, $strict = true)
     {
         $builder = new QueryBuilder();
         $primaryKey = $this->schemaInfo()->getPkFiledName();
         if (empty($primaryKey)) {
             throw new Exception('save() needs primaryKey for model ' . static::class);
         }
-        $rawArray = $this->toArray($notNul);
+        $rawArray = $this->toArray($notNul, $strict);
         $builder->insert($this->schemaInfo()->getTable(), $rawArray);
         $this->preHandleQueryBuilder($builder);
         $this->query($builder);
@@ -483,6 +484,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
         }
         $this->preHandleQueryBuilder($builder);
+        // 合并时间戳字段
+        // $data = $this->preHandleTimeStamp($data);
         $builder->update($this->schemaInfo()->getTable(), $data);
         $results = $this->query($builder);
 
@@ -532,16 +535,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $return;
     }
 
-    public function toArray($notNul = false): array
+    public function toArray($notNul = false, $strict = true): array
     {
-        $temp = $this->data;
+        $temp = $this->data ?? [];
         if ($notNul) {
             foreach ($temp as $key => $value) {
                 if ($value === null) {
                     unset($temp[$key]);
                 }
             }
-            $temp = array_merge($temp, $this->_joinData ?? []);
+            if (!$strict) {
+                $temp = array_merge($temp, $this->_joinData ?? []);
+            }
             return $temp;
         }
         if (is_array($this->fields)) {
@@ -551,7 +556,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 }
             }
         }
-        $temp = array_merge($temp, $this->_joinData ?? []);
+        if (!$strict) {
+            $temp = array_merge($temp, $this->_joinData ?? []);
+        }
         return $temp;
     }
 
@@ -569,6 +576,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     function __get($name)
     {
         return $this->getAttr($name);
+    }
+
+    public function __isset($name)
+    {
+        return ($this->getAttr($name) !== null);
     }
 
     function func(callable $call)
@@ -805,5 +817,48 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         return null;
+    }
+
+    /**
+     * 处理时间戳
+     * @param $data
+     * @return mixed
+     */
+    private function preHandleTimeStamp($data, $doType = 'insert')
+    {
+        if ($this->autoTimeStamp !== null){
+            return $data;
+        }
+        $type = 'int';
+        switch ($this->autoTimeStamp){
+            case true:
+                break;
+            case 'datetime':
+                $type = 'datetime';
+                break;
+        }
+
+        switch ($doType){
+            case 'insert':
+                $this->setAttr($this->createTime, $this->parseTimeStamp(time(), $type));
+                $this->setAttr($this->updateTime, $this->parseTimeStamp(time(), $type));
+                break;
+            default:
+                $this->setAttr($this->updateTime, $this->parseTimeStamp(time(), $type));
+                break;
+        }
+
+    }
+
+    private function parseTimeStamp(int $timestamp, $type = 'int')
+    {
+        switch ($type){
+            case 'int':
+                return $timestamp;
+                break;
+            case 'datetime':
+                return date('Y-m-d H:i:s', $timestamp);
+                break;
+        }
     }
 }
