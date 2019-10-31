@@ -148,7 +148,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @param $where
      * @return $this
      */
-    public function where($where)
+    public function where(...$where)
     {
         $this->where[] = $where;
         return $this;
@@ -270,13 +270,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
 
-    public function setAttr($attrName, $attrValue): bool
+    public function setAttr($attrName, $attrValue, $setter = true): bool
     {
         if (isset($this->schemaInfo()->getColumns()[$attrName])) {
             $col = $this->schemaInfo()->getColumns()[$attrName];
             $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             $method = 'set' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
-            if (method_exists($this, $method)) {
+            if ($setter && method_exists($this, $method)) {
                 $attrValue = $this->$method($attrValue, $this->data);
             }
             $this->data[$attrName] = $attrValue;
@@ -287,10 +287,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
     }
 
-    public function data(array $data)
+    /**
+     * 数据赋值
+     * @param array $data
+     * @param bool $setter 是否调用setter
+     * @return $this
+     */
+    public function data(array $data, $setter = true)
     {
         foreach ($data as $key => $value) {
-            $this->setAttr($key, $value);
+            $this->setAttr($key, $value, $setter);
         }
         $this->originData = $this->data;
         return $this;
@@ -365,7 +371,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 获取数据
      * @param null $where
      * @param bool $returnAsArray
-     * @return AbstractModel|null
+     * @return $this|null|array
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
@@ -384,7 +390,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($returnAsArray){
             return $res[0];
         }
-        $modelInstance->data($res[0]);
+        $modelInstance->data($res[0], false);
         $modelInstance->lastQuery = $this->lastQuery();
         return $modelInstance;
     }
@@ -411,7 +417,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 if ($returnAsArray) {
                     $resultSet[] = $result;
                 } else {
-                    $resultSet[] = static::create($result);
+                    $resultSet[] = (new static)->data($result, false);
                 }
             }
         }
@@ -647,8 +653,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         $result = $this->query($builder);
         if ($result) {
-            $this->data($result[0]);
-            $ins->data($result[0]);
+            $this->data($result[0], false);
+            $ins->data($result[0], false);
             $this->_joinMap[$class] = $ins;
 
             return $this->_joinMap[$class];
@@ -779,7 +785,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($this->where) {
             $whereModel = new static();
             foreach ($this->where as $whereOne){
-                $builder = PreProcess::mappingWhere($builder, $whereOne, $whereModel);
+                if (is_array($whereOne[0]) || is_int($whereOne[0])){
+                    $builder = PreProcess::mappingWhere($builder, $whereOne[0], $whereModel);
+                }else{
+                    $builder->where(...$whereOne);
+                }
             }
         }
         if($this->group){
