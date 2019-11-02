@@ -70,29 +70,29 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $tempTableName = null;
 
 
-    /**
-     * getSchemaInfo
-     * @param bool $isCache
-     * @return Table
-     * @author Tioncico
-     * Time: 15:21
-     */
+    function __construct(array $data = [])
+    {
+        $this->data($data);
+    }
+
     public function schemaInfo(bool $isCache = true): Table
     {
-        if (isset(self::$schemaInfoList[$this->tableName]) && self::$schemaInfoList[$this->tableName] instanceof Table && $isCache == true) {
-            return self::$schemaInfoList[$this->tableName];
+        $key = md5(static::class);
+        if (isset(self::$schemaInfoList[$key]) && self::$schemaInfoList[$key] instanceof Table && $isCache == true) {
+            return self::$schemaInfoList[$key];
         }
-
         if ($this->tempConnectionName) {
             $connectionName = $this->tempConnectionName;
         } else {
             $connectionName = $this->connectionName;
         }
+        if(empty($this->tableName)){
+            throw new Exception("Table name is require for model ".static::class);
+        }
         $tableObjectGeneration = new TableObjectGeneration(DbManager::getInstance()->getConnection($connectionName), $this->tableName);
         $schemaInfo = $tableObjectGeneration->generationTable();
-        self::$schemaInfoList[$this->tableName] = $schemaInfo;
-
-        return self::$schemaInfoList[$this->tableName];
+        self::$schemaInfoList[$key] = $schemaInfo;
+        return self::$schemaInfoList[$key];
     }
 
 
@@ -182,17 +182,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
+    /*
+     * 这边可以获取临时表名
+     */
     public function getTableName()
     {
-        // 是否有表前缀
-
         if($this->tempTableName !== null){
-            $table = $this->tempTableName;
-            $this->tempTableName = null;
+            return $this->tempTableName;
         }else{
-            $table = $this->schemaInfo()->getTable();
+           return $this->schemaInfo()->getTable();
         }
-        return $table;
     }
 
     public function tableName(string $name, bool $is_temp = false)
@@ -250,14 +249,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         return $this->lastQuery;
     }
-
-    function __construct(array $data = [])
-    {
-        //初始化表名
-        $this->tableNameInit();
-        $this->data($data);
-    }
-
 
     function connection(string $name, bool $isTemp = false): AbstractModel
     {
@@ -620,6 +611,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->join   = null;
         $this->group  = null;
         $this->alias  = null;
+        $this->tempTableName = null;
     }
 
     /**
@@ -767,22 +759,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $temp = clone $builder;
                 call_user_func($this->onQuery, $ret, $temp, $start);
             }
-        }
-    }
-
-    protected function tableNameInit()
-    {
-        if (empty($this->tableName)) {
-            $className = get_called_class();
-            $classNameArr = explode('\\', $className);
-            //切割当前类名
-            $className = $classNameArr[count($classNameArr) - 1];
-            //去掉Model
-            // $tableName = str_replace('Model', '', $className);
-            $tableName = $className;
-            //驼峰转下划线
-            $tableName = Str::snake($tableName);
-            $this->tableName = $tableName;
         }
     }
 
