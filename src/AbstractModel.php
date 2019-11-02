@@ -10,7 +10,6 @@ use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
-use EasySwoole\Utility\Str;
 use JsonSerializable;
 
 /**
@@ -69,12 +68,28 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /** @var string 临时表名 */
     private $tempTableName = null;
 
+    /** @var bool|string 是否开启时间戳 */
+    protected  $autoTimeStamp = false;
+    /** @var bool|string 创建时间字段名 false不设置 */
+    protected  $createTime = 'create_time';
+    /** @var bool|string 更新时间字段名 false不设置 */
+    protected  $updateTime = 'update_time';
 
-    function __construct(array $data = [])
+    /**
+     * AbstractModel constructor.
+     * @param array $data
+     * @throws Exception
+     */
+    public function __construct(array $data = [])
     {
         $this->data($data);
     }
 
+    /**
+     * @param bool $isCache
+     * @return Table
+     * @throws Exception
+     */
     public function schemaInfo(bool $isCache = true): Table
     {
         $key = md5(static::class);
@@ -182,8 +197,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
-    /*
-     * 这边可以获取临时表名
+    /**
+     * 获取表名，如果有设置临时表名则返回临时表名
+     * @throws
      */
     public function getTableName()
     {
@@ -194,6 +210,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
     }
 
+    /**
+     * @param string $name
+     * @param bool $is_temp
+     * @return $this
+     * @throws Exception
+     */
     public function tableName(string $name, bool $is_temp = false)
     {
         if ($is_temp){
@@ -218,26 +240,56 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /*  ==============    聚合查询    ==================   */
 
+    /**
+     * @param $field
+     * @return null
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function max($field)
     {
         return $this->queryPolymerization('max', $field);
     }
 
+    /**
+     * @param $field
+     * @return null
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function min($field)
     {
         return $this->queryPolymerization('min', $field);
     }
 
+    /**
+     * @param null $field
+     * @return null
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function count($field = null)
     {
         return $this->queryPolymerization('count', $field);
     }
 
+    /**
+     * @param $field
+     * @return null
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function avg($field)
     {
         return $this->queryPolymerization('avg', $field);
     }
 
+    /**
+     * @param $field
+     * @return null
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function sum($field)
     {
         return $this->queryPolymerization('sum', $field);
@@ -280,7 +332,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->data[$attrName] ?? null;
     }
 
-
+    /**
+     * @param $attrName
+     * @param $attrValue
+     * @param bool $setter
+     * @return bool
+     * @throws Exception
+     */
     public function setAttr($attrName, $attrValue, $setter = true): bool
     {
         if (isset($this->schemaInfo()->getColumns()[$attrName])) {
@@ -303,6 +361,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @param array $data
      * @param bool $setter 是否调用setter
      * @return $this
+     * @throws Exception
      */
     public function data(array $data, $setter = true)
     {
@@ -363,6 +422,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             throw new Exception('save() needs primaryKey for model ' . static::class);
         }
         $rawArray = $this->toArray($notNul, $strict);
+        // 合并时间戳字段
+        $rawArray = $this->preHandleTimeStamp($rawArray, 'insert');
         $builder->insert($this->getTableName(), $rawArray);
         $this->preHandleQueryBuilder($builder);
         $this->query($builder);
@@ -447,16 +508,34 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->all($where, true);
     }
 
+    /**
+     * @param null $where
+     * @return array
+     * @throws Exception
+     * @throws \Throwable
+     */
     public function findAll($where = null):array
     {
         return $this->select($where);
     }
 
+    /**
+     * @param null $where
+     * @return array|AbstractModel|null
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \Throwable
+     */
     public function findOne($where = null)
     {
         return $this->get($where, true);
     }
 
+    /**
+     * @param array $data
+     * @return AbstractModel|$this
+     * @throws Exception
+     */
     public static function create(array $data = []): AbstractModel
     {
         return new static($data);
@@ -498,9 +577,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         $this->preHandleQueryBuilder($builder);
         // 合并时间戳字段
-        // $data = $this->preHandleTimeStamp($data);
+        $data = $this->preHandleTimeStamp($data, 'update');
         $builder->update($this->getTableName(), $data);
         $results = $this->query($builder);
+        if ($results){
+            $this->originData = $this->data;
+        }
 
         return $results ? true : false;
     }
@@ -520,12 +602,23 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->getAttr($offset);
     }
 
+    /**
+     * @param mixed $offset
+     * @param mixed $value
+     * @return bool
+     * @throws Exception
+     */
     public function offsetSet($offset, $value)
     {
         return $this->setAttr($offset, $value);
     }
 
 
+    /**
+     * @param mixed $offset
+     * @return bool
+     * @throws Exception
+     */
     public function offsetUnset($offset)
     {
         return $this->setAttr($offset, null);
@@ -581,6 +674,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * @param $name
+     * @param $value
+     * @throws Exception
+     */
     function __set($name, $value)
     {
         $this->setAttr($name, $value);
@@ -596,6 +694,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return ($this->getAttr($name) !== null);
     }
 
+    /**
+     * @param callable $call
+     * @return mixed
+     * @throws \Throwable
+     */
     function func(callable $call)
     {
         $builder = new QueryBuilder();
@@ -603,7 +706,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->query($builder,$isRaw);
     }
 
-    protected function reset()
+    private function reset()
     {
         $this->tempConnectionName = null;
         $this->fields = "*";
@@ -739,6 +842,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return null;
     }
 
+    /**
+     * @param QueryBuilder $builder
+     * @param bool $raw
+     * @return mixed
+     * @throws \Throwable
+     */
     protected function query(QueryBuilder $builder, bool $raw = false)
     {
         $start = microtime(true);
@@ -771,7 +880,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      */
-    protected function preHandleQueryBuilder(QueryBuilder $builder)
+    private function preHandleQueryBuilder(QueryBuilder $builder)
     {
         // 快速连贯操作
         if ($this->withTotalCount) {
@@ -800,6 +909,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
     }
 
+    /**
+     * @param $type
+     * @param null $field
+     * @return null|mixed
+     * @throws Exception
+     * @throws \Throwable
+     */
     private function queryPolymerization($type, $field = null)
     {
         if ($field === null){
@@ -820,32 +936,44 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 处理时间戳
      * @param $data
+     * @param string $doType
      * @return mixed
+     * @throws Exception
      */
     private function preHandleTimeStamp($data, $doType = 'insert')
     {
-        if ($this->autoTimeStamp !== null){
+        if ($this->autoTimeStamp === false){
             return $data;
         }
         $type = 'int';
-        switch ($this->autoTimeStamp){
-            case true:
-                break;
-            case 'datetime':
-                $type = 'datetime';
-                break;
+
+        if ( $this->autoTimeStamp === 'datetime'){
+            $type = 'datetime';
         }
 
         switch ($doType){
             case 'insert':
-                $this->setAttr($this->createTime, $this->parseTimeStamp(time(), $type));
-                $this->setAttr($this->updateTime, $this->parseTimeStamp(time(), $type));
+                if ($this->createTime !== false){
+                    $tem = $this->parseTimeStamp(time(), $type);
+                    $this->setAttr($this->createTime, $tem);
+                    $data[$this->createTime] = $tem;
+                }
+                if ($this->updateTime !== false){
+                    $tem = $this->parseTimeStamp(time(), $type);
+                    $this->setAttr($this->updateTime, $tem);
+                    $data[$this->updateTime] = $tem;
+                }
                 break;
-            default:
-                $this->setAttr($this->updateTime, $this->parseTimeStamp(time(), $type));
+            case 'update':
+                if ($this->updateTime !== false){
+                    $tem = $this->parseTimeStamp(time(), $type);
+                    $this->setAttr($this->updateTime, $tem);
+                    $data[$this->updateTime] = $tem;
+                }
                 break;
         }
 
+        return $data;
     }
 
     private function parseTimeStamp(int $timestamp, $type = 'int')
@@ -856,6 +984,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 break;
             case 'datetime':
                 return date('Y-m-d H:i:s', $timestamp);
+                break;
+            default:
+                return date($type, $timestamp);
                 break;
         }
     }
