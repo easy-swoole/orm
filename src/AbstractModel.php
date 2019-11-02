@@ -199,7 +199,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($is_temp){
             $this->tempTableName = $name;
         }else{
-            $this->tableName = $name;
+            $this->schemaInfo()->setTableName($name);
         }
         return $this;
     }
