@@ -23,5 +23,5 @@ use EasySwoole\Utility\Str;
  */
 class TestUserModel extends AbstractModel
 {
-
+    protected $tableName='test_user_model';
 }
