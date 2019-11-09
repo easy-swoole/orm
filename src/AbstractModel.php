@@ -907,6 +907,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $builder->join($joinOne[0], $joinOne[1], $joinOne[2]);
             }
         }
+        // 如果在闭包里设置了属性，并且Model没设置，则覆盖Model里的
+        if ( $this->fields == '*' ){
+            $this->fields = implode(', ', $builder->getField());
+        }
+
     }
 
     /**
