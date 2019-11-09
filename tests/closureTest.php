@@ -55,7 +55,7 @@ class closureTest extends TestCase
     {
         $user = TestUserModel::create()->get(function(QueryBuilder $queryBuilder){
            $queryBuilder->where('name', 'Siam222');
-           $queryBuilder->fields(['name,age']);
+           $queryBuilder->fields(['name','age']);
         });
 
         $this->assertNotEmpty($user->age);
