@@ -44,7 +44,7 @@ class Connection implements ConnectionInterface
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{
-            if($client->mysqlClient()->errno){
+            if($ret === false && $client->mysqlClient()->errno){
                 if(in_array($client->mysqlClient()->errno,[2006,2013])){
                     $this->pool->unsetObj($client);
                 }
