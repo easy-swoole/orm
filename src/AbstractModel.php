@@ -124,7 +124,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function order(...$args)
     {
-        $this->order = $args;
+        $this->order[] = $args;
         return $this;
     }
     /**
@@ -886,8 +886,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($this->withTotalCount) {
             $builder->withTotalCount();
         }
-        if ($this->order) {
-            $builder->orderBy(...$this->order);
+        if ($this->order && is_array($this->order)) {
+            foreach ($this->order as $order){
+                $builder->orderBy(...$order);
+            }
         }
         if ($this->where) {
             $whereModel = new static();
