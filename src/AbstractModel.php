@@ -443,7 +443,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 获取数据
      * @param null $where
      * @param bool $returnAsArray
-     * @return $this|null|array
+     * @return $this|null|array|bool
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
@@ -456,7 +456,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->preHandleQueryBuilder($builder);
         $builder->getOne($this->parseTableName(), $this->fields);
         $res = $this->query($builder);
+
         if (empty($res)) {
+            if ($res === false){
+                return false;
+            }
             return null;
         }
         if ($returnAsArray){
@@ -472,7 +476,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 批量查询
      * @param null $where
      * @param bool $returnAsArray
-     * @return array
+     * @return array|bool
      * @throws Exception
      * @throws \Throwable
      */
@@ -484,6 +488,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder->get($this->parseTableName(), $this->limit, $this->fields);
         $results = $this->query($builder);
         $resultSet = [];
+        if ($results === false){
+            return false;
+        }
         if (is_array($results)) {
             foreach ($results as $result) {
                 if ($returnAsArray) {
