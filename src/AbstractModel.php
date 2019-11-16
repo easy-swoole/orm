@@ -11,6 +11,7 @@ use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
 use JsonSerializable;
+use PhpParser\Builder;
 
 /**
  * 抽象模型
@@ -31,8 +32,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $join   = NULL;
     private $group  = NULL;
     private $alias  = NULL;
-    /** @var array 关联模型数据 */
-    private $_joinMap = [];
     /** @var string 表名 */
     protected $tableName = '';
     /** @var Table */
@@ -443,7 +442,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 获取数据
      * @param null $where
      * @param bool $returnAsArray
-     * @return $this|null|array
+     * @return $this|null|array|bool
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
@@ -456,7 +455,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->preHandleQueryBuilder($builder);
         $builder->getOne($this->parseTableName(), $this->fields);
         $res = $this->query($builder);
+
         if (empty($res)) {
+            if ($res === false){
+                return false;
+            }
             return null;
         }
         if ($returnAsArray){
@@ -472,7 +475,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 批量查询
      * @param null $where
      * @param bool $returnAsArray
-     * @return array
+     * @return array|bool
      * @throws Exception
      * @throws \Throwable
      */
@@ -484,6 +487,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder->get($this->parseTableName(), $this->limit, $this->fields);
         $results = $this->query($builder);
         $resultSet = [];
+        if ($results === false){
+            return false;
+        }
         if (is_array($results)) {
             foreach ($results as $result) {
                 if ($returnAsArray) {
@@ -734,8 +740,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     protected function hasOne(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
     {
-        if (isset($this->_joinMap[$class])) {
-            return $this->_joinMap[$class];
+        $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
+        if (isset($this->_joinData[$fileName])) {
+            return $this->_joinData[$fileName];
         }
 
         $ref = new \ReflectionClass($class);
@@ -757,24 +764,44 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         $targetTable = $ins->schemaInfo()->getTable();
         $currentTable = $this->schemaInfo()->getTable();
+
         // 支持复杂的构造
         if ($where) {
+            /** @var QueryBuilder $builder */
             $builder = call_user_func($where, $builder);
             $this->preHandleQueryBuilder($builder);
-            $builder->getOne($targetTable);
+            $builder->getOne($targetTable, $builder->getField());
         } else {
-            $builder->join($targetTable, "{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
+            $targetTableAlias = "ES_INS";
+            // 关联表字段自动别名
+            $fields = $this->parserRelationFields($this, $ins, $targetTableAlias);
+
+            $builder->join($targetTable." AS {$targetTableAlias}", "{$targetTableAlias}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
                 ->where("{$currentTable}.{$pk}", $this->$pk);
             $this->preHandleQueryBuilder($builder);
-            $builder->getOne($currentTable);
+            $builder->getOne($currentTable, $fields);
         }
+
         $result = $this->query($builder);
         if ($result) {
-            $this->data($result[0], false);
-            $ins->data($result[0], false);
-            $this->_joinMap[$class] = $ins;
+            // 分离结果 两个数组
+            $targetData = [];
+            $originData = [];
+            foreach ($result[0] as $key => $value){
+                // 如果有包含附属别名，则是targetData
+                if (strpos($key, $targetTableAlias) !==  false){
+                    $trueKey = ltrim($key, $targetTableAlias."_");
+                    $targetData[$trueKey] = $value;
+                }else{
+                    $originData[$key] = $value;
+                }
+            }
 
-            return $this->_joinMap[$class];
+            $this->data($originData, false);
+            $ins->data($targetData, false);
+            $this->_joinData[$fileName] = $ins;
+
+            return $this->_joinData[$fileName];
         }
         return null;
 
@@ -795,8 +822,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     protected function hasMany(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
     {
-        if (isset($this->_joinMap[$class])) {
-            return $this->_joinMap[$class];
+        $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
+        if (isset($this->_joinData[$fileName])) {
+            return $this->_joinData[$fileName];
         }
 
         $ref = new \ReflectionClass($class);
@@ -818,28 +846,67 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         $targetTable = $ins->schemaInfo()->getTable();
         $currentTable = $this->schemaInfo()->getTable();
+
         // 支持复杂的构造
         if ($where) {
+            /** @var QueryBuilder $builder */
             $builder = call_user_func($where, $builder);
             $this->preHandleQueryBuilder($builder);
-            $builder->get($targetTable);
+            $builder->get($targetTable, null, $builder->getField());
         } else {
-            $builder->join($targetTable, "{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
+            $targetTableAlias = "ES_INS";
+            // 关联表字段自动别名
+            $fields = $this->parserRelationFields($this, $ins, $targetTableAlias);
+
+            $builder->join($targetTable." AS {$targetTableAlias}", "{$targetTableAlias}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
                 ->where("{$currentTable}.{$pk}", $this->$pk);
             $this->preHandleQueryBuilder($builder);
-            $builder->get($currentTable);
+            $builder->get($currentTable, null, $fields);
         }
+
         $result = $this->query($builder);
         if ($result) {
             $return = [];
             foreach ($result as $one) {
-                $return[] = ($ref->newInstance())->data($one);
+                // 分离结果 两个数组
+                $targetData = [];
+                $originData = [];
+                foreach ($one as $key => $value){
+                    // 如果有包含附属别名，则是targetData
+                    if (strpos($key, $targetTableAlias) !==  false){
+                        $trueKey = ltrim($key, $targetTableAlias."_");
+                        $targetData[$trueKey] = $value;
+                    }else{
+                        $originData[$key] = $value;
+                    }
+                }
+                $return[] = ($ref->newInstance())->data($targetData);
             }
-            $this->_joinMap[$class] = $return;
+            $this->_joinData[$fileName] = $return;
 
-            return $this->_joinMap[$class];
+            return $this->_joinData[$fileName];
         }
         return null;
+    }
+
+    /**
+     * 关联查询 字段自动别名解析
+     * @param AbstractModel $model
+     * @param AbstractModel $ins
+     * @param string $insAlias
+     * @return array
+     * @throws Exception
+     */
+    protected function parserRelationFields($model, $ins, $insAlias)
+    {
+        $currentTable = $model->schemaInfo()->getTable();
+        $insFields = array_keys($ins->schemaInfo()->getColumns());
+        $fields    = [];
+        $fields[]  = "{$currentTable}.*";
+        foreach ($insFields as $field){
+            $fields[] = "{$insAlias}.{$field} AS {$insAlias}_{$field}";
+        }
+        return $fields;
     }
 
     /**
