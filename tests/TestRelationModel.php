@@ -28,4 +28,9 @@ class TestRelationModel extends AbstractModel
     {
         return $this->hasOne(TestUserListModel::class, null, 'name', 'name');
     }
+
+    public function has_many()
+    {
+        return $this->hasMany(TestUserListModel::class, null, 'name', 'name');
+    }
 }

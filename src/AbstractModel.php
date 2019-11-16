@@ -11,6 +11,7 @@ use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
 use JsonSerializable;
+use PhpParser\Builder;
 
 /**
  * 抽象模型
@@ -764,16 +765,17 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $targetTable = $ins->schemaInfo()->getTable();
         $currentTable = $this->schemaInfo()->getTable();
 
-        $targetTableAlias = "ES_INS";
-        // 关联表字段自动别名
-        $fields = $this->paserRelationFields($this, $ins, $targetTableAlias);
-
         // 支持复杂的构造
         if ($where) {
+            /** @var QueryBuilder $builder */
             $builder = call_user_func($where, $builder);
             $this->preHandleQueryBuilder($builder);
-            $builder->getOne($targetTable, $fields);
+            $builder->getOne($targetTable, $builder->getField());
         } else {
+            $targetTableAlias = "ES_INS";
+            // 关联表字段自动别名
+            $fields = $this->parserRelationFields($this, $ins, $targetTableAlias);
+
             $builder->join($targetTable." AS {$targetTableAlias}", "{$targetTableAlias}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
                 ->where("{$currentTable}.{$pk}", $this->$pk);
             $this->preHandleQueryBuilder($builder);
@@ -845,21 +847,23 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $targetTable = $ins->schemaInfo()->getTable();
         $currentTable = $this->schemaInfo()->getTable();
 
-        $targetTableAlias = "ES_INS";
-        // 关联表字段自动别名
-        $fields = $this->paserRelationFields($this, $ins, $targetTableAlias);
-
         // 支持复杂的构造
         if ($where) {
+            /** @var QueryBuilder $builder */
             $builder = call_user_func($where, $builder);
             $this->preHandleQueryBuilder($builder);
-            $builder->get($targetTable, null, $fields);
+            $builder->get($targetTable, null, $builder->getField());
         } else {
-            $builder->join($targetTable, "{$targetTable}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
+            $targetTableAlias = "ES_INS";
+            // 关联表字段自动别名
+            $fields = $this->parserRelationFields($this, $ins, $targetTableAlias);
+
+            $builder->join($targetTable." AS {$targetTableAlias}", "{$targetTableAlias}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
                 ->where("{$currentTable}.{$pk}", $this->$pk);
             $this->preHandleQueryBuilder($builder);
             $builder->get($currentTable, null, $fields);
         }
+
         $result = $this->query($builder);
         if ($result) {
             $return = [];
@@ -893,7 +897,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @return array
      * @throws Exception
      */
-    protected function paserRelationFields($model, $ins, $insAlias)
+    protected function parserRelationFields($model, $ins, $insAlias)
     {
         $currentTable = $model->schemaInfo()->getTable();
         $insFields = array_keys($ins->schemaInfo()->getColumns());

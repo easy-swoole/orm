@@ -46,8 +46,6 @@ class RelationToArrayTest extends TestCase
         $user_list->addTime = "2019-11-15 17:37:20";
         $user_list->state=1;
         $user_list->save();
-
-        
     }
     
     public function testGet()
@@ -80,4 +78,46 @@ class RelationToArrayTest extends TestCase
         $res = TestUserListModel::create()->destroy(null, true);
         $this->assertIsInt($res);
     }
+
+    public function testAddHasMany()
+    {
+        $test_user_model = TestRelationModel::create();
+        $test_user_model->name = 'siam';
+        $test_user_model->age = 20;
+        $test_user_model->addTime = "2019-11-15 17:36:34";
+        $test_user_model->state = 2;
+        $test_user_model->save();
+
+        $user_list = TestUserListModel::create();
+        $user_list->name = 'siam';
+        $user_list->age = 22;
+        $user_list->addTime = "2019-11-15 17:37:20";
+        $user_list->state=1;
+        $user_list->save();
+
+        $user_list = TestUserListModel::create();
+        $user_list->name = 'siam';
+        $user_list->age = 21;
+        $user_list->addTime = "2019-11-15 17:37:20";
+        $user_list->state=1;
+        $user_list->save();
+    }
+    public function testHasMany()
+    {
+        $test_user_model = TestRelationModel::create()->get([
+            'name' => 'siam'
+        ]);
+        $hasMany =  $test_user_model->has_many();
+        $this->assertEquals(2, count($hasMany));
+        $this->assertInstanceOf(TestUserListModel::class, $hasMany[1]);
+    }
+
+    public function testDeleteAllHasMany()
+    {
+        $res = TestRelationModel::create()->destroy(null, true);
+        $this->assertIsInt($res);
+        $res = TestUserListModel::create()->destroy(null, true);
+        $this->assertIsInt($res);
+    }
+
 }
