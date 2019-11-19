@@ -39,7 +39,7 @@ class PreProcess
                 $builder->where($primaryKey, $whereVal, 'IN');
             }
         } else if (is_callable($whereVal)) {
-            $whereVal($builder);
+            call_user_func($whereVal,$builder);
         }
         return $builder;
     }
