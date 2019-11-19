@@ -11,7 +11,6 @@ use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
 use JsonSerializable;
-use PhpParser\Builder;
 
 /**
  * 抽象模型
