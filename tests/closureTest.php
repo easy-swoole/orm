@@ -63,6 +63,23 @@ class closureTest extends TestCase
         $this->assertEmpty($user->addTime);
     }
 
+    public function testUpdate()
+    {
+        $test = TestUserModel::create()->update([
+            'age' => QueryBuilder::inc(3)
+        ], [
+            'name' => 'Siam222'
+        ]);
+        $this->assertTrue($test);
+
+        $user = TestUserModel::create()->get(function(QueryBuilder $queryBuilder){
+            $queryBuilder->where('name', 'Siam222');
+            $queryBuilder->fields(['name','age']);
+        });
+
+        $this->assertEquals(103, $user->age);
+    }
+
     public function testDeleteAll()
     {
         $res = TestUserListModel::create()->destroy(null, true);
