@@ -36,11 +36,23 @@ class Connection implements ConnectionInterface
                     $ret = $stmt->execute($builder->getLastBindParams(),$this->config->getTimeout());
                 }
             }
+
+            if ($client->mysqlClient()->errno !== 0){
+                $errno = $client->mysqlClient()->errno;
+                $error = $client->mysqlClient()->error;
+                $client->mysqlClient()->errno = 0;
+                $client->mysqlClient()->error = "";
+            }else{
+                $errno = $client->mysqlClient()->errno;
+                $error = $client->mysqlClient()->error;
+            }
+
             $result->setResult($ret);
-            $result->setLastError($client->mysqlClient()->error);
-            $result->setLastErrorNo($client->mysqlClient()->errno);
+            $result->setLastError($error);
+            $result->setLastErrorNo($errno);
             $result->setLastInsertId($client->mysqlClient()->insert_id);
             $result->setAffectedRows($client->mysqlClient()->affected_rows);
+
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{
