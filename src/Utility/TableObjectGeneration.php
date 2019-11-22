@@ -8,6 +8,7 @@
 
 namespace EasySwoole\ORM\Utility;
 
+use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\Schema\Column;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\ConnectionInterface;
@@ -37,6 +38,9 @@ class TableObjectGeneration
         $query->raw("show full columns from {$this->tableName}");
         $data = $this->connection->query($query);
         $this->tableColumns = $data->getResult();
+        if (!is_array($this->tableColumns)){
+            throw new Exception("generationTable Error : ". $data->getLastError());
+        }
         return $data->getResult();
     }
 
