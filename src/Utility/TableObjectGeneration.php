@@ -90,6 +90,8 @@ class TableObjectGeneration
         //默认值
         if ($column['Default']!==null){
             $columnObj->setDefaultValue($column['Default']);
+        }else{
+            $columnObj->setDefaultValue(null);
         }
         if ($column['Extra']=='auto_increment'){
             $columnObj->setIsAutoIncrement();
