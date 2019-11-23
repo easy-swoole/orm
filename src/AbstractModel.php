@@ -871,11 +871,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $targetData = [];
                 $originData = [];
                 foreach ($one as $key => $value){
-                    // 如果有包含附属别名，则是targetData
-                    if (isset($targetTableAlias) && strpos($key, $targetTableAlias) !==  false){
-                        $trueKey = ltrim($key, $targetTableAlias."_");
-                        $targetData[$trueKey] = $value;
+                    if(isset($targetTableAlias)){
+                        // 如果有包含附属别名，则是targetData
+                        if (isset($targetTableAlias) && strpos($key, $targetTableAlias) !==  false){
+                            $trueKey = ltrim($key, $targetTableAlias."_");
+                            $targetData[$trueKey] = $value;
+                        }else{
+                            $originData[$key] = $value;
+                        }
                     }else{
+                        // callable $where 自行处理字段
                         $targetData[$key] = $value;
                     }
                 }
