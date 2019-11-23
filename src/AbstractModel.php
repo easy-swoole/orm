@@ -787,12 +787,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $targetData = [];
             $originData = [];
             foreach ($result[0] as $key => $value){
-                // 如果有包含附属别名，则是targetData
-                if (strpos($key, $targetTableAlias) !==  false){
-                    $trueKey = ltrim($key, $targetTableAlias."_");
-                    $targetData[$trueKey] = $value;
+                if (isset($targetTableAlias)) {
+                    // 如果有包含附属别名，则是targetData
+                    if (strpos($key, $targetTableAlias) !==  false){
+                        $trueKey = ltrim($key, $targetTableAlias."_");
+                        $targetData[$trueKey] = $value;
+                    }else{
+                        $originData[$key] = $value;
+                    }
                 }else{
-                    $originData[$key] = $value;
+                    $targetData[$key] = $value;
                 }
             }
 
@@ -871,12 +875,17 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $targetData = [];
                 $originData = [];
                 foreach ($one as $key => $value){
-                    // 如果有包含附属别名，则是targetData
-                    if (strpos($key, $targetTableAlias) !==  false){
-                        $trueKey = ltrim($key, $targetTableAlias."_");
-                        $targetData[$trueKey] = $value;
+                    if(isset($targetTableAlias)){
+                        // 如果有包含附属别名，则是targetData
+                        if (strpos($key, $targetTableAlias) !==  false){
+                            $trueKey = ltrim($key, $targetTableAlias."_");
+                            $targetData[$trueKey] = $value;
+                        }else{
+                            $originData[$key] = $value;
+                        }
                     }else{
-                        $originData[$key] = $value;
+                        // callable $where 自行处理字段
+                        $targetData[$key] = $value;
                     }
                 }
                 $return[] = ($ref->newInstance())->data($targetData);
