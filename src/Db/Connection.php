@@ -34,6 +34,8 @@ class Connection implements ConnectionInterface
                 $stmt = $client->mysqlClient()->prepare($builder->getLastPrepareQuery(),$this->config->getTimeout());
                 if($stmt){
                     $ret = $stmt->execute($builder->getLastBindParams(),$this->config->getTimeout());
+                }else{
+                    $ret = false;
                 }
             }
 
@@ -47,11 +49,17 @@ class Connection implements ConnectionInterface
                 $error = $client->mysqlClient()->error;
             }
 
+            $insert_id     = $client->mysqlClient()->insert_id;
+            $affected_rows = $client->mysqlClient()->affected_rows;
+
+            $client->mysqlClient()->insert_id     = 0;
+            $client->mysqlClient()->affected_rows = 0;
+
             $result->setResult($ret);
             $result->setLastError($error);
             $result->setLastErrorNo($errno);
-            $result->setLastInsertId($client->mysqlClient()->insert_id);
-            $result->setAffectedRows($client->mysqlClient()->affected_rows);
+            $result->setLastInsertId($insert_id);
+            $result->setAffectedRows($affected_rows);
 
         }catch (\Throwable $throwable){
             throw $throwable;
