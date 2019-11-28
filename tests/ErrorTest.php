@@ -32,14 +32,31 @@ class ErrorTest extends TestCase
     }
 
 
-    public function testAdd()
+    public function testGet()
     {
         $model = TestUserModel::create();
         $testUserModel = $model->where("xxx", 1)->get("");
-        $this->assertNull($testUserModel);
+        $this->assertFalse($testUserModel);
         if ($model->lastQueryResult()->getLastErrorNo() !== 0 ){
             $this->assertIsString($model->lastQueryResult()->getLastError());
         }
 
+    }
+
+    public function testSave()
+    {
+        // insert 不存在的字段
+        $model = TestUserModel::create();
+        $model->test = 123;
+        $res = $model->save(false , false);
+        $this->assertFalse($res);
+    }
+
+    // 全部字段为null  id自增
+    public function testSaveNull()
+    {// 没有准备表结构 本地临时测试通过
+        // $model = TestUserListModel::create();
+        // $res = $model->save();
+        // $this->assertIsInt($res);
     }
 }
