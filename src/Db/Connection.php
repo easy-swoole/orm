@@ -44,6 +44,8 @@ class Connection implements ConnectionInterface
                 $error = $client->mysqlClient()->error;
                 $client->mysqlClient()->errno = 0;
                 $client->mysqlClient()->error = "";
+                // 抛出异常
+                throw new Exception($error);
             }else{
                 $errno = $client->mysqlClient()->errno;
                 $error = $client->mysqlClient()->error;
