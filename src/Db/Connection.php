@@ -39,38 +39,31 @@ class Connection implements ConnectionInterface
                 }
             }
 
-            if ($client->mysqlClient()->errno !== 0){
-                $errno = $client->mysqlClient()->errno;
-                $error = $client->mysqlClient()->error;
-                $client->mysqlClient()->errno = 0;
-                $client->mysqlClient()->error = "";
-                // 抛出异常
-                throw new Exception($error);
-            }else{
-                $errno = $client->mysqlClient()->errno;
-                $error = $client->mysqlClient()->error;
-            }
-
+            $errno = $client->mysqlClient()->errno;
+            $error = $client->mysqlClient()->error;
             $insert_id     = $client->mysqlClient()->insert_id;
             $affected_rows = $client->mysqlClient()->affected_rows;
-
+            /*
+             * 重置mysqli客户端成员属性，避免下次使用
+             */
+            $client->mysqlClient()->errno = 0;
+            $client->mysqlClient()->error = "";
             $client->mysqlClient()->insert_id     = 0;
             $client->mysqlClient()->affected_rows = 0;
-
+            //结果设置
             $result->setResult($ret);
             $result->setLastError($error);
             $result->setLastErrorNo($errno);
             $result->setLastInsertId($insert_id);
             $result->setAffectedRows($affected_rows);
-
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{
-            if($ret === false && $client->mysqlClient()->errno){
-                if(in_array($client->mysqlClient()->errno,[2006,2013])){
-                    $this->pool->unsetObj($client);
-                }
-                throw new Exception("{$client->mysqlClient()->error}");
+            /*
+             * 断线的时候回收链接
+             */
+            if(in_array($client->mysqlClient()->errno,[2006,2013])){
+                $this->pool->unsetObj($client);
             }
         }
         return $result;
