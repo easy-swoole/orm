@@ -16,7 +16,6 @@ use EasySwoole\ORM\Exception\Exception;
 use PHPUnit\Framework\TestCase;
 
 /**
- * ErrorTest需要单独运行测试
  * Class ErrorTest
  * @package EasySwoole\ORM\Tests
  */
@@ -47,7 +46,6 @@ class ErrorTest extends TestCase
             if ($model->lastQueryResult()->getLastErrorNo() !== 0 ){
                 $this->assertIsString($model->lastQueryResult()->getLastError());
             }
-        } catch (\EasySwoole\Mysqli\Exception\Exception $e) {
         } catch (Exception $e) {
             $this->assertEquals("SQLSTATE[42S22] [1054] Unknown column 'xxx' in 'where clause'", $e->getMessage());
         } catch (\Throwable $e) {
