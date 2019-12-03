@@ -9,6 +9,7 @@
 namespace EasySwoole\ORM\Tests;
 
 use EasySwoole\Mysqli\Exception\Exception;
+use EasySwoole\ORM\AbstractModel;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
@@ -84,6 +85,15 @@ class CoherentTest extends TestCase
 
         $getCoherent6 = TestUserListModel::create()->where('id', $getCoherent3->id, '!=')->get();
         $this->assertNotEquals($getCoherent6->id, $getCoherent3->id);
+
+        // where null
+        /** @var AbstractModel $model7 */
+        $model7 = TestUserListModel::create();
+        $test7 = $model7->where('name', null, 'is')->get();
+        $this->assertEquals("SELECT  * FROM user_test_list WHERE  name is NULL LIMIT 1", $model7->lastQuery()->getLastQuery());
+        $test7 = $model7->where('name', null, 'is not')->get();
+        $this->assertEquals("SELECT  * FROM user_test_list WHERE  name is not NULL LIMIT 1", $model7->lastQuery()->getLastQuery());
+
     }
 
     public function testGroupAndAll()
@@ -150,6 +160,12 @@ class CoherentTest extends TestCase
     {
         $count = TestUserListModel::create()->count();
         $this->assertEquals($count, 3);
+    }
+
+    public function testCountZero()
+    {
+        $count = TestUserListModel::create()->where('name', 'undefined')->count();
+        $this->assertEquals($count, 0);
     }
 
     public function testAvg()
