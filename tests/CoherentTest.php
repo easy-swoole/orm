@@ -91,8 +91,8 @@ class CoherentTest extends TestCase
         $model7 = TestUserListModel::create();
         $test7 = $model7->where('name', null, 'is')->get();
         $this->assertEquals("SELECT  * FROM user_test_list WHERE  name is NULL LIMIT 1", $model7->lastQuery()->getLastQuery());
-        $test7 = $model7->where('name', null, 'not')->get();
-        $this->assertEquals("SELECT  * FROM user_test_list WHERE  name not NULL LIMIT 1", $model7->lastQuery()->getLastQuery());
+        $test7 = $model7->where('name', null, 'is not')->get();
+        $this->assertEquals("SELECT  * FROM user_test_list WHERE  name is not NULL LIMIT 1", $model7->lastQuery()->getLastQuery());
 
     }
 
