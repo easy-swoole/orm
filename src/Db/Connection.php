@@ -67,9 +67,8 @@ class Connection implements ConnectionInterface
                 */
                 if(in_array($errno,[2006,2013])){
                     $this->pool->unsetObj($client);
-                }else{
-                    throw new Exception($error);
                 }
+                throw new Exception($error);
             }
 
         }
