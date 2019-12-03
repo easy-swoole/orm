@@ -152,6 +152,12 @@ class CoherentTest extends TestCase
         $this->assertEquals($count, 3);
     }
 
+    public function testCountZero()
+    {
+        $count = TestUserListModel::create()->where('name', 'undefined')->count();
+        $this->assertEquals($count, 0);
+    }
+
     public function testAvg()
     {
         $avg = TestUserListModel::create()->avg('age');
