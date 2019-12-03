@@ -27,6 +27,8 @@ class Connection implements ConnectionInterface
         $result = new Result();
         $client = $this->getClient();
         $ret = null;
+        $errno = 0;
+        $error = '';
         try{
             if($rawQuery){
                 $ret = $client->rawQuery($builder->getLastQuery(),$this->config->getTimeout());
@@ -47,7 +49,7 @@ class Connection implements ConnectionInterface
              * 重置mysqli客户端成员属性，避免下次使用
              */
             $client->mysqlClient()->errno = 0;
-            $client->mysqlClient()->error = "";
+            $client->mysqlClient()->error = '';
             $client->mysqlClient()->insert_id     = 0;
             $client->mysqlClient()->affected_rows = 0;
             //结果设置
@@ -59,12 +61,17 @@ class Connection implements ConnectionInterface
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{
-            /*
-             * 断线的时候回收链接
-             */
-            if(in_array($client->mysqlClient()->errno,[2006,2013])){
-                $this->pool->unsetObj($client);
+            if($errno){
+                /*
+                    * 断线的时候回收链接
+                */
+                if(in_array($errno,[2006,2013])){
+                    $this->pool->unsetObj($client);
+                }else{
+                    throw new Exception($error);
+                }
             }
+
         }
         return $result;
     }
