@@ -83,7 +83,7 @@ class Connection implements ConnectionInterface
         if($client){
             return $client;
         }else{
-            throw new PoolEmpty("pool empty for host {$this->config->getHost()}");
+            throw new PoolEmpty("mysql pool empty at host:{$this->config->getHost()} port:{$this->config->getPort()} db:{$this->config->getDatabase()}");
         }
     }
 
