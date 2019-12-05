@@ -438,6 +438,50 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * @param $data
+     * @param bool $replace
+     * @return array
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \Throwable
+     */
+    public function saveAll($data, $replace = true)
+    {
+        $pk = $this->schemaInfo()->getPkFiledName();
+        if (empty($pk)) {
+            throw new Exception('saveAll() needs primaryKey for model ' . static::class);
+        }
+
+        // 开启事务
+        DbManager::getInstance()->startTransaction();
+        $result = [];
+
+        try{
+            foreach ($data as $key => $row){
+                // 如果有设置更新
+                if ($replace && isset($row[$pk])){
+                    $model = static::create()->get($row[$pk]);
+                    unset($row[$pk]);
+                    $model->update($row);
+                    $result[$key] = $model;
+                }else{
+                    $model = static::create($row);
+                    $res = $model->save();
+                    $result[$key] = $model;
+                }
+            }
+            DbManager::getInstance()->commit();
+            return $result;
+        } catch (\EasySwoole\Mysqli\Exception\Exception $e) {
+            DbManager::getInstance()->rollback();
+            throw $e;
+        } catch (\Throwable $e) {
+            throw $e;
+        }
+
+    }
+
+    /**
      * 获取数据
      * @param null $where
      * @param bool $returnAsArray
@@ -586,6 +630,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder->update($this->getTableName(), $data);
         $results = $this->query($builder);
         if ($results){
+            foreach ($data as $columnKey => $columnValue){
+                $this->setAttr($columnKey, $columnValue);
+            }
             $this->originData = $this->data;
         }
 
