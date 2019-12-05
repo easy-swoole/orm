@@ -476,6 +476,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             DbManager::getInstance()->rollback();
             throw $e;
         } catch (\Throwable $e) {
+            DbManager::getInstance()->rollback();
             throw $e;
         }
 

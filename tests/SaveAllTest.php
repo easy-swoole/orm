@@ -9,6 +9,7 @@
 namespace EasySwoole\ORM\Tests;
 
 
+use EasySwoole\Mysqli\Exception\Exception;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
@@ -90,6 +91,37 @@ class SaveAllTest extends TestCase
         $this->assertEquals($res[0]['id'], $ids[0]);
         $this->assertEquals($res[0]['state'], 127);
         $this->assertIsInt($res[1]['id']);
+    }
+
+    /**
+     * @depends testSaveAll
+     */
+    public function testSaveAllNotReplace($ids)
+    {
+        $data = [
+            [
+                'id'   => $ids[0],
+                'name' => 'siam,你好',
+                'age'  => 21,
+                'addTime' => "error",
+                'state' => 127,
+            ],
+            [
+                'id'   => $ids[1],
+                'name' => 'siam,你好',
+                'age'  => 21,
+                'addTime' => "2019-11-22 20:19:16",
+                'state' => 127
+            ]
+        ];
+
+        try {
+            $res = TestUserListModel::create()->saveAll($data, FALSE);
+        } catch (Exception $e) {
+        } catch (\EasySwoole\ORM\Exception\Exception $e) {
+            $this->assertEquals($e->getMessage(), "SQLSTATE[23000] [1062] Duplicate entry '{$ids[0]}' for key 'PRIMARY'");
+        } catch (\Throwable $e) {
+        }
     }
 
 
