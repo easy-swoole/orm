@@ -115,6 +115,21 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->onQuery = $call;
         return $this;
     }
+
+    /**
+     * 调用事件
+     * @param $eventName
+     * @param array $param
+     * @return bool|mixed
+     */
+    protected function callEvent($eventName, ...$param)
+    {
+        if(method_exists(static::class, $eventName)){
+            return call_user_func([static::class, $eventName], $this, ...$param);
+        }
+        return true;
+    }
+
     /*  ==============    快速支持连贯操作    ==================   */
     /**
      * @param mixed ...$args
@@ -373,11 +388,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * @param null $where
      * @param bool $allow 是否允许没有主键删除
-     * @return int|null
+     * @return int|bool
      * @throws Exception
      * @throws \Throwable
      */
-    public function destroy($where = null, $allow = false): ?int
+    public function destroy($where = null, $allow = false)
     {
         $builder = new QueryBuilder();
         $primaryKey = $this->schemaInfo()->getPkFiledName();
@@ -400,7 +415,22 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         PreProcess::mappingWhere($builder, $where, $this);
         $this->preHandleQueryBuilder($builder);
         $builder->delete($this->getTableName(), $this->limit);
+
+        // beforeDelete事件
+        $beforeRes = $this->callEvent('onBeforeDelete');
+        if ($beforeRes === false){
+            $this->callEvent('onAfterDelete', false);
+            return false;
+        }
+
         $this->query($builder);
+        //  是否出错
+        if ($this->lastQueryResult()->getResult() === false) {
+            $this->callEvent('onAfterDelete', false);
+            return false;
+        }
+
+        $this->callEvent('onAfterDelete', $this->lastQueryResult()->getAffectedRows());
         return $this->lastQueryResult()->getAffectedRows();
     }
 
@@ -424,11 +454,20 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $rawArray = $this->preHandleTimeStamp($rawArray, 'insert');
         $builder->insert($this->getTableName(), $rawArray);
         $this->preHandleQueryBuilder($builder);
-        $this->query($builder);
-        if ($this->lastQueryResult()->getResult() === false) {
+        // beforeInsert事件
+        $beforeRes = $this->callEvent('onBeforeInsert');
+        if ($beforeRes === false){
+            $this->callEvent('onAfterInsert', false);
             return false;
         }
 
+        $this->query($builder);
+        if ($this->lastQueryResult()->getResult() === false) {
+            $this->callEvent('onAfterInsert', false);
+            return false;
+        }
+
+        $this->callEvent('onAfterInsert', true);
         if ($this->lastQueryResult()->getLastInsertId()) {
             $this->data[$primaryKey] = $this->lastQueryResult()->getLastInsertId();
             $this->originData = $this->data;
@@ -523,7 +562,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws Exception
      * @throws \Throwable
      */
-    public function all($where = null, bool $returnAsArray = false): array
+    public function all($where = null, bool $returnAsArray = false)
     {
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $this);
@@ -629,12 +668,24 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         // 合并时间戳字段
         $data = $this->preHandleTimeStamp($data, 'update');
         $builder->update($this->getTableName(), $data);
+
+        // beforeUpdate事件
+        $beforeRes = $this->callEvent('onBeforeUpdate');
+        if ($beforeRes === false){
+            $this->callEvent('onAfterUpdate', false);
+            return false;
+        }
+
         $results = $this->query($builder);
         if ($results){
             foreach ($data as $columnKey => $columnValue){
                 $this->setAttr($columnKey, $columnValue);
             }
             $this->originData = $this->data;
+
+            $this->callEvent('onAfterUpdate', true);
+        }else{
+            $this->callEvent('onAfterUpdate', false);
         }
 
         return $results ? true : false;
