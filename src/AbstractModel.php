@@ -72,6 +72,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     protected  $createTime = 'create_time';
     /** @var bool|string 更新时间字段名 false不设置 */
     protected  $updateTime = 'update_time';
+    /** @var array 预查询 */
+    private $with;
+    /** @var bool 是否为预查询 */
+    private $preHandleWith = false;
 
     /**
      * AbstractModel constructor.
@@ -207,6 +211,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function alias($alias)
     {
         $this->alias = $alias;
+        return $this;
+    }
+
+    public function with($with){
+        if (is_string($with)){
+            $this->with = explode(',', $with);
+        } else if (is_array($with)){
+            $this->with = $with;
+        }
         return $this;
     }
 
@@ -550,6 +563,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         $modelInstance->data($res[0], false);
         $modelInstance->lastQuery = $this->lastQuery();
+        // 预查询
+        if (!empty($this->with)){
+            $this->preHandleWith($modelInstance);
+        }
         return $modelInstance;
     }
 
@@ -580,6 +597,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 } else {
                     $resultSet[] = (new static)->data($result, false);
                 }
+            }
+            if (!$returnAsArray && !empty($this->with)){
+                $resultSet = $this->preHandleWith($resultSet);
             }
         }
         return $resultSet;
@@ -838,6 +858,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     protected function hasOne(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
     {
+        if ($this->preHandleWith === true){
+            return [$class, $where, $pk, $joinPk, $joinType];
+        }
+
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
         if (isset($this->_joinData[$fileName])) {
             return $this->_joinData[$fileName];
@@ -924,6 +948,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     protected function hasMany(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
     {
+        if ($this->preHandleWith === true){
+            return [$class, $where, $pk, $joinPk, $joinType];
+        }
+
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
         if (isset($this->_joinData[$fileName])) {
             return $this->_joinData[$fileName];
@@ -1169,6 +1197,30 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             default:
                 return date($type, $timestamp);
                 break;
+        }
+    }
+
+    // ================ 关联预查询  ======================
+    private function preHandleWith($data)
+    {
+        $this->preHandleWith = true;
+        // $data 只有一条 直接foreach调用 $data->$with();
+        if ($data instanceof AbstractModel){// get查询使用
+            foreach ($this->with as $with){
+                $data->$with();
+            }
+            return $data;
+        }else if (is_array($data)){// all查询使用
+            // $data 是多条，需要先提取主键数组，select 副表 where joinPk in (pk arrays);
+            // foreach 判断主键，设置值
+            foreach ($this->with as $with){
+                list($class, $where, $pk, $joinPk, $joinType) = $data[0]->$with();
+                var_dump($class);
+                var_dump($where);
+                var_dump($pk);
+                var_dump($joinPk);
+                var_dump($joinType);
+            }
         }
     }
 }
