@@ -859,7 +859,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     protected function hasOne(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
     {
         if ($this->preHandleWith === true){
-            return [$class, $where, $pk, $joinPk, $joinType];
+            return [$class, $where, $pk, $joinPk, $joinType, 'hasOne'];
         }
 
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
@@ -949,7 +949,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     protected function hasMany(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
     {
         if ($this->preHandleWith === true){
-            return [$class, $where, $pk, $joinPk, $joinType];
+            return [$class, $where, $pk, $joinPk, $joinType, 'hasMany'];
         }
 
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
@@ -1203,7 +1203,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     // ================ 关联预查询  ======================
     private function preHandleWith($data)
     {
-        $this->preHandleWith = true;
         // $data 只有一条 直接foreach调用 $data->$with();
         if ($data instanceof AbstractModel){// get查询使用
             foreach ($this->with as $with){
@@ -1214,13 +1213,40 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             // $data 是多条，需要先提取主键数组，select 副表 where joinPk in (pk arrays);
             // foreach 判断主键，设置值
             foreach ($this->with as $with){
-                list($class, $where, $pk, $joinPk, $joinType) = $data[0]->$with();
-                var_dump($class);
-                var_dump($where);
-                var_dump($pk);
-                var_dump($joinPk);
-                var_dump($joinType);
+                list($class, $where, $pk, $joinPk, $joinType, $withType) = $data[0]->$with();
+                if ($pk !== null && $joinPk !== null){
+                    $data[0]->preHandleWith = true;
+                    $pks = array_map(function ($v) use ($pk){
+                        return $v->$pk;
+                    }, $data);
+                    /** @var AbstractModel $insClass */
+                    $insClass = new $class;
+                    $insData  = $insClass->where($joinPk, $pks, 'IN')->all();
+                    $temData  = [];
+                    foreach ($insData as $insK => $insV){
+                        if ($withType=='hasOne'){
+                            $temData[$insV[$pk]] = $insV;
+                        }else if($withType=='hasMany'){
+                            $temData[$insV[$pk]][] = $insV;
+                        }
+                    }
+                    foreach ($data as $model){
+                        if (isset($temData[$model[$pk]])){
+                            $model[$with] = $temData[$model[$pk]];
+                        }
+                    }
+                    $data[0]->preHandleWith = false;
+                } else {
+                    // 闭包的只能一个一个调用
+                    foreach ($data as $model){
+                        foreach ($this->with as $with){
+                            $model->$with();
+                        }
+                    }
+                }
             }
+            return $data;
         }
+        return $data;
     }
 }

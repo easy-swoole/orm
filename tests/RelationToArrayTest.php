@@ -112,6 +112,29 @@ class RelationToArrayTest extends TestCase
         $this->assertInstanceOf(TestUserListModel::class, $hasMany[1]);
     }
 
+    public function testGetWith()
+    {
+        $test = TestRelationModel::create()->with(['user_list', 'has_many'])->get([
+            'name' => 'siam'
+        ]);
+        $this->assertNotEmpty($test['user_list']);
+        $this->assertInstanceOf(TestUserListModel::class, $test['user_list']);
+
+        $this->assertEquals(2, count($test['has_many']));
+        $this->assertInstanceOf(TestUserListModel::class, $test['has_many'][1]);
+    }
+
+    public function testAllWith()
+    {
+        $test = TestRelationModel::create()->with(['user_list', 'has_many'])->all();
+        $this->assertNotEmpty($test[0]['user_list']);
+        $this->assertInstanceOf(TestUserListModel::class, $test[0]['user_list']);
+
+        $this->assertEquals(2, count($test[0]['has_many']));
+        $this->assertInstanceOf(TestUserListModel::class, $test[0]['has_many'][1]);
+
+    }
+
     public function testDeleteAllHasMany()
     {
         $res = TestRelationModel::create()->destroy(null, true);
