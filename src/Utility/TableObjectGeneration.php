@@ -36,7 +36,7 @@ class TableObjectGeneration
     {
         $query = new QueryBuilder();
         $query->raw("show full columns from {$this->tableName}");
-        $data = $this->connection->query($query);
+        $data = $this->connection->defer()->query($query);
         $this->tableColumns = $data->getResult();
         if (!is_array($this->tableColumns)){
             throw new Exception("generationTable Error : ". $data->getLastError());

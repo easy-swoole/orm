@@ -87,7 +87,7 @@ class EventTest extends TestCase
             'age'  => 100
         ]);
 
-        $model->age = 333;
+        $model->age = 102;
         $res = $model->update();
         $this->assertTrue($res);
 
