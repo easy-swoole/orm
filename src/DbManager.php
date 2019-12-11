@@ -4,6 +4,7 @@ namespace EasySwoole\ORM;
 
 use EasySwoole\Component\Singleton;
 use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\Db\ClientInterface;
 use EasySwoole\ORM\Db\ConnectionInterface;
 use EasySwoole\ORM\Db\Result;
 use EasySwoole\ORM\Exception\Exception;
@@ -42,45 +43,80 @@ class DbManager
         return null;
     }
 
-    function query(QueryBuilder $builder,bool $raw = false,string $connectionName = 'default',float $timeout = null):Result
+    /**
+     * @param QueryBuilder $builder
+     * @param bool $raw
+     * @param string|ClientInterface $connection
+     * @param float|null $timeout
+     * @return Result
+     * @throws Exception
+     * @throws \Throwable
+     */
+    function query(QueryBuilder $builder, bool $raw = false, $connection = 'default', float $timeout = null):Result
     {
-        $start = microtime(true);
-        $con = $this->getConnection($connectionName);
-        if($con){
-            $ret = null;
-            try{
-                $con = $con->defer($timeout);
-                if(empty($con)){
-                    throw new PoolEmpty("connection : {$connectionName} is empty");
-                }
-                $ret = $con->query($builder,$raw);
-                if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
-                    $temp = new QueryBuilder();
-                    $temp->raw('SELECT FOUND_ROWS() as count');
-                    $count = $con->query($temp,true);
-                    if($this->onQuery){
-                        call_user_func($this->onQuery,$count,$temp,$start);
-                    }
-                    $ret->setTotalCount($count->getResult()[0]['count']);
-                }
-            }catch (\Throwable $exception){
-                throw $exception;
-            }finally{
-                if($this->onQuery){
-                    $temp = clone $builder;
-                    call_user_func($this->onQuery,$ret,$temp,$start);
-                }
+        if(is_string($connection)){
+            $conTemp = $this->getConnection($connection);
+            if(!$conTemp){
+                throw new Exception("connection : {$connection} not register");
             }
-            return $ret;
+            $client = $conTemp->defer($timeout);
+            if(empty($client)){
+                throw new PoolEmpty("connection : {$connection} is empty");
+            }
+        }else{
+            $client = $connection;
+        }
+
+        $start = microtime(true);
+        $ret = $client->query($builder,$raw);
+        if($this->onQuery){
+            $temp = clone $builder;
+            call_user_func($this->onQuery,$ret,$temp,$start);
+        }
+        if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
+            $temp = new QueryBuilder();
+            $temp->raw('SELECT FOUND_ROWS() as count');
+            $count = $client->query($temp,true);
+            if($this->onQuery){
+                call_user_func($this->onQuery,$count,$temp,$start,$client);
+            }
+            $ret->setTotalCount($count->getResult()[0]['count']);
+        }
+        return $ret;
+    }
+
+
+    function invoke(callable $call,string $connectionName = 'default',float $timeout = null)
+    {
+        $connection = $this->getConnection($connectionName);
+        if($connection){
+            $client = $connection->getClientPool()->getObj($timeout);
+            if($client){
+                try{
+                    call_user_func($call,$client);
+                }catch (\Throwable $exception){
+                    throw $exception;
+                }finally{
+                    $connection->getClientPool()->recycleObj($client);
+                }
+            }else{
+                throw new PoolEmpty("connection : {$connection} is empty");
+            }
         }else{
             throw new Exception("connection : {$connectionName} not register");
         }
     }
 
-    public function startTransaction($connectionNames = 'default'):bool
+    /**
+     * @param string|ClientInterface|array<string>|array<ClientInterface> $connections
+     * @return bool
+     * @throws Exception
+     * @throws \Throwable
+     */
+    public function startTransaction($connections = 'default'):bool
     {
-        if(!is_array($connectionNames)){
-            $connectionNames = [$connectionNames];
+        if(!is_array($connections)){
+            $connections = [$connections];
         }
         /*
          * 1、raw执行 start transaction
@@ -88,7 +124,7 @@ class DbManager
          * 3、若部分链接成功，则成功链接执行rollback
          */
         $cid = Coroutine::getCid();
-        foreach ($connectionNames as $name) {
+        foreach ($connections as $name) {
             $builder = new QueryBuilder();
             $builder->starTtransaction();
             $res = $this->query($builder,true,$name);

@@ -26,13 +26,11 @@ class Connection implements ConnectionInterface
         return $this->getPool()->defer($timeout);
     }
 
-    function invoke(callable $callable,float $timeout = null)
+    function getClientPool(): AbstractPool
     {
-        if($timeout === null){
-            $timeout = $this->config->getGetObjectTimeout();
-        }
-        return $this->getPool()->invoke($callable,$timeout);
+        return $this->getPool();
     }
+
 
     protected function getPool():MysqlPool
     {

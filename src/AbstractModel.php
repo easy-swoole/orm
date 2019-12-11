@@ -5,6 +5,7 @@ namespace EasySwoole\ORM;
 
 use ArrayAccess;
 use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\Db\ClientInterface;
 use EasySwoole\ORM\Db\Result;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\PreProcess;
@@ -65,6 +66,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $onQuery;
     /** @var string 临时表名 */
     private $tempTableName = null;
+    /**
+     * @var ClientInterface
+     */
+    private $client;
 
     /** @var bool|string 是否开启时间戳 */
     protected  $autoTimeStamp = false;
@@ -86,6 +91,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $this->data($data);
     }
+
+    public function setExecClient(?ClientInterface $client)
+    {
+        $this->client = $client;
+        return $this;
+    }
+
 
     /**
      * @param bool $isCache
@@ -650,6 +662,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return new static($data);
     }
 
+    public static function invoke(ClientInterface $client,array $data): AbstractModel
+    {
+        return (static::create($data))->setExecClient($client);
+    }
+
 
     /**
      * 更新
@@ -1061,7 +1078,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         try {
             $ret = null;
-            $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
+            if($this->client){
+                $ret = DbManager::getInstance()->query($builder, $raw, $this->client);
+            }else{
+                $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
+            }
             $builder->reset();
             $this->lastQueryResult = $ret;
             return $ret->getResult();
