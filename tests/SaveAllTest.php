@@ -61,9 +61,6 @@ class SaveAllTest extends TestCase
     }
 
     /**
-     * @throws \EasySwoole\Mysqli\Exception\Exception
-     * @throws \EasySwoole\ORM\Exception\Exception
-     * @throws \Throwable
      * @depends testSaveAll
      */
     public function testUpdateAll($ids)
@@ -85,12 +82,19 @@ class SaveAllTest extends TestCase
             ]
         ];
 
-        $res = TestUserListModel::create()->saveAll($data);
+        try {
+            $res = TestUserListModel::create()->saveAll($data);
 
-        $this->assertEquals(count($res), 2);
-        $this->assertEquals($res[0]['id'], $ids[0]);
-        $this->assertEquals($res[0]['state'], 127);
-        $this->assertIsInt($res[1]['id']);
+            $this->assertEquals(count($res), 2);
+            $this->assertEquals($res[0]['id'], $ids[0]);
+            $this->assertEquals($res[0]['state'], 127);
+            $this->assertIsInt($res[1]['id']);
+        } catch (Exception $e) {
+        } catch (\EasySwoole\ORM\Exception\Exception $e) {
+            $this->assertEquals($e->getMessage(), "SQLSTATE[22007] [1292] Incorrect datetime value: 'error' for column 'addTime'");
+        } catch (\Throwable $e) {
+        }
+
     }
 
     /**

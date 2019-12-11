@@ -46,7 +46,7 @@ class TableObjectGenerationTest extends TestCase
         $sql = "DROP TABLE  if exists {$this->tableName};";
         $query = new QueryBuilder();
         $query->raw($sql);
-        $data = $this->connection->query($query);
+        $data = $this->connection->defer()->query($query);
         $this->assertTrue($data->getResult());
 
         $tableDDL = new Table($this->tableName);
@@ -58,7 +58,7 @@ class TableObjectGenerationTest extends TestCase
         $tableDDL->setIfNotExists();
         $sql = $tableDDL->__createDDL();
         $query->raw($sql);
-        $data = $this->connection->query($query);
+        $data = $this->connection->defer()->query($query);
         $this->assertTrue($data->getResult());
     }
 

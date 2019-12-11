@@ -33,25 +33,26 @@ class ConnectionTest extends TestCase
     function testQuery(){
         $queryBuild = new QueryBuilder();
         $queryBuild->raw("show tables");
-        $data = $this->connection->query($queryBuild);
+        $data = $this->connection->defer()->query($queryBuild);
         $this->assertTrue($data instanceof Result);
     }
 
-    function testGetPool(){
-        /**
-         * @var $data MysqlPool
-         */
-        $data = $this->connection->getPool();
-        $this->assertTrue($data instanceof MysqlPool);
-        /**
-         * @var $mysqli Client
-         */
-        $mysqli = $data->getObj();
-        $queryBuild = new QueryBuilder();
-        $queryBuild->raw("show tables");
-
-        $data = $mysqli->rawQuery('show tables');
-        $this->assertIsArray($data);
-    }
+    // getPool变更为受保护 不再测试
+//    function testGetPool(){
+//        /**
+//         * @var $data MysqlPool
+//         */
+//        $data = $this->connection->getPool();
+//        $this->assertTrue($data instanceof MysqlPool);
+//        /**
+//         * @var $mysqli Client
+//         */
+//        $mysqli = $data->getObj();
+//        $queryBuild = new QueryBuilder();
+//        $queryBuild->raw("show tables");
+//
+//        $data = $mysqli->rawQuery('show tables');
+//        $this->assertIsArray($data);
+//    }
 
 }

@@ -66,7 +66,7 @@ class DbManagerTest extends TestCase
 
         $queryBuild = new QueryBuilder();
         $queryBuild->raw("show tables");
-        $data = $connection->query($queryBuild);
+        $data = $connection->defer()->query($queryBuild);
         $this->assertTrue($data instanceof Result);
     }
 
