@@ -7,8 +7,9 @@ namespace EasySwoole\ORM\Db;
 use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Exception\Exception;
+use EasySwoole\Pool\ObjectInterface;
 
-class MysqliClient extends Client implements ClientInterface
+class MysqliClient extends Client implements ClientInterface,ObjectInterface
 {
 
     public function query(QueryBuilder $builder, bool $rawQuery = false): Result
@@ -61,5 +62,20 @@ class MysqliClient extends Client implements ClientInterface
 
         }
         return $result;
+    }
+
+    function gc()
+    {
+        $this->close();
+    }
+
+    function objectRestore()
+    {
+        // TODO: Implement objectRestore() method.
+    }
+
+    function beforeUse(): ?bool
+    {
+        return $this->connect();
     }
 }
