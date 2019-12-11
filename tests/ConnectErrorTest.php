@@ -11,7 +11,7 @@ namespace EasySwoole\ORM\Tests;
 
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
-use EasySwoole\ORM\Db\Pool;
+use EasySwoole\ORM\Db\MysqlPool;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\Pool\Exception\PoolEmpty;
@@ -43,7 +43,7 @@ class ConnectErrorTest extends TestCase
     {
         /** @var Connection $connection */
         $connection = DbManager::getInstance()->getConnection('error');
-        $pool = new Pool($this->config);
+        $pool = new MysqlPool($this->config);
 
         try {
             $obj = $pool->defer(1);

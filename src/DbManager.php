@@ -7,6 +7,7 @@ use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\ConnectionInterface;
 use EasySwoole\ORM\Db\Result;
 use EasySwoole\ORM\Exception\Exception;
+use EasySwoole\Pool\Exception\PoolEmpty;
 use Swoole\Coroutine;
 
 /**
@@ -41,13 +42,17 @@ class DbManager
         return null;
     }
 
-    function query(QueryBuilder $builder,bool $raw = false,string $connectionName = 'default'):Result
+    function query(QueryBuilder $builder,bool $raw = false,string $connectionName = 'default',float $timeout = null):Result
     {
         $start = microtime(true);
         $con = $this->getConnection($connectionName);
         if($con){
             $ret = null;
             try{
+                $con = $con->defer($timeout);
+                if(empty($con)){
+                    throw new PoolEmpty("connection : {$connectionName} is empty");
+                }
                 $ret = $con->query($builder,$raw);
                 if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
                     $temp = new QueryBuilder();

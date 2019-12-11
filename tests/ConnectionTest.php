@@ -13,7 +13,7 @@ use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
-use EasySwoole\ORM\Db\Pool;
+use EasySwoole\ORM\Db\MysqlPool;
 use EasySwoole\ORM\Db\Result;
 use PHPUnit\Framework\TestCase;
 
@@ -39,10 +39,10 @@ class ConnectionTest extends TestCase
 
     function testGetPool(){
         /**
-         * @var $data Pool
+         * @var $data MysqlPool
          */
         $data = $this->connection->getPool();
-        $this->assertTrue($data instanceof Pool);
+        $this->assertTrue($data instanceof MysqlPool);
         /**
          * @var $mysqli Client
          */
