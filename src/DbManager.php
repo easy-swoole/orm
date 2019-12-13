@@ -115,6 +115,16 @@ class DbManager
      */
     public function startTransaction($connections = 'default'):bool
     {
+        if ($connections instanceof ClientInterface){
+            $builder = new QueryBuilder();
+            $builder->startTransaction();
+            $res = $this->query($builder, true,$connections);
+            if ($res->getResult() !== true){
+                return false;
+            }
+            return true;
+        }
+
         if(!is_array($connections)){
             $connections = [$connections];
         }
@@ -147,6 +157,16 @@ class DbManager
 
     public function commit($connectName = NULL):bool
     {
+        if ($connectName instanceof ClientInterface){
+            $builder = new QueryBuilder();
+            $builder->commit();
+            $res = $this->query($builder, true,$connectName);
+            if ($res->getResult() !== true){
+                return false;
+            }
+            return true;
+        }
+
         $cid = Coroutine::getCid();
         if(isset($this->transactionContext[$cid])){
             // 如果有指定
@@ -179,6 +199,16 @@ class DbManager
 
     public function rollback($connectName = NULL):bool
     {
+        if ($connectName instanceof ClientInterface){
+            $builder = new QueryBuilder();
+            $builder->rollback();
+            $res = $this->query($builder, true,$connectName);
+            if ($res->getResult() !== true){
+                return false;
+            }
+            return true;
+        }
+
         $cid = Coroutine::getCid();
         if(isset($this->transactionContext[$cid])){
             // 如果有指定
