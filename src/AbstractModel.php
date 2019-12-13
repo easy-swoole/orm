@@ -517,7 +517,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         // 开启事务
-        DbManager::getInstance()->startTransaction();
+        DbManager::getInstance()->startTransaction($this->connectionName);
         $result = [];
 
         try{
@@ -534,13 +534,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     $result[$key] = $model;
                 }
             }
-            DbManager::getInstance()->commit();
+            DbManager::getInstance()->commit($this->connectionName);
             return $result;
         } catch (\EasySwoole\Mysqli\Exception\Exception $e) {
-            DbManager::getInstance()->rollback();
+            DbManager::getInstance()->rollback($this->connectionName);
             throw $e;
         } catch (\Throwable $e) {
-            DbManager::getInstance()->rollback();
+            DbManager::getInstance()->rollback($this->connectionName);
             throw $e;
         }
 
