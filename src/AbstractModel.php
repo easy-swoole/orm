@@ -50,7 +50,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 当前的数据
      * @var array
      */
-    private $data;
+    private $data = [];
     /**
      * 附加数据
      * @var array
