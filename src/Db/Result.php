@@ -71,6 +71,62 @@ class Result
     }
 
     /**
+     * @return mixed
+     */
+    public function getResultOne()
+    {
+        return $this->result[0] ?? $this->result;
+    }
+
+    /**
+     * @param string $column
+     * @return mixed
+     */
+    public function getResultColumn(?string $column = null)
+    {
+        if (is_array($this->result)){
+            if (is_string($column) && isset($this->result[0][$column])) {
+                return array_column($this->result, $column);
+            }
+            return array_column($this->result, key($this->result[0]));
+        }
+
+        return $this->result;
+    }
+
+    /**
+     * @param string $column
+     * @return mixed
+     */
+    public function getResultScalar(?string $column = null)
+    {
+        $result = $this->getResultColumn($column);
+        if (is_array($result) && count($result) > 0) {
+            return reset($result);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param string $column
+     * @return mixed
+     */
+    public function getResultIndexBy(string $column)
+    {
+        if (is_array($this->result) &&
+            isset($this->result[0][$column])) {
+            $indexedModels = [];
+            foreach ($this->result as $model) {
+                $indexedModels[$model[$column]] = $model;
+            }
+            return $indexedModels;
+        }
+
+        return $this->result;
+    }
+
+    /**
      * @param mixed $result
      */
     public function setResult($result): void
