@@ -175,7 +175,7 @@ class DbManager
                 $builder->commit();
                 $res = $this->query($builder,true,$connectName);
                 if ($res->getResult() !== true){
-                    $this->rollback();
+                    $this->rollback($connectName);
                     return false;
                 }
                 $this->clearTransactionContext($connectName);
@@ -186,7 +186,7 @@ class DbManager
                 $builder->commit();
                 $res = $this->query($builder, true,$name);
                 if ($res->getResult() !== true){
-                    $this->rollback();
+                    $this->rollback($name);
                     return false;
                 }
             }
