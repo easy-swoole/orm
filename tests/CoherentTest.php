@@ -138,6 +138,44 @@ class CoherentTest extends TestCase
         $this->assertNotEmpty($groupDivField['sum(age)']);
     }
 
+    public function testColumn()
+    {
+        $res = TestUserListModel::create()->field('`name`, `age`')->order('age')->column();
+        $this->assertIsArray($res);
+        $this->assertTrue(count($res) > 0);
+        $this->assertTrue($res[0] === '仙士可');
+
+        $res = TestUserListModel::create()->field('`name`')->order('age')->column();
+        $this->assertIsArray($res);
+        $this->assertTrue(count($res) > 0);
+        $this->assertTrue($res[0] === '仙士可');
+
+        $res = TestUserListModel::create()->order('age')->column('name');
+        $this->assertIsArray($res);
+        $this->assertTrue(count($res) > 0);
+        $this->assertTrue($res[0] === '仙士可');
+    }
+
+    public function testScalar()
+    {
+        $res = TestUserListModel::create()->field('`name`, `age`')->order('age')->scalar();
+        $this->assertTrue($res === '仙士可');
+
+        $res = TestUserListModel::create()->field('`name`')->order('age')->scalar();
+        $this->assertTrue($res === '仙士可');
+
+        $res = TestUserListModel::create()->order('age')->scalar('name');
+        $this->assertTrue($res === '仙士可');
+    }
+
+    public function testIndexBy()
+    {
+        $res = TestUserListModel::create()->order('age')->indexBy('age');
+        $this->assertTrue(isset($res['100']['name']));
+        $this->assertTrue($res['100']['name'] === '仙士可');
+        $this->assertTrue($res['18']['name'] === 'Siam');
+    }
+
     public function testAlias()
     {
         $res = TestUserListModel::create()->alias('siam')->where(['siam.name' => '仙士可'])->all();

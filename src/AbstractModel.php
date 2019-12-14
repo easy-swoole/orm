@@ -652,6 +652,34 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->get($where, true);
     }
 
+    public function column(?string $column = null)
+    {
+        if (!is_null($column)) {
+            $this->fields = [$column];
+        }
+        $this->all();
+
+        return $this->lastQueryResult->getResultColumn($column);
+    }
+
+    public function scalar(?string $column = null)
+    {
+        if (!is_null($column)) {
+            $this->fields = [$column];
+        }
+        $this->limit = 1;
+        $this->all();
+
+        return $this->lastQueryResult->getResultScalar($column);
+    }
+
+    public function indexBy(string $column)
+    {
+        $this->all();
+
+        return $this->lastQueryResult->getResultIndexBy($column);
+    }
+
     /**
      * @param array $data
      * @return AbstractModel|$this
