@@ -557,9 +557,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function get($where = null, bool $returnAsArray = false)
     {
-        $modelInstance = static::create()->connection($this->connectionName);
         $builder = new QueryBuilder;
-        $builder = PreProcess::mappingWhere($builder, $where, $modelInstance);
+        $builder = PreProcess::mappingWhere($builder, $where, $this);
         $this->preHandleQueryBuilder($builder);
         $builder->getOne($this->parseTableName(), $this->fields);
         $res = $this->query($builder);
@@ -573,13 +572,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($returnAsArray){
             return $res[0];
         }
-        $modelInstance->data($res[0], false);
-        $modelInstance->lastQuery = $this->lastQuery();
+        $this->data($res[0], false);
+        $this->lastQuery = $this->lastQuery();
         // 预查询
         if (!empty($this->with)){
-            $this->preHandleWith($modelInstance);
+            $this->preHandleWith($this);
         }
-        return $modelInstance;
+        return $this;
     }
 
 
@@ -801,7 +800,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $return = [];
         foreach ($this->data as $key => $data){
-            $return[$key] = $this->getAttr($key);
+            if (method_exists($this, $key)){
+                $return[$key] = $this->data[$key];
+            }else{
+                $return[$key] = $this->getAttr($key);
+            }
         }
         foreach ($this->_joinData as $key => $data)
         {
