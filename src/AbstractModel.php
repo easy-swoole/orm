@@ -308,7 +308,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function count($field = null)
     {
-        return $this->queryPolymerization('count', $field);
+        return (int)$this->queryPolymerization('count', $field);
     }
 
     /**
