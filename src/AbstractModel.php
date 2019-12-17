@@ -713,6 +713,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             if (empty($data)) {
                 return true;
             }
+        }else{
+            foreach ($data as $columnKey => $columnValue){
+                $this->setAttr($columnKey, $columnValue);
+            }
+            $data = array_diff_assoc($this->data, $this->originData);
         }
         $builder = new QueryBuilder();
         if ($where) {
@@ -742,11 +747,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         $results = $this->query($builder);
         if ($results){
-            foreach ($data as $columnKey => $columnValue){
-                $this->setAttr($columnKey, $columnValue);
-            }
             $this->originData = $this->data;
-
             $this->callEvent('onAfterUpdate', true);
         }else{
             $this->callEvent('onAfterUpdate', false);
