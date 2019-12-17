@@ -717,6 +717,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             foreach ($data as $columnKey => $columnValue){
                 $this->setAttr($columnKey, $columnValue);
             }
+            $data = array_diff_assoc($this->data, $this->originData);
         }
         $builder = new QueryBuilder();
         if ($where) {
