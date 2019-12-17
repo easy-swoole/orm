@@ -680,6 +680,20 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * 直接返回某一行的某一列
+     * @param $column
+     * @return array|AbstractModel|null
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \Throwable
+     */
+    public function val($column)
+    {
+        $data = $this->findOne();
+        return $data[$column] ?: $data;
+    }
+
+    /**
      * @param array $data
      * @return AbstractModel|$this
      * @throws Exception

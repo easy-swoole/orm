@@ -55,6 +55,27 @@ class InvokeOrmTest  extends TestCase
         });
     }
 
+    public function testGetVal()
+    {
+        DbManager::getInstance()->invoke(function ($client){
+            $res = TestUserListGetterModel::invoke($client)->where([
+                'state' => 1,
+                'name'  => 'Siam',
+                'age'   => 18
+            ])->val('name');
+            $this->assertEquals($res, "Siam");
+        });
+
+        DbManager::getInstance()->invoke(function ($client){
+            $res = TestUserListGetterModel::invoke($client)->where([
+                'state' => 1,
+                'name'  => 'undefined',
+                'age'   => 18
+            ])->val('name');
+            $this->assertNull($res);
+        });
+    }
+
     public function testUpdate()
     {
         DbManager::getInstance()->invoke(function ($client){
