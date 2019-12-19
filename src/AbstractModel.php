@@ -20,7 +20,7 @@ use JsonSerializable;
  */
 abstract class AbstractModel implements ArrayAccess, JsonSerializable
 {
-
+    /** @var Result */
     private $lastQueryResult;
     private $lastQuery;
     /* 快速支持连贯操作 */
@@ -733,6 +733,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             $data = array_diff_assoc($this->data, $this->originData);
         }
+
+        if (empty($data)){
+            return true;
+        }
+
         $builder = new QueryBuilder();
         if ($where) {
             PreProcess::mappingWhere($builder, $where, $this);
