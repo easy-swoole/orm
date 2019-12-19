@@ -735,6 +735,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         if (empty($data)){
+            $this->originData = $this->data;
             return true;
         }
 
