@@ -71,27 +71,27 @@ class Result
     }
 
     /**
-     * @return mixed
+     * @return array
      */
-    public function getResultOne()
+    public function getResultOne(): ?array
     {
-        return $this->result[0] ?? $this->result;
+        return $this->result[0] ?? null;
     }
 
     /**
      * @param string $column
-     * @return mixed
+     * @return array
      */
-    public function getResultColumn(?string $column = null)
+    public function getResultColumn(?string $column = null): ?array
     {
-        if (is_array($this->result)){
+        if (is_array($this->result)) {
             if (is_string($column) && isset($this->result[0][$column])) {
                 return array_column($this->result, $column);
             }
             return array_column($this->result, key($this->result[0]));
         }
 
-        return $this->result;
+        return null;
     }
 
     /**
@@ -105,14 +105,14 @@ class Result
             return reset($result);
         }
 
-        return $result;
+        return null;
     }
 
     /**
      * @param string $column
-     * @return mixed
+     * @return array
      */
-    public function getResultIndexBy(string $column)
+    public function getResultIndexBy(string $column): ?array
     {
         if (is_array($this->result) &&
             isset($this->result[0][$column])) {
@@ -123,7 +123,7 @@ class Result
             return $indexedModels;
         }
 
-        return $this->result;
+        return null;
     }
 
     /**
