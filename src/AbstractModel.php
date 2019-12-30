@@ -651,7 +651,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->get($where, true);
     }
 
-    public function column(?string $column = null)
+    /**
+     * @param string $column
+     * @return array|null
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \Throwable
+     */
+    public function column(?string $column = null): ?array
     {
         if (!is_null($column)) {
             $this->fields = [$column];
@@ -661,6 +668,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->lastQueryResult->getResultColumn($column);
     }
 
+    /**
+     * @param string $column
+     * @return mixed
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \Throwable
+     */
     public function scalar(?string $column = null)
     {
         if (!is_null($column)) {
@@ -672,7 +686,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->lastQueryResult->getResultScalar($column);
     }
 
-    public function indexBy(string $column)
+    /**
+     * @param string $column
+     * @return array|null
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \Throwable
+     */
+    public function indexBy(string $column): ?array
     {
         $this->all();
 

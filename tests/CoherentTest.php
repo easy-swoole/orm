@@ -154,6 +154,12 @@ class CoherentTest extends TestCase
         $this->assertIsArray($res);
         $this->assertTrue(count($res) > 0);
         $this->assertTrue($res[0] === '仙士可');
+
+        $res = TestUserListModel::create()->field('`name`')->where(['name' => mt_rand()])->order('age')->column('name');
+        $this->assertTrue(is_null($res));
+
+        $res = TestUserListModel::create()->field('`name`')->order('age')->column('age');
+        $this->assertTrue(is_null($res));
     }
 
     public function testScalar()
@@ -166,6 +172,12 @@ class CoherentTest extends TestCase
 
         $res = TestUserListModel::create()->order('age')->scalar('name');
         $this->assertTrue($res === '仙士可');
+
+        $res = TestUserListModel::create()->field('`name`')->where(['name' => mt_rand()])->order('age')->scalar('name');
+        $this->assertTrue(is_null($res));
+
+        $res = TestUserListModel::create()->field('`name`')->order('age')->scalar('age');
+        $this->assertTrue(is_null($res));
     }
 
     public function testIndexBy()
@@ -174,6 +186,12 @@ class CoherentTest extends TestCase
         $this->assertTrue(isset($res['100']['name']));
         $this->assertTrue($res['100']['name'] === '仙士可');
         $this->assertTrue($res['18']['name'] === 'Siam');
+
+        $res = TestUserListModel::create()->field('`name`')->where(['name' => mt_rand()])->order('age')->indexBy('name');
+        $this->assertTrue(is_null($res));
+
+        $res = TestUserListModel::create()->field('`name`')->order('age')->indexBy('age');
+        $this->assertTrue(is_null($res));
     }
 
     public function testAlias()
