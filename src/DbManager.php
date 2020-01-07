@@ -93,7 +93,7 @@ class DbManager
             $client = $connection->getClientPool()->getObj($timeout);
             if($client){
                 try{
-                    call_user_func($call,$client);
+                    return call_user_func($call,$client);
                 }catch (\Throwable $exception){
                     throw $exception;
                 }finally{
