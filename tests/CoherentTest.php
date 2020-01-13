@@ -287,11 +287,11 @@ class CoherentTest extends TestCase
 
     public function testWhereDelete()
     {
-        // $res = TestUserListModel::create()->where([
-        //     'name' => 'Siam'
-        // ])->destroy();
-        //
-        // $this->assertEquals($res, true);
+        $res = TestUserListModel::create()->where([
+            'name' => 'Siam'
+        ])->destroy();
+
+        $this->assertEquals($res, true);
     }
 
     public function testTempTableName()
@@ -306,7 +306,7 @@ class CoherentTest extends TestCase
 
     public function testDeleteAll()
     {
-        // $res = TestUserListModel::create()->destroy(null, true);
-        // $this->assertIsInt($res);
+        $res = TestUserListModel::create()->destroy(null, true);
+        $this->assertIsInt($res);
     }
 }
