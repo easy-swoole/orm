@@ -9,6 +9,7 @@
 namespace EasySwoole\ORM\Tests;
 
 use EasySwoole\Mysqli\Exception\Exception;
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\AbstractModel;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
@@ -159,7 +160,9 @@ class CoherentTest extends TestCase
         $this->assertTrue(is_null($res));
 
         $res = TestUserListModel::create()->field('`name`')->order('age')->column('age');
-        $this->assertTrue(is_null($res));
+        $this->assertEquals(100, $res[0]);
+        $this->assertEquals(19, $res[1]);
+        $this->assertEquals(18, $res[2]);
     }
 
     public function testScalar()
@@ -177,7 +180,8 @@ class CoherentTest extends TestCase
         $this->assertTrue(is_null($res));
 
         $res = TestUserListModel::create()->field('`name`')->order('age')->scalar('age');
-        $this->assertTrue(is_null($res));
+
+        $this->assertEquals(100,$res);
     }
 
     public function testIndexBy()
@@ -255,6 +259,30 @@ class CoherentTest extends TestCase
             'name' => 'Siam'
         ], null, true);
         $this->assertEquals($res, true);
+    }
+
+    /**
+     * 测试issue inc报错 测试结果正常
+     * @throws Exception
+     * @throws \EasySwoole\ORM\Exception\Exception
+     * @throws \Throwable
+     */
+    public function testUpdateInc()
+    {
+        $res = TestUserListModel::create()->update([
+            'age' => QueryBuilder::inc(2),
+        ], [
+            'age' => 100
+        ]);
+        $this->assertEquals($res, true);
+
+        $user = TestUserListModel::create()->get([
+            'age' => 102
+        ]);
+        $user->age = QueryBuilder::inc(3);
+        $res = $user->update();
+        $this->assertEquals($res, true);
+        $this->assertEquals(1, $user->lastQueryResult->getAffectedRows());
     }
 
     public function testWhereDelete()

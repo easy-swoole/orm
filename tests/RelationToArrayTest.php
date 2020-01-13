@@ -34,7 +34,7 @@ class RelationToArrayTest extends TestCase
     public function testAdd()
     {
         $test_user_model = TestRelationModel::create();
-        $test_user_model->name = 'siam';
+        $test_user_model->name = 'siam_relation';
         $test_user_model->age = 21;
         $test_user_model->addTime = "2019-11-15 17:36:34";
         $test_user_model->state = 2;
@@ -51,7 +51,7 @@ class RelationToArrayTest extends TestCase
     public function testGet()
     {
         $test_user_model = TestRelationModel::create()->get([
-            'name' => 'siam'
+            'name' => 'siam_relation'
         ]);
         $relation =  $test_user_model->user_list();
         $this->assertInstanceOf(TestUserListModel::class, $relation);
@@ -64,7 +64,7 @@ class RelationToArrayTest extends TestCase
     public function testJson()
     {
         $test_user_model = TestRelationModel::create()->get([
-            'name' => 'siam'
+            'name' => 'siam_relation'
         ]);
         $relation =  $test_user_model->user_list();
         // echo json_encode($test_user_model);

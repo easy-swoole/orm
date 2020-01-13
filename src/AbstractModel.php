@@ -1303,7 +1303,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $data->$with();
             }
             return $data;
-        }else if (is_array($data)){// all查询使用
+        }else if (is_array($data && !empty($data))){// all查询使用
             // $data 是多条，需要先提取主键数组，select 副表 where joinPk in (pk arrays);
             // foreach 判断主键，设置值
             foreach ($this->with as $with){
