@@ -88,6 +88,9 @@ class Result
             if (is_string($column) && isset($this->result[0][$column])) {
                 return array_column($this->result, $column);
             }
+            if ($this->result[0] === null){
+                return null;
+            }
             return array_column($this->result, key($this->result[0]));
         }
 
