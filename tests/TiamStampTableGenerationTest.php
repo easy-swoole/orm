@@ -1,23 +1,23 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Tioncico
- * Date: 2019/10/22 0022
- * Time: 14:10
+ * User: Administrator
+ * Date: 2019/11/3 0003
+ * Time: 0:28
  */
 
 namespace EasySwoole\ORM\Tests;
 
 
+use PHPUnit\Framework\TestCase;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
-use PHPUnit\Framework\TestCase;
 
-class TableObjectGenerationTest extends TestCase
+class TiamStampTableGenerationTest extends TestCase
 {
     /**
      * @var $generation TableObjectGeneration
@@ -28,7 +28,7 @@ class TableObjectGenerationTest extends TestCase
      */
     protected $connection;
 
-    protected $tableName = 'test';
+    protected $tableName = 'tiamstamp_test';
 
 
     protected function setUp()
@@ -53,8 +53,10 @@ class TableObjectGenerationTest extends TestCase
         $tableDDL->colInt('id',11)->setIsPrimaryKey()->setIsAutoIncrement();
         $tableDDL->colVarChar('name',255);
         $tableDDL->colTinyInt('age',1);
-        $tableDDL->colDateTime('addTime');
-        $tableDDL->colTinyInt('state',1);
+        $tableDDL->colDateTime('create_time')->setIsNotNull(false);
+        $tableDDL->colDateTime('update_time')->setIsNotNull(false);
+        $tableDDL->colInt('create_at', 10)->setIsNotNull(false);
+        $tableDDL->colInt('update_at', 10)->setIsNotNull(false);
         $tableDDL->setIfNotExists();
         $sql = $tableDDL->__createDDL();
         $query->raw($sql);
@@ -67,5 +69,4 @@ class TableObjectGenerationTest extends TestCase
         $data = $this->generation->getTableColumnsInfo();
         $this->assertIsArray($data);
     }
-
 }

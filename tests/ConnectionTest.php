@@ -13,7 +13,7 @@ use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
-use EasySwoole\ORM\Db\Pool;
+use EasySwoole\ORM\Db\MysqlPool;
 use EasySwoole\ORM\Db\Result;
 use PHPUnit\Framework\TestCase;
 
@@ -33,25 +33,26 @@ class ConnectionTest extends TestCase
     function testQuery(){
         $queryBuild = new QueryBuilder();
         $queryBuild->raw("show tables");
-        $data = $this->connection->query($queryBuild);
+        $data = $this->connection->defer()->query($queryBuild);
         $this->assertTrue($data instanceof Result);
     }
 
-    function testGetPool(){
-        /**
-         * @var $data Pool
-         */
-        $data = $this->connection->getPool();
-        $this->assertTrue($data instanceof Pool);
-        /**
-         * @var $mysqli Client
-         */
-        $mysqli = $data->getObj();
-        $queryBuild = new QueryBuilder();
-        $queryBuild->raw("show tables");
-
-        $data = $mysqli->rawQuery('show tables');
-        $this->assertIsArray($data);
-    }
+    // getPool变更为受保护 不再测试
+//    function testGetPool(){
+//        /**
+//         * @var $data MysqlPool
+//         */
+//        $data = $this->connection->getPool();
+//        $this->assertTrue($data instanceof MysqlPool);
+//        /**
+//         * @var $mysqli Client
+//         */
+//        $mysqli = $data->getObj();
+//        $queryBuild = new QueryBuilder();
+//        $queryBuild->raw("show tables");
+//
+//        $data = $mysqli->rawQuery('show tables');
+//        $this->assertIsArray($data);
+//    }
 
 }

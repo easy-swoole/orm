@@ -4,9 +4,10 @@
 namespace EasySwoole\ORM\Db;
 
 
-use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\Pool\AbstractPool;
 
 interface ConnectionInterface
 {
-    public function query(QueryBuilder $builder,bool $rawQuery = false):Result;
+    function defer(float $timeout = null):?ClientInterface;
+    function getClientPool():AbstractPool;
 }

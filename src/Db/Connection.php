@@ -4,11 +4,7 @@
 namespace EasySwoole\ORM\Db;
 
 
-use EasySwoole\Mysqli\Client;
-use EasySwoole\Mysqli\QueryBuilder;
-use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\Pool\AbstractPool;
-use EasySwoole\Pool\Exception\PoolEmpty;
 
 class Connection implements ConnectionInterface
 {
@@ -22,53 +18,24 @@ class Connection implements ConnectionInterface
         $this->config = $config;
     }
 
-    public function query(QueryBuilder $builder,bool $rawQuery = false): Result
+    function defer(float $timeout = null): ?ClientInterface
     {
-        $result = new Result();
-        $client = $this->getClient();
-        $ret = null;
-        try{
-            if($rawQuery){
-                $ret = $client->rawQuery($builder->getLastQuery(),$this->config->getTimeout());
-            }else{
-                $stmt = $client->mysqlClient()->prepare($builder->getLastPrepareQuery(),$this->config->getTimeout());
-                if($stmt){
-                    $ret = $stmt->execute($builder->getLastBindParams(),$this->config->getTimeout());
-                }
-            }
-            $result->setResult($ret);
-            $result->setLastError($client->mysqlClient()->error);
-            $result->setLastErrorNo($client->mysqlClient()->errno);
-            $result->setLastInsertId($client->mysqlClient()->insert_id);
-            $result->setAffectedRows($client->mysqlClient()->affected_rows);
-        }catch (\Throwable $throwable){
-            throw $throwable;
-        }finally{
-            if($client->mysqlClient()->errno){
-                if(in_array($client->mysqlClient()->errno,[2006,2013])){
-                    $this->pool->unsetObj($client);
-                }
-                throw new Exception("{$client->mysqlClient()->error}");
-            }
+        if($timeout === null){
+            $timeout = $this->config->getGetObjectTimeout();
         }
-        return $result;
+        return $this->getPool()->defer($timeout);
     }
 
-    private function getClient():Client
+    function getClientPool(): AbstractPool
     {
-        $pool = $this->getPool();
-        $client = $pool->defer($this->config->getTimeout());
-        if($client){
-            return $client;
-        }else{
-            throw new PoolEmpty("pool empty for host {$this->config->getHost()}");
-        }
+        return $this->getPool();
     }
 
-    public function getPool():Pool
+
+    protected function getPool():MysqlPool
     {
         if(!$this->pool){
-            $this->pool = new Pool($this->config);
+            $this->pool = new MysqlPool($this->config);
         }
         return $this->pool;
     }

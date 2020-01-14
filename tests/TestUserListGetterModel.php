@@ -29,4 +29,9 @@ class TestUserListGetterModel extends AbstractModel
     {
         return 123;
     }
+
+    public function setAddTimeAttr()
+    {
+        return '2019-11-2 23:48:44';
+    }
 }

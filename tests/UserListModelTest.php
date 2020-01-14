@@ -55,7 +55,7 @@ class UserListModelTest extends TestCase
         $tableDDL->setIfNotExists();
         $sql = $tableDDL->__createDDL();
         $query->raw($sql);
-        $data = $this->connection->query($query);
+        $data = $this->connection->defer()->query($query);
         $this->assertTrue($data->getResult());
     }
 
