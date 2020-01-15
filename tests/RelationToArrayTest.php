@@ -41,7 +41,7 @@ class RelationToArrayTest extends TestCase
         $test_user_model->save();
 
         $user_list = TestUserListModel::create();
-        $user_list->name = 'siam';
+        $user_list->name = 'siam_relation';
         $user_list->age = 21;
         $user_list->addTime = "2019-11-15 17:37:20";
         $user_list->state=1;
