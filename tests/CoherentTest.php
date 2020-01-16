@@ -269,7 +269,8 @@ class CoherentTest extends TestCase
      */
     public function testUpdateInc()
     {
-        $res = TestUserListModel::create()->update([
+        $model = TestUserListModel::create();
+        $res   = $model->update([
             'age' => QueryBuilder::inc(2),
         ], [
             'age' => 100
@@ -279,6 +280,8 @@ class CoherentTest extends TestCase
         $user = TestUserListModel::create()->get([
             'age' => 102
         ]);
+        $this->assertInstanceOf(TestUserListModel::class, $user);
+
         $user->age = QueryBuilder::inc(3);
         $res = $user->update();
         $this->assertEquals($res, true);
