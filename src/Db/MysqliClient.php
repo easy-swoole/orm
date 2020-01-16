@@ -21,6 +21,7 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
         $ret = null;
         $errno = 0;
         $error = '';
+        $stmt = null;
         try{
             if($rawQuery){
                 $ret = $this->rawQuery($builder->getLastQuery(),$this->config->getTimeout());
@@ -45,7 +46,11 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
             $this->mysqlClient()->insert_id     = 0;
             $this->mysqlClient()->affected_rows = 0;
             //结果设置
-            $result->setResult($ret);
+            if (!$rawQuery && $ret && $this->config->isFetchMode()){
+                $result->setResult(new Cursor($stmt));
+            } else {
+                $result->setResult($ret);
+            }
             $result->setLastError($error);
             $result->setLastErrorNo($errno);
             $result->setLastInsertId($insert_id);

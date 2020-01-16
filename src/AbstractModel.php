@@ -7,6 +7,8 @@ use ArrayAccess;
 use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\ClientInterface;
+use EasySwoole\ORM\Db\Cursor;
+use EasySwoole\ORM\Db\CursorInterface;
 use EasySwoole\ORM\Db\Result;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\PreProcess;
@@ -589,7 +591,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 批量查询
      * @param null $where
      * @param bool $returnAsArray
-     * @return array|bool
+     * @return array|bool|Cursor
      * @throws Exception
      * @throws \Throwable
      */
@@ -603,6 +605,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $resultSet = [];
         if ($results === false){
             return false;
+        }
+        if ($results instanceof CursorInterface){
+            $results->setModelName(static::class);
+            $results->setReturnAsArray($returnAsArray);
+            return $results;
         }
         if (is_array($results)) {
             foreach ($results as $result) {
@@ -622,11 +629,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 批量查询 不映射对象  返回数组
      * @param null $where
-     * @return array
+     * @return array|bool|Cursor
      * @throws Exception
      * @throws \Throwable
      */
-    public function select($where = null):array
+    public function select($where = null)
     {
         return $this->all($where, true);
     }
