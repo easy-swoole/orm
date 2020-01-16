@@ -4,6 +4,7 @@
 namespace EasySwoole\ORM;
 
 use ArrayAccess;
+use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\ClientInterface;
 use EasySwoole\ORM\Db\Result;
@@ -572,13 +573,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($returnAsArray){
             return $res[0];
         }
-        $this->data($res[0], false);
-        $this->lastQuery = $this->lastQuery();
+        $model = new static();
+
+        $model->data($res[0], false);
+        $model->lastQuery = $model->lastQuery();
         // 预查询
-        if (!empty($this->with)){
-            $this->preHandleWith($this);
+        if (!empty($model->with)){
+            $model->preHandleWith($model);
         }
-        return $this;
+        return $model;
     }
 
 
@@ -725,9 +728,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * @param ClientInterface $client
+     * @param ClientInterface|Client $client
      * @param array $data
-     * @return AbstractModel
+     * @return AbstractModel|$this
      * @throws Exception
      */
     public static function invoke(ClientInterface $client,array $data = []): AbstractModel
@@ -748,18 +751,25 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function update(array $data = [], $where = null, $allow = false)
     {
-        if (empty($data)) {
-            // $data = $this->toArray();
-            $data = array_diff_assoc($this->data, $this->originData);
-            if (empty($data)) {
-                return true;
-            }
-        }else{
+        if (!empty($data)) {
             foreach ($data as $columnKey => $columnValue){
                 $this->setAttr($columnKey, $columnValue);
             }
-            $data = array_diff_assoc($this->data, $this->originData);
         }
+
+        $attachData = [];
+        // 遍历属性，把inc 和dec 的属性先处理
+        foreach ($this->data as $tem_key => $tem_data){
+            if (is_array($tem_data)){
+                if (isset($tem_data["[I]"])){
+                    $attachData[$tem_key] = $tem_data;
+                    unset($this->data[$tem_key]);
+                }
+            }
+        }
+
+        $data = array_diff_assoc($this->data, $this->originData);
+        $data = array_merge($data, $attachData);
 
         if (empty($data)){
             $this->originData = $this->data;
@@ -1324,9 +1334,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             // $data 是多条，需要先提取主键数组，select 副表 where joinPk in (pk arrays);
             // foreach 判断主键，设置值
             foreach ($this->with as $with){
+                $data[0]->preHandleWith = true;
                 list($class, $where, $pk, $joinPk, $joinType, $withType) = $data[0]->$with();
                 if ($pk !== null && $joinPk !== null){
-                    $data[0]->preHandleWith = true;
                     $pks = array_map(function ($v) use ($pk){
                         return $v->$pk;
                     }, $data);
@@ -1359,5 +1369,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             return $data;
         }
         return $data;
+    }
+
+
+    public static function defer(float $timeout = null)
+    {
+        try {
+            $model = new static();
+        } catch (Exception $e) {
+            return null;
+        }
+        $connectionName = $model->connectionName;
+
+        return DbManager::getInstance()->getConnection($connectionName)->defer($timeout);
     }
 }

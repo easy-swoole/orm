@@ -12,6 +12,9 @@ use EasySwoole\Pool\ObjectInterface;
 class MysqliClient extends Client implements ClientInterface,ObjectInterface
 {
 
+    protected $lastQuery;
+    protected $lastQueryResult;
+
     public function query(QueryBuilder $builder, bool $rawQuery = false): Result
     {
         $result = new Result();
@@ -47,6 +50,9 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
             $result->setLastErrorNo($errno);
             $result->setLastInsertId($insert_id);
             $result->setAffectedRows($affected_rows);
+
+            $this->lastQueryResult = $result;
+            $this->lastQuery       = $builder;
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{
@@ -78,4 +84,23 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
     {
         return $this->connect();
     }
+
+    /**
+     * 最后的sql构造
+     * @return mixed
+     */
+    public function lastQuery():? QueryBuilder
+    {
+        return $this->lastQuery;
+    }
+
+    /**
+     * 最后的查询结果
+     * @return mixed
+     */
+    public function lastQueryResult():? Result
+    {
+        return $this->lastQueryResult;
+    }
+
 }
