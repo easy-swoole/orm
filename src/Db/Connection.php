@@ -39,4 +39,12 @@ class Connection implements ConnectionInterface
         }
         return $this->pool;
     }
+
+    /**
+     * @return Config|null
+     */
+    public function getConfig():?Config
+    {
+        return $this->config;
+    }
 }

@@ -10,4 +10,5 @@ interface ConnectionInterface
 {
     function defer(float $timeout = null):?ClientInterface;
     function getClientPool():AbstractPool;
+    function getConfig():?Config;
 }
