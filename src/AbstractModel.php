@@ -703,7 +703,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 直接返回某一行的某一列
      * @param $column
-     * @return array|AbstractModel|null
+     * @return mixed|null
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
@@ -711,7 +711,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function val($column)
     {
         $data = $this->findOne();
-        return $data[$column] ?: $data;
+        return isset($data[$column]) ? $data[$column] : null;
     }
 
     /**
@@ -724,6 +724,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return new static($data);
     }
 
+    /**
+     * @param ClientInterface $client
+     * @param array $data
+     * @return AbstractModel
+     * @throws Exception
+     */
     public static function invoke(ClientInterface $client,array $data = []): AbstractModel
     {
         return (static::create($data))->setExecClient($client);
@@ -1224,7 +1230,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($field === null){
             $field = $this->schemaInfo()->getPkFiledName();
         }
-        $fields = "$type(`{$field}`)";
+        // 判断字段中是否带了表名，是否有`
+        if (strstr($field, '`') == false){
+            // 有表名
+            if (strstr($field, '.') !== false){
+                $temArray = explode(".", $field);
+                $field = "`{$temArray[0]}`.`{$temArray[1]}`";
+            }else{
+                $field = "`{$field}`";
+            }
+        }
+
+        $fields = "$type({$field})";
         $this->fields = $fields;
         $this->limit = 1;
         $res = $this->all(null, true);
