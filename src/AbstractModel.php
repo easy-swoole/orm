@@ -4,6 +4,7 @@
 namespace EasySwoole\ORM;
 
 use ArrayAccess;
+use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\ClientInterface;
 use EasySwoole\ORM\Db\Result;
@@ -572,13 +573,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($returnAsArray){
             return $res[0];
         }
-        $this->data($res[0], false);
-        $this->lastQuery = $this->lastQuery();
+        $model = new static();
+
+        $model->data($res[0], false);
+        $model->lastQuery = $model->lastQuery();
         // 预查询
-        if (!empty($this->with)){
-            $this->preHandleWith($this);
+        if (!empty($model->with)){
+            $model->preHandleWith($model);
         }
-        return $this;
+        return $model;
     }
 
 
@@ -725,9 +728,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * @param ClientInterface $client
+     * @param ClientInterface|Client $client
      * @param array $data
-     * @return AbstractModel
+     * @return AbstractModel|$this
      * @throws Exception
      */
     public static function invoke(ClientInterface $client,array $data = []): AbstractModel
@@ -1366,5 +1369,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             return $data;
         }
         return $data;
+    }
+
+
+    public static function defer(float $timeout = null)
+    {
+        try {
+            $model = new static();
+        } catch (Exception $e) {
+            return null;
+        }
+        $connectionName = $model->connectionName;
+
+        return DbManager::getInstance()->getConnection($connectionName)->defer($timeout);
     }
 }
