@@ -572,6 +572,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             return null;
         }
+        
+        if ($res instanceof CursorInterface){
+            $res->setModelName(static::class);
+            $res->setReturnAsArray($returnAsArray);
+            return $res;
+        }
+        
         if ($returnAsArray){
             return $res[0];
         }
