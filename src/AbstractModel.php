@@ -507,12 +507,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * @param $data
      * @param bool $replace
+     * @param bool $transaction 是否开启事务
      * @return array
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
-    public function saveAll($data, $replace = true)
+    public function saveAll($data, $replace = true, $transaction = true)
     {
         $pk = $this->schemaInfo()->getPkFiledName();
         if (empty($pk)) {
@@ -520,9 +521,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         // 开启事务
-        DbManager::getInstance()->startTransaction($this->connectionName);
-        $result = [];
+        if ($transaction){
+            DbManager::getInstance()->startTransaction($this->connectionName);
+        }
 
+        $result = [];
         try{
             foreach ($data as $key => $row){
                 // 如果有设置更新
@@ -537,13 +540,20 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     $result[$key] = $model;
                 }
             }
-            DbManager::getInstance()->commit($this->connectionName);
+            if($transaction){
+                DbManager::getInstance()->commit($this->connectionName);
+            }
             return $result;
         } catch (\EasySwoole\Mysqli\Exception\Exception $e) {
-            DbManager::getInstance()->rollback($this->connectionName);
+
+            if($transaction) {
+                DbManager::getInstance()->rollback($this->connectionName);
+            }
             throw $e;
         } catch (\Throwable $e) {
-            DbManager::getInstance()->rollback($this->connectionName);
+            if($transaction) {
+                DbManager::getInstance()->rollback($this->connectionName);
+            }
             throw $e;
         }
 
