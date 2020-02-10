@@ -520,9 +520,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             throw new Exception('saveAll() needs primaryKey for model ' . static::class);
         }
 
+        if ($this->tempConnectionName) {
+            $connectionName = $this->tempConnectionName;
+        } else {
+            $connectionName = $this->connectionName;
+        }
+
         // 开启事务
         if ($transaction){
-            DbManager::getInstance()->startTransaction($this->connectionName);
+            DbManager::getInstance()->startTransaction($connectionName);
         }
 
         $result = [];
@@ -530,29 +536,29 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             foreach ($data as $key => $row){
                 // 如果有设置更新
                 if ($replace && isset($row[$pk])){
-                    $model = static::create()->connection($this->connectionName)->get($row[$pk]);
+                    $model = static::create()->connection($connectionName)->get($row[$pk]);
                     unset($row[$pk]);
                     $model->update($row);
                     $result[$key] = $model;
                 }else{
-                    $model = static::create($row)->connection($this->connectionName);
+                    $model = static::create($row)->connection($connectionName);
                     $res = $model->save();
                     $result[$key] = $model;
                 }
             }
             if($transaction){
-                DbManager::getInstance()->commit($this->connectionName);
+                DbManager::getInstance()->commit($connectionName);
             }
             return $result;
         } catch (\EasySwoole\Mysqli\Exception\Exception $e) {
 
             if($transaction) {
-                DbManager::getInstance()->rollback($this->connectionName);
+                DbManager::getInstance()->rollback($connectionName);
             }
             throw $e;
         } catch (\Throwable $e) {
             if($transaction) {
-                DbManager::getInstance()->rollback($this->connectionName);
+                DbManager::getInstance()->rollback($connectionName);
             }
             throw $e;
         }
