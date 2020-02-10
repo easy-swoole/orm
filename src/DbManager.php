@@ -100,7 +100,7 @@ class DbManager
                     $connection->getClientPool()->recycleObj($client);
                 }
             }else{
-                throw new PoolEmpty("connection : {$connection} is empty");
+                throw new PoolEmpty("connection : {$connectionName} is empty");
             }
         }else{
             throw new Exception("connection : {$connectionName} not register");
