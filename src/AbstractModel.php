@@ -1271,7 +1271,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $temArray = explode(".", $field);
                 $field = "`{$temArray[0]}`.`{$temArray[1]}`";
             }else{
-                $field = "`{$field}`";
+                if(!is_numeric($field)){
+                    $field = "`{$field}`";
+                }
             }
         }
 
