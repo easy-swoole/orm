@@ -1378,14 +1378,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     $temData  = [];
                     foreach ($insData as $insK => $insV){
                         if ($withType=='hasOne'){
-                            $temData[$insV[$pk]] = $insV;
+                            $temData[$insV[$joinPk]] = $insV;
                         }else if($withType=='hasMany'){
-                            $temData[$insV[$pk]][] = $insV;
+                            $temData[$insV[$joinPk]][] = $insV;
                         }
                     }
                     foreach ($data as $model){
                         if (isset($temData[$model[$pk]])){
                             $model[$with] = $temData[$model[$pk]];
+                        }else{
+                            $model[$with] = null;
                         }
                     }
                     $data[0]->preHandleWith = false;
