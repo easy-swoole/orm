@@ -51,7 +51,7 @@ class CursorTest extends TestCase
 
     public function testQuery()
     {
-        $cursor = TestUserModel::create()->select();
+        $cursor = TestUserModel::create()->all();
         $this->assertInstanceOf(Cursor::class, $cursor);
     }
 
@@ -62,11 +62,5 @@ class CursorTest extends TestCase
         $this->assertInstanceOf(TestUserModel::class, $item);
     }
 
-    public function testCursorAsArray()
-    {
-        $cursor = TestUserModel::create()->select();
-        $item = $cursor->fetch();
-        $this->assertIsArray($item);
-    }
 
 }

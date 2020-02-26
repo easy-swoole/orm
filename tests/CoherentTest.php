@@ -120,12 +120,6 @@ class CoherentTest extends TestCase
         $this->assertEquals($order->age, 19);
     }
 
-    public function testSelect()
-    {
-        $groupDivField = TestUserListModel::create()->field('sum(age), `name`')->group('name')->select();
-        $this->assertNotEmpty($groupDivField[0]['sum(age)']);
-    }
-
     public function testJoinData()
     {
         $res = TestUserListModel::create()->field('sum(age) as siam, `name`')->group('name')->all();
@@ -135,10 +129,10 @@ class CoherentTest extends TestCase
 
     public function testFind()
     {
-        $groupDivField = TestUserListModel::create()->field('sum(age), `name`')->group('name')->findAll();
+        $groupDivField = TestUserListModel::create()->field('sum(age), `name`')->group('name')->all();
         $this->assertNotEmpty($groupDivField[0]['sum(age)']);
 
-        $groupDivField = TestUserListModel::create()->field('sum(age), `name`')->group('name')->findOne();
+        $groupDivField = TestUserListModel::create()->field('sum(age), `name`')->group('name')->get();
         $this->assertNotEmpty($groupDivField['sum(age)']);
     }
 

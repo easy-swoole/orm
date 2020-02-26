@@ -56,18 +56,6 @@ class ErrorTest extends TestCase
 
     }
 
-    public function testSave()
-    {
-        // insert 不存在的字段
-        try {
-            $model = TestUserModel::create();
-            $model->test = 123;
-            $res = $model->save(false, false);
-        } catch (Exception $e) {
-            $this->assertEquals("SQLSTATE[42S22] [1054] Unknown column 'test' in 'field list'", $e->getMessage());
-        } catch (\Throwable $e) {
-        }
-    }
 
     // 全部字段为null  id自增
     public function testSaveNull()
