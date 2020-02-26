@@ -674,15 +674,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * @param null $where
-     * @param bool$returnAsArray
      * @return array|AbstractModel|null
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
-    public function findOne($where = null,bool $returnAsArray = false)
+    public function findOne($where = null)
     {
-        return $this->get($where, $returnAsArray);
+        return $this->get($where, true);
     }
 
     /**
@@ -1379,16 +1378,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     $temData  = [];
                     foreach ($insData as $insK => $insV){
                         if ($withType=='hasOne'){
-                            $temData[$insV[$joinPk]] = $insV;
+                            $temData[$insV[$pk]] = $insV;
                         }else if($withType=='hasMany'){
-                            $temData[$insV[$joinPk]][] = $insV;
+                            $temData[$insV[$pk]][] = $insV;
                         }
                     }
                     foreach ($data as $model){
                         if (isset($temData[$model[$pk]])){
                             $model[$with] = $temData[$model[$pk]];
-                        }else{
-                            $model[$with] = null;
                         }
                     }
                     $data[0]->preHandleWith = false;
