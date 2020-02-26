@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 连贯操作之join
  * User: Siam
  * Date: 2019/10/28
  * Time: 10:10
@@ -13,6 +13,10 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
+use EasySwoole\ORM\Tests\models\TestUserModel;
 
 class CoherentJoinTest extends TestCase
 {

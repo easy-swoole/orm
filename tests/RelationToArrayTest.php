@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 关联查询、toArray
  * User: Siam
  * Date: 2019/11/15
  * Time: 17:32
@@ -12,6 +12,11 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
+use EasySwoole\ORM\Tests\models\TestRelationModel;
 
 class RelationToArrayTest extends TestCase
 {

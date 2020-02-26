@@ -1,7 +1,7 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: Administrator
+ * 连贯操作
+ * User: Siam
  * Date: 2019/10/23 0023
  * Time: 22:00
  */
@@ -15,6 +15,9 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
+
 class CoherentTest extends TestCase
 {
     /**

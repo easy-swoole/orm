@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 批量插入、更新
  * User: Siam
  * Date: 2019/12/5
  * Time: 17:22
@@ -14,6 +14,10 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
 
 class SaveAllTest extends TestCase
 {

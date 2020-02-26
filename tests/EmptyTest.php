@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 空属性字段
  * User: Administrator
  * Date: 2019/10/28 0028
  * Time: 18:52
@@ -12,6 +12,10 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
 
 class EmptyTest extends TestCase
 {

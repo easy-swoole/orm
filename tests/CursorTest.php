@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 游标模式
  * User: haoxu
  * Date: 2020-01-15
  * Time: 14:42
@@ -13,6 +13,10 @@ use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
 use EasySwoole\ORM\Db\Connection;
 use Swoole\Coroutine\MySQL\Statement;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserModel;
 
 class CursorTest extends TestCase
 {

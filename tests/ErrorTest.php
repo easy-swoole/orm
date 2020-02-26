@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 错误测试
  * User: Siam
  * Date: 2019/11/22
  * Time: 14:47
@@ -14,6 +14,9 @@ use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
 use PHPUnit\Framework\TestCase;
+
+
+use EasySwoole\ORM\Tests\models\TestUserModel;
 
 /**
  * Class ErrorTest

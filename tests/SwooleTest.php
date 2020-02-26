@@ -12,6 +12,16 @@ namespace EasySwoole\ORM\Tests;
 use PHPUnit\Framework\TestCase;
 use Swoole\Coroutine\MySQL;
 
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
+use EasySwoole\ORM\Tests\models\TestUserModel;
+use EasySwoole\ORM\Tests\models\TestTimeStampModel;
+use EasySwoole\ORM\Tests\models\TestFunctionFieldNameModel;
+use EasySwoole\ORM\Tests\models\TestRelationModel;
+use EasySwoole\ORM\Tests\models\TestUserEventModel;
+use EasySwoole\ORM\Tests\models\TestUserListGetterModel;
+
 class SwooleTest extends TestCase
 {
     /** @var MySQL */

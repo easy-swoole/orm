@@ -1,4 +1,7 @@
 <?php
+/**
+ *  ResultColumn  ResultIndexBy ResultScalar
+ */
 
 namespace EasySwoole\ORM\Tests;
 
