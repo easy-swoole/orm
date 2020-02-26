@@ -674,14 +674,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * @param null $where
+     * @param bool$returnAsArray
      * @return array|AbstractModel|null
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
-    public function findOne($where = null)
+    public function findOne($where = null,bool $returnAsArray = false)
     {
-        return $this->get($where, true);
+        return $this->get($where, $returnAsArray);
     }
 
     /**
