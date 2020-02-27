@@ -80,6 +80,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         return $this;
     }
+
+    public function page($page, $limit)
+    {
+        $this->limit(($page - 1) * $limit , $limit);
+        $this->withTotalCount();
+        return $this;
+    }
+
     /**
      * @param $fields
      * @return $this
