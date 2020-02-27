@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 表字段有ORM函数同名，测试取出数据（修复前getAttr有bug 会当成关联查询）
  * User: Siam
  * Date: 2019/12/16
  * Time: 15:27
@@ -10,6 +10,9 @@ namespace EasySwoole\ORM\Tests;
 
 
 use PHPUnit\Framework\TestCase;
+
+
+use EasySwoole\ORM\Tests\models\TestFunctionFieldNameModel;
 
 class FieldNameEQFunctionNameTest extends TestCase
 {

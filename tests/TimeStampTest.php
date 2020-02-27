@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 自动时间戳
  * User: Administrator
  * Date: 2019/11/3 0003
  * Time: 0:05
@@ -14,6 +14,9 @@ use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
 
+
+
+use EasySwoole\ORM\Tests\models\TestTimeStampModel;
 
 /**
  * Class TestUserModel

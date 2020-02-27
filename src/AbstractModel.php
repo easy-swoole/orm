@@ -464,20 +464,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * 保存 插入
-     * @param bool $notNul
-     * @param bool $strict
      * @throws Exception
      * @throws \Throwable
      * @return bool|int
      */
-    public function save($notNul = false, $strict = true)
+    public function save()
     {
         $builder = new QueryBuilder();
         $primaryKey = $this->schemaInfo()->getPkFiledName();
         if (empty($primaryKey)) {
             throw new Exception('save() needs primaryKey for model ' . static::class);
         }
-        $rawArray = $this->toArray($notNul, $strict);
+        $rawArray = $this->toArray();
         // 合并时间戳字段
         $rawArray = $this->preHandleTimeStamp($rawArray, 'insert');
         $builder->insert($this->getTableName(), $rawArray);
@@ -574,7 +572,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
-    public function get($where = null, bool $returnAsArray = false)
+    public function get($where = null)
     {
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $this);
@@ -591,13 +589,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         
         if ($res instanceof CursorInterface){
             $res->setModelName(static::class);
-            $res->setReturnAsArray($returnAsArray);
             return $res;
         }
-        
-        if ($returnAsArray){
-            return $res[0];
-        }
+
         $model = new static();
 
         $model->data($res[0], false);
@@ -618,7 +612,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws Exception
      * @throws \Throwable
      */
-    public function all($where = null, bool $returnAsArray = false)
+    public function all($where = null)
     {
         $builder = new QueryBuilder;
         $builder = PreProcess::mappingWhere($builder, $where, $this);
@@ -631,18 +625,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         if ($results instanceof CursorInterface){
             $results->setModelName(static::class);
-            $results->setReturnAsArray($returnAsArray);
             return $results;
         }
         if (is_array($results)) {
             foreach ($results as $result) {
-                if ($returnAsArray) {
-                    $resultSet[] = $result;
-                } else {
-                    $resultSet[] = (new static)->connection($this->connectionName)->data($result, false);
-                }
+                $resultSet[] = (new static)->connection($this->connectionName)->data($result, false);
             }
-            if (!$returnAsArray && !empty($this->with)){
+            if (!empty($this->with)){
                 $resultSet = $this->preHandleWith($resultSet);
             }
         }
@@ -650,45 +639,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * 批量查询 不映射对象  返回数组
-     * @param null $where
-     * @return array|bool|Cursor
-     * @throws Exception
-     * @throws \Throwable
-     */
-    public function select($where = null)
-    {
-        return $this->all($where, true);
-    }
-
-    /**
-     * @param null $where
-     * @return array
-     * @throws Exception
-     * @throws \Throwable
-     */
-    public function findAll($where = null):array
-    {
-        return $this->select($where);
-    }
-
-    /**
-     * @param null $where
-     * @return array|AbstractModel|null
-     * @throws Exception
-     * @throws \EasySwoole\Mysqli\Exception\Exception
-     * @throws \Throwable
-     */
-    public function findOne($where = null)
-    {
-        return $this->get($where, true);
-    }
-
-    /**
      * @param string $column
      * @return array|null
      * @throws Exception
-     * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
     public function column(?string $column = null): ?array
@@ -705,7 +658,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @param string $column
      * @return mixed
      * @throws Exception
-     * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
     public function scalar(?string $column = null)
@@ -723,7 +675,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @param string $column
      * @return array|null
      * @throws Exception
-     * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
     public function indexBy(string $column): ?array
@@ -743,8 +694,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function val($column)
     {
-        $data = $this->findOne();
-        return isset($data[$column]) ? $data[$column] : null;
+        $data = $this->get();
+        if (!$data) return $data;
+        $data = $data->getAttr($column);
+        if (!empty($data)) {
+            return $data;
+        } else {
+            return NULL;
+        }
     }
 
     /**
@@ -951,7 +908,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     public function __isset($name)
     {
-        return ($this->getAttr($name) !== null);
+        if (isset($this->data[$name])) return true;
+
+        // 是否是附加字段
+        if (isset($this->_joinData[$name])) return true;
+
+        $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $name ) ) ) . 'Attr';
+        if (method_exists($this, $method)) return true;
+
+        // 判断是否有关联查询
+        if (method_exists($this, $name)) return true;
+
+        return false;
     }
 
     /**
@@ -1286,10 +1254,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $fields = "$type({$field})";
         $this->fields = $fields;
         $this->limit = 1;
-        $res = $this->all(null, true);
-
-        if (isset($res[0][$fields])){
-            return $res[0][$fields];
+        $res = $this->all();
+        if (isset($res[0]->$fields)){
+            return $res[0]->$fields;
         }
 
         return null;

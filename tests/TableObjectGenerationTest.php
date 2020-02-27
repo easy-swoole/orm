@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 生成表
  * User: Tioncico
  * Date: 2019/10/22 0022
  * Time: 14:10

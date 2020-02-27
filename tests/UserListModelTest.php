@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * Model自定义表名测试
  * User: Tioncico
  * Date: 2019/10/22 0022
  * Time: 15:08
@@ -15,6 +15,16 @@ use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Utility\Schema\Table;
 use PHPUnit\Framework\TestCase;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
+use EasySwoole\ORM\Tests\models\TestUserModel;
+use EasySwoole\ORM\Tests\models\TestTimeStampModel;
+use EasySwoole\ORM\Tests\models\TestFunctionFieldNameModel;
+use EasySwoole\ORM\Tests\models\TestRelationModel;
+use EasySwoole\ORM\Tests\models\TestUserEventModel;
+use EasySwoole\ORM\Tests\models\TestUserListGetterModel;
 
 /**
  * Model自定义表名测试

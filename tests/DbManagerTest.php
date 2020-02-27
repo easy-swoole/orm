@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * DbManager 添加链接、onQuery回调等基础操作
  * User: Tioncico
  * Date: 2019/10/22 0022
  * Time: 10:51
@@ -79,12 +79,5 @@ class DbManagerTest extends TestCase
         $this->assertTrue($data instanceof Result);
 
     }
-
-//    function testTransaction()
-//    {
-//        DbManager::getInstance()->startTransaction();
-//        DbManager::getInstance()->commit();
-//        DbManager::getInstance()->rollback();
-//    }
 
 }

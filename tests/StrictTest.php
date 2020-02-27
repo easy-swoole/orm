@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 严格模式
  * User: haoxu
  * Date: 2019-10-30
  * Time: 18:07
@@ -13,6 +13,10 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
 
 class StrictTest extends TestCase
 {
@@ -54,4 +58,44 @@ class StrictTest extends TestCase
         $array = $testUserModel->toArray(false, false);
         $this->assertEquals($array['strict'], 'strict');
     }
+
+    // 插入过滤数据
+    public function testSaveFilter()
+    {
+        $model = TestUserListModel::create([
+            'state'   => 1,
+            'name'    => 'Siam',
+            'age'     => 18,
+            'addTime' => date('Y-m-d H:i:s'),
+            'strict'  => 'error',
+        ]);
+        $test = $model->save();
+        $this->assertIsInt($test);
+    }
+
+    // 更新过滤数据
+    public function testUpdateFilter()
+    {
+        $test = TestUserListModel::create()->get([
+            'state'   => 1,
+            'name'    => 'Siam',
+            'age'     => 18,
+            'addTime' => date('Y-m-d H:i:s'),
+        ]);
+
+        $res = $test->update([
+            'age'    => 19,
+            'strict' => 'error'
+        ]);
+
+        $this->assertTrue($res);
+        $this->assertEquals($test->age, 19);
+    }
+
+    public function testDeleteAll()
+    {
+        $res = TestUserListModel::create()->destroy(null, true);
+        $this->assertIsInt($res);
+    }
+
 }

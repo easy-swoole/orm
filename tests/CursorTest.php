@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 游标模式
  * User: haoxu
  * Date: 2020-01-15
  * Time: 14:42
@@ -13,6 +13,10 @@ use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
 use EasySwoole\ORM\Db\Connection;
 use Swoole\Coroutine\MySQL\Statement;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserModel;
 
 class CursorTest extends TestCase
 {
@@ -47,7 +51,7 @@ class CursorTest extends TestCase
 
     public function testQuery()
     {
-        $cursor = TestUserModel::create()->select();
+        $cursor = TestUserModel::create()->all();
         $this->assertInstanceOf(Cursor::class, $cursor);
     }
 
@@ -58,11 +62,5 @@ class CursorTest extends TestCase
         $this->assertInstanceOf(TestUserModel::class, $item);
     }
 
-    public function testCursorAsArray()
-    {
-        $cursor = TestUserModel::create()->select();
-        $item = $cursor->fetch();
-        $this->assertIsArray($item);
-    }
 
 }

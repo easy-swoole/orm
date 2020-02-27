@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 基本测试 ddl 等
  * User: Tioncico
  * Date: 2019/10/22 0022
  * Time: 15:08
@@ -16,6 +16,9 @@ use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Utility\Schema\Table;
 use PHPUnit\Framework\TestCase;
 
+
+
+use EasySwoole\ORM\Tests\models\TestUserModel;
 class ModelTest extends TestCase
 {
     /**

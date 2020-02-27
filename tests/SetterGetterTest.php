@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 获取器、设置器
  * User: Siam
  * Date: 2019/10/31
  * Time: 9:35
@@ -13,6 +13,10 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserListGetterModel;
 
 class SetterGetterTest extends TestCase
 {

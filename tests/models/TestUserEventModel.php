@@ -6,7 +6,7 @@
  * Time: 15:08
  */
 
-namespace EasySwoole\ORM\Tests;
+namespace EasySwoole\ORM\Tests\models;
 
 
 use EasySwoole\ORM\AbstractModel;

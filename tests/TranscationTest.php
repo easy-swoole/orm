@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 事务
  * User: Administrator
  * Date: 2020/2/12 0012
  * Time: 22:32
@@ -13,6 +13,16 @@ use PHPUnit\Framework\TestCase;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
+
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
+use EasySwoole\ORM\Tests\models\TestUserModel;
+use EasySwoole\ORM\Tests\models\TestTimeStampModel;
+use EasySwoole\ORM\Tests\models\TestFunctionFieldNameModel;
+use EasySwoole\ORM\Tests\models\TestRelationModel;
+use EasySwoole\ORM\Tests\models\TestUserEventModel;
+use EasySwoole\ORM\Tests\models\TestUserListGetterModel;
 
 class TranscationTest extends TestCase
 {

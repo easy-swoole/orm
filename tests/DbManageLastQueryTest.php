@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * DbManager获取Query结果
  * User: Siam
  * Date: 2020/1/16
  * Time: 10:33
@@ -19,6 +19,9 @@ use EasySwoole\ORM\Db\Result;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
 
+
+
+use EasySwoole\ORM\Tests\models\TestUserListModel;
 
 class DbManageLastQueryTest  extends TestCase
 {

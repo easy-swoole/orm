@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 回调事件测试
  * User: Siam
  * Date: 2019/12/10
  * Time: 9:42
@@ -15,6 +15,9 @@ use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
 use PHPUnit\Framework\TestCase;
+
+
+use EasySwoole\ORM\Tests\models\TestUserEventModel;
 
 /**
  * Class ErrorTest

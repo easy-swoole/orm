@@ -15,8 +15,6 @@ interface CursorInterface
 {
     public function __construct(Statement $statement);
 
-    public function setReturnAsArray(bool $returnAsArray);
-
     public function setModelName(string $modelName);
 
     public function fetch();

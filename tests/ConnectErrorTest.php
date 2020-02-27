@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * 连接错误
  * User: Administrator
  * Date: 2019/11/16 0016
  * Time: 10:05
@@ -16,6 +16,8 @@ use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\Pool\Exception\PoolEmpty;
 use PHPUnit\Framework\TestCase;
+
+
 
 class ConnectErrorTest extends TestCase
 {

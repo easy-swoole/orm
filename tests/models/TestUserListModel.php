@@ -6,7 +6,7 @@
  * Time: 15:08
  */
 
-namespace EasySwoole\ORM\Tests;
+namespace EasySwoole\ORM\Tests\models;
 
 
 use EasySwoole\ORM\AbstractModel;
@@ -21,17 +21,8 @@ use EasySwoole\Utility\Str;
  * @property $addTime
  * @property $state
  */
-class TestUserListGetterModel extends AbstractModel
+class TestUserListModel extends AbstractModel
 {
     protected $tableName='user_test_list';
 
-    public function getAddTimeAttr()
-    {
-        return 123;
-    }
-
-    public function setAddTimeAttr()
-    {
-        return '2019-11-2 23:48:44';
-    }
 }
