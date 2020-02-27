@@ -566,7 +566,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 获取数据
      * @param null $where
-     * @param bool $returnAsArray
      * @return $this|null|array|bool
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
