@@ -63,7 +63,7 @@ class RelationToArrayTest extends TestCase
 
         $toArray = $test_user_model->toArray(false, false);
         $this->assertNotEmpty($toArray['user_list']);
-        $this->assertInstanceOf(TestUserListModel::class, $toArray['user_list']);
+        $this->assertIsArray($toArray['user_list']);
     }
 
     public function testJson()

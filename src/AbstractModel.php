@@ -11,9 +11,14 @@ use EasySwoole\ORM\Db\Cursor;
 use EasySwoole\ORM\Db\CursorInterface;
 use EasySwoole\ORM\Db\Result;
 use EasySwoole\ORM\Exception\Exception;
+use EasySwoole\ORM\Relations\BelongsToMany;
+use EasySwoole\ORM\Relations\HasMany;
+use EasySwoole\ORM\Relations\HasOne;
+use EasySwoole\ORM\Utility\FieldHandle;
 use EasySwoole\ORM\Utility\PreProcess;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
+use EasySwoole\ORM\Utility\TimeStampHandle;
 use JsonSerializable;
 
 /**
@@ -39,41 +44,22 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     protected $tableName = '';
     /** @var Table */
     private static $schemaInfoList;
-    /**
-     * 当前连接驱动类的名称
-     * 继承后可以覆盖该成员以指定默认的驱动类
-     * @var string
-     */
+    /** @var string 连接池名称 */
     protected $connectionName = 'default';
-    /*
-     * 临时设定的链接
-     */
+    /** @var null|string 临时连接名 */
     private $tempConnectionName = null;
-    /**
-     * 当前的数据
-     * @var array
-     */
+    /** @var array 当前的数据 */
     private $data = [];
-    /**
-     * 附加数据
-     * @var array
-     */
+    /** @var array 附加数据 */
     private $_joinData = [];
-    /**
-     * 模型的原始数据
-     * 未应用修改器和获取器之前的原始数据
-     * @var array
-     */
+    /** @var array 未应用修改器和获取器之前的原始数据 */
     private $originData;
     /* 回调事件 */
     private $onQuery;
     /** @var string 临时表名 */
     private $tempTableName = null;
-    /**
-     * @var ClientInterface
-     */
+    /**@var ClientInterface */
     private $client;
-
     /** @var bool|string 是否开启时间戳 */
     protected  $autoTimeStamp = false;
     /** @var bool|string 创建时间字段名 false不设置 */
@@ -95,14 +81,19 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->data($data);
     }
 
+    /**
+     * 设置执行client
+     * @param ClientInterface|null $client
+     * @return $this
+     */
     public function setExecClient(?ClientInterface $client)
     {
         $this->client = $client;
         return $this;
     }
 
-
     /**
+     * 表结构信息
      * @param bool $isCache
      * @return Table
      * @throws Exception
@@ -223,12 +214,22 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
+    /**
+     * 别名设置
+     * @param $alias
+     * @return $this
+     */
     public function alias($alias)
     {
         $this->alias = $alias;
         return $this;
     }
 
+    /**
+     * 预查询
+     * @param $with
+     * @return $this
+     */
     public function with($with){
         if (is_string($with)){
             $this->with = explode(',', $with);
@@ -252,6 +253,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * 设置表名(一般用于分表)
      * @param string $name
      * @param bool $is_temp
      * @return $this
@@ -346,6 +348,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->lastQuery;
     }
 
+    /**
+     * 连接名设置
+     * @param string $name
+     * @param bool $isTemp
+     * @return AbstractModel
+     */
     function connection(string $name, bool $isTemp = false): AbstractModel
     {
         if ($isTemp) {
@@ -356,6 +364,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
+    /**
+     * 获取器
+     * @param $attrName
+     * @return mixed|null
+     */
     public function getAttr($attrName)
     {
         $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
@@ -374,6 +387,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * 设置器
      * @param $attrName
      * @param $attrValue
      * @param bool $setter
@@ -395,22 +409,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $this->_joinData[$attrName] = $attrValue;
             return false;
         }
-    }
-
-    /**
-     * 数据赋值
-     * @param array $data
-     * @param bool $setter 是否调用setter
-     * @return $this
-     * @throws Exception
-     */
-    public function data(array $data, $setter = true)
-    {
-        foreach ($data as $key => $value) {
-            $this->setAttr($key, $value, $setter);
-        }
-        $this->originData = $this->data;
-        return $this;
     }
 
     /**
@@ -477,7 +475,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         $rawArray = $this->toArray();
         // 合并时间戳字段
-        $rawArray = $this->preHandleTimeStamp($rawArray, 'insert');
+        $rawArray = TimeStampHandle::preHandleTimeStamp($this, $rawArray, 'insert');
         $builder->insert($this->getTableName(), $rawArray);
         $this->preHandleQueryBuilder($builder);
         // beforeInsert事件
@@ -540,7 +538,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     $result[$key] = $model;
                 }else{
                     $model = static::create($row)->connection($connectionName);
-                    $res = $model->save();
+                    $model->save();
                     $result[$key] = $model;
                 }
             }
@@ -549,7 +547,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             return $result;
         } catch (\EasySwoole\Mysqli\Exception\Exception $e) {
-
             if($transaction) {
                 DbManager::getInstance()->rollback($connectionName);
             }
@@ -566,7 +563,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 获取数据
      * @param null $where
-     * @param bool $returnAsArray
      * @return $this|null|array|bool
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
@@ -607,7 +603,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 批量查询
      * @param null $where
-     * @param bool $returnAsArray
      * @return array|bool|Cursor
      * @throws Exception
      * @throws \Throwable
@@ -696,6 +691,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $data = $this->get();
         if (!$data) return $data;
+
         $data = $data->getAttr($column);
         if (!empty($data)) {
             return $data;
@@ -703,28 +699,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             return NULL;
         }
     }
-
-    /**
-     * @param array $data
-     * @return AbstractModel|$this
-     * @throws Exception
-     */
-    public static function create(array $data = []): AbstractModel
-    {
-        return new static($data);
-    }
-
-    /**
-     * @param ClientInterface|Client $client
-     * @param array $data
-     * @return AbstractModel|$this
-     * @throws Exception
-     */
-    public static function invoke(ClientInterface $client,array $data = []): AbstractModel
-    {
-        return (static::create($data))->setExecClient($client);
-    }
-
 
     /**
      * 更新
@@ -779,7 +753,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         $this->preHandleQueryBuilder($builder);
         // 合并时间戳字段
-        $data = $this->preHandleTimeStamp($data, 'update');
+        $data = TimeStampHandle::preHandleTimeStamp($this, $data, 'update');
         $builder->update($this->getTableName(), $data);
 
         // beforeUpdate事件
@@ -799,6 +773,352 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         return $results ? true : false;
     }
+
+
+    // ================ 关联部分开始  ======================
+
+    /**
+     * 一对一关联
+     * @param string        $class
+     * @param callable|null $where
+     * @param null          $pk
+     * @param null          $joinPk
+     * @param string        $joinType
+     * @return mixed|null
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    protected function hasOne(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
+    {
+        if ($this->preHandleWith === true){
+            return [$class, $where, $pk, $joinPk, $joinType, 'hasOne'];
+        }
+
+        $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
+        if (isset($this->_joinData[$fileName])) {
+            return $this->_joinData[$fileName];
+        }
+        $result = (new HasOne($this, $class))->result($where, $pk, $joinPk, $joinType);
+        $this->_joinData[$fileName] = $result;
+        return $result;
+    }
+
+    /**
+     * 一对多关联
+     * @param string        $class
+     * @param callable|null $where
+     * @param null          $pk
+     * @param null          $joinPk
+     * @param string        $joinType
+     * @return mixed|null
+     * @throws
+     */
+    protected function hasMany(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
+    {
+        if ($this->preHandleWith === true){
+            return [$class, $where, $pk, $joinPk, $joinType, 'hasMany'];
+        }
+        $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
+        if (isset($this->_joinData[$fileName])) {
+            return $this->_joinData[$fileName];
+        }
+        $result = (new HasMany($this, $class))->result($where, $pk, $joinPk, $joinType);
+        $this->_joinData[$fileName] = $result;
+        return $result;
+    }
+
+    /**
+     * 多对多关联
+     * @param string $class
+     * @param $middleTableName
+     * @param null $pk
+     * @param null $childPk
+     * @return array|bool|Cursor|mixed|null
+     * @throws Exception
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    protected function belongsToMany(string $class, $middleTableName, $pk = null, $childPk = null)
+    {
+        if ($this->preHandleWith === true){
+            return [$class, $middleTableName, 'belongsToMany'];
+        }
+        $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
+        if (isset($this->_joinData[$fileName])) {
+            return $this->_joinData[$fileName];
+        }
+        $result = (new BelongsToMany($this, $class, $middleTableName, $pk, $childPk))->result();
+        $this->_joinData[$fileName] = $result;
+        return $result;
+    }
+
+    /**
+     * 关联预查询
+     * @param $data
+     * @return mixed
+     * @throws Exception
+     * @throws \Throwable
+     */
+    private function preHandleWith($data)
+    {
+        // $data 只有一条 直接foreach调用 $data->$with();
+        if ($data instanceof AbstractModel){// get查询使用
+            foreach ($this->with as $with){
+                $data->$with();
+            }
+            return $data;
+        }else if (is_array($data) && !empty($data)){// all查询使用
+            // $data 是多条，需要先提取主键数组，select 副表 where joinPk in (pk arrays);
+            // foreach 判断主键，设置值
+            foreach ($this->with as $with){
+                $data[0]->preHandleWith = true;
+                list($class, $where, $pk, $joinPk, $joinType, $withType) = $data[0]->$with();
+                if ($pk !== null && $joinPk !== null){
+                    $pks = array_map(function ($v) use ($pk){
+                        return $v->$pk;
+                    }, $data);
+                    /** @var AbstractModel $insClass */
+                    $insClass = new $class;
+                    $insData  = $insClass->where($joinPk, $pks, 'IN')->all();
+                    $temData  = [];
+                    foreach ($insData as $insK => $insV){
+                        if ($withType=='hasOne'){
+                            $temData[$insV[$pk]] = $insV;
+                        }else if($withType=='hasMany'){
+                            $temData[$insV[$pk]][] = $insV;
+                        }
+                    }
+                    foreach ($data as $model){
+                        if (isset($temData[$model[$pk]])){
+                            $model[$with] = $temData[$model[$pk]];
+                        }
+                    }
+                    $data[0]->preHandleWith = false;
+                } else {
+                    // 闭包的只能一个一个调用
+                    foreach ($data as $model){
+                        foreach ($this->with as $with){
+                            $model->$with();
+                        }
+                    }
+                }
+            }
+            return $data;
+        }
+        return $data;
+    }
+
+    // ================ 关联部分结束  ======================
+
+    // ================ Model内部底层支持开始  ======================
+
+    /**
+     * 实例化Model
+     * @param array $data
+     * @return AbstractModel|$this
+     * @throws Exception
+     */
+    public static function create(array $data = []): AbstractModel
+    {
+        return new static($data);
+    }
+
+    /**
+     * 数据赋值
+     * @param array $data
+     * @param bool $setter 是否调用setter
+     * @return $this
+     * @throws Exception
+     */
+    public function data(array $data, $setter = true)
+    {
+        foreach ($data as $key => $value) {
+            $this->setAttr($key, $value, $setter);
+        }
+        $this->originData = $this->data;
+        return $this;
+    }
+
+    /**
+     * 类属性(连贯操作数据)清除
+     */
+    private function reset()
+    {
+        $this->tempConnectionName = null;
+        $this->fields = "*";
+        $this->limit  = null;
+        $this->withTotalCount = false;
+        $this->order  = null;
+        $this->where  = [];
+        $this->join   = null;
+        $this->group  = null;
+        $this->alias  = null;
+        $this->tempTableName = null;
+    }
+
+    /**
+     * 执行QueryBuilder
+     * @param QueryBuilder $builder
+     * @param bool $raw
+     * @return mixed
+     * @throws \Throwable
+     */
+    public function query(QueryBuilder $builder, bool $raw = false)
+    {
+        $start = microtime(true);
+        $this->lastQuery = clone $builder;
+        if ($this->tempConnectionName) {
+            $connectionName = $this->tempConnectionName;
+        } else {
+            $connectionName = $this->connectionName;
+        }
+        try {
+            $ret = null;
+            if($this->client){
+                $ret = DbManager::getInstance()->query($builder, $raw, $this->client);
+            }else{
+                $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
+            }
+            $builder->reset();
+            $this->lastQueryResult = $ret;
+            return $ret->getResult();
+        } catch (\Throwable $throwable) {
+            throw $throwable;
+        } finally {
+            $this->reset();
+            if ($this->onQuery) {
+                $temp = clone $builder;
+                call_user_func($this->onQuery, $ret, $temp, $start);
+            }
+        }
+    }
+
+    /**
+     * 连贯操作预处理
+     * @param QueryBuilder $builder
+     * @throws Exception
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     */
+    public function preHandleQueryBuilder(QueryBuilder $builder)
+    {
+        // 快速连贯操作
+        if ($this->withTotalCount) {
+            $builder->withTotalCount();
+        }
+        if ($this->order && is_array($this->order)) {
+            foreach ($this->order as $order){
+                $builder->orderBy(...$order);
+            }
+        }
+        if ($this->where) {
+            $whereModel = new static();
+            foreach ($this->where as $whereOne){
+                if (is_array($whereOne[0]) || is_int($whereOne[0])){
+                    $builder = PreProcess::mappingWhere($builder, $whereOne[0], $whereModel);
+                }else{
+                    $builder->where(...$whereOne);
+                }
+            }
+        }
+        if($this->group){
+            $builder->groupBy($this->group);
+        }
+        if($this->join){
+            foreach ($this->join as $joinOne) {
+                $builder->join($joinOne[0], $joinOne[1], $joinOne[2]);
+            }
+        }
+        // 如果在闭包里设置了属性，并且Model没设置，则覆盖Model里的
+        if ( $this->fields == '*' ){
+            $this->fields = implode(', ', $builder->getField());
+        }
+
+    }
+
+    /**
+     * 快捷查询 统一执行
+     * @param $type
+     * @param null $field
+     * @return null|mixed
+     * @throws Exception
+     * @throws \Throwable
+     */
+    private function queryPolymerization($type, $field = null)
+    {
+        if ($field === null){
+            $field = $this->schemaInfo()->getPkFiledName();
+        }
+        // 判断字段中是否带了表名，是否有`
+        if (strstr($field, '`') == false){
+            // 有表名
+            if (strstr($field, '.') !== false){
+                $temArray = explode(".", $field);
+                $field = "`{$temArray[0]}`.`{$temArray[1]}`";
+            }else{
+                if(!is_numeric($field)){
+                    $field = "`{$field}`";
+                }
+            }
+        }
+
+        $fields = "$type({$field})";
+        $this->fields = $fields;
+        $this->limit = 1;
+        $res = $this->all();
+        if (isset($res[0]->$fields)){
+            return $res[0]->$fields;
+        }
+
+        return null;
+    }
+
+    /**
+     * 取出链接
+     * @param float|NULL $timeout
+     * @return ClientInterface|null
+     */
+    public static function defer(float $timeout = null)
+    {
+        try {
+            $model = new static();
+        } catch (Exception $e) {
+            return null;
+        }
+        $connectionName = $model->connectionName;
+
+        return DbManager::getInstance()->getConnection($connectionName)->defer($timeout);
+    }
+
+    /**
+     * 闭包注入QueryBuilder执行
+     * @param callable $call
+     * @return mixed
+     * @throws \Throwable
+     */
+    function func(callable $call)
+    {
+        $builder = new QueryBuilder();
+        $isRaw = (bool)call_user_func($call,$builder);
+        return $this->query($builder,$isRaw);
+    }
+
+    /**
+     * invoke执行Model
+     * @param ClientInterface|Client $client
+     * @param array $data
+     * @return AbstractModel|$this
+     * @throws Exception
+     */
+    public static function invoke(ClientInterface $client,array $data = []): AbstractModel
+    {
+        return (static::create($data))->setExecClient($client);
+    }
+
+    // ================ Model内部底层支持结束  ======================
+
+    // ================ 魔术方法 JSON、取出、遍历等  ======================
 
     /**
      * ArrayAccess Exists
@@ -858,6 +1178,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $return;
     }
 
+    /**
+     * Model数据转数组格式返回
+     * @param bool $notNul
+     * @param bool $strict
+     * @return array
+     */
     public function toArray($notNul = false, $strict = true): array
     {
         $temp = $this->data ?? [];
@@ -868,7 +1194,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 }
             }
             if (!$strict) {
-                $temp = array_merge($temp, $this->_joinData ?? []);
+                $temp = $this->reToArray($temp);
             }
             return $temp;
         }
@@ -878,9 +1204,38 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     unset($temp[$key]);
                 }
             }
+        }else{
+            if (!$strict) {
+                $temp = $this->reToArray($temp);
+            }
         }
-        if (!$strict) {
-            $temp = array_merge($temp, $this->_joinData ?? []);
+        return $temp;
+    }
+
+    /**
+     * 循环处理附加数据的toArray
+     * @param $temp
+     * @return mixed
+     */
+    private function reToArray($temp)
+    {
+        foreach ($this->_joinData as $joinField => $joinData){
+            if (is_object($joinData) && method_exists($joinData, 'toArray')){
+                $temp[$joinField] = $joinData->toArray();
+            }else{
+                $joinDataTem = $joinData;
+                if(is_array($joinData)){
+                    $joinDataTem = [];
+                    foreach ($joinData as $key => $one){
+                        if (is_object($one) && method_exists($one, 'toArray')){
+                            $joinDataTem[$key] = $one->toArray();
+                        }else{
+                            $joinDataTem[$key] = $one;
+                        }
+                    }
+                }
+                $temp[$joinField] = $joinDataTem;
+            }
         }
         return $temp;
     }
@@ -922,464 +1277,48 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return false;
     }
 
-    /**
-     * @param callable $call
-     * @return mixed
-     * @throws \Throwable
-     */
-    function func(callable $call)
-    {
-        $builder = new QueryBuilder();
-        $isRaw = (bool)call_user_func($call,$builder);
-        return $this->query($builder,$isRaw);
-    }
 
-    private function reset()
-    {
-        $this->tempConnectionName = null;
-        $this->fields = "*";
-        $this->limit  = null;
-        $this->withTotalCount = false;
-        $this->order  = null;
-        $this->where  = [];
-        $this->join   = null;
-        $this->group  = null;
-        $this->alias  = null;
-        $this->tempTableName = null;
-    }
+    // ================ 以下为类属性和配置获取方法  ======================
 
     /**
-     * @param string        $class
-     * @param callable|null $where
-     * @param null          $pk
-     * @param null          $joinPk
-     * @param string        $joinType
-     * @return mixed|null
-     * @throws Exception
-     * @throws \EasySwoole\Mysqli\Exception\Exception
-     * @throws \ReflectionException
-     * @throws \Throwable
+     * 获取使用的链接池名
+     * @return string|null
      */
-    protected function hasOne(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
+    public function getConnectionName()
     {
-        if ($this->preHandleWith === true){
-            return [$class, $where, $pk, $joinPk, $joinType, 'hasOne'];
-        }
-
-        $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
-        if (isset($this->_joinData[$fileName])) {
-            return $this->_joinData[$fileName];
-        }
-
-        $ref = new \ReflectionClass($class);
-
-        if (!$ref->isSubclassOf(AbstractModel::class)) {
-            throw new Exception("relation class must be subclass of AbstractModel");
-        }
-
-        /** @var AbstractModel $ins */
-        $ins = $ref->newInstance();
-        $builder = new QueryBuilder();
-
-        if ($pk === null) {
-            $pk = $this->schemaInfo()->getPkFiledName();
-        }
-        if ($joinPk === null) {
-            $joinPk = $ins->schemaInfo()->getPkFiledName();
-        }
-
-        $targetTable = $ins->schemaInfo()->getTable();
-        $currentTable = $this->schemaInfo()->getTable();
-
-        // 支持复杂的构造
-        if ($where) {
-            /** @var QueryBuilder $builder */
-            $builder = call_user_func($where, $builder);
-            $this->preHandleQueryBuilder($builder);
-            $builder->getOne($targetTable, $builder->getField());
-        } else {
-            $targetTableAlias = "ES_INS";
-            // 关联表字段自动别名
-            $fields = $this->parserRelationFields($this, $ins, $targetTableAlias);
-
-            $builder->join($targetTable." AS {$targetTableAlias}", "{$targetTableAlias}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
-                ->where("{$currentTable}.{$pk}", $this->$pk);
-            $this->preHandleQueryBuilder($builder);
-            $builder->getOne($currentTable, $fields);
-        }
-
-        $result = $this->query($builder);
-        if ($result) {
-            // 分离结果 两个数组
-            $targetData = [];
-            $originData = [];
-            foreach ($result[0] as $key => $value){
-                if (isset($targetTableAlias)) {
-                    // 如果有包含附属别名，则是targetData
-                    if (strpos($key, $targetTableAlias) !==  false){
-                        $trueKey = ltrim($key, $targetTableAlias."_");
-                        $targetData[$trueKey] = $value;
-                    }else{
-                        $originData[$key] = $value;
-                    }
-                }else{
-                    $targetData[$key] = $value;
-                }
-            }
-
-            $this->data($originData, false);
-            $ins->data($targetData, false);
-            $this->_joinData[$fileName] = $ins;
-
-            return $this->_joinData[$fileName];
-        }
-        return null;
-
-    }
-
-    /**
-     * 一对多关联
-     * @param string        $class
-     * @param callable|null $where
-     * @param null          $pk
-     * @param null          $joinPk
-     * @param string        $joinType
-     * @return mixed|null
-     * @throws Exception
-     * @throws \EasySwoole\Mysqli\Exception\Exception
-     * @throws \ReflectionException
-     * @throws \Throwable
-     */
-    protected function hasMany(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
-    {
-        if ($this->preHandleWith === true){
-            return [$class, $where, $pk, $joinPk, $joinType, 'hasMany'];
-        }
-
-        $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
-        if (isset($this->_joinData[$fileName])) {
-            return $this->_joinData[$fileName];
-        }
-
-        $ref = new \ReflectionClass($class);
-
-        if (!$ref->isSubclassOf(AbstractModel::class)) {
-            throw new Exception("relation class must be subclass of AbstractModel");
-        }
-
-        /** @var AbstractModel $ins */
-        $ins = $ref->newInstance();
-        $builder = new QueryBuilder();
-
-        if ($pk === null) {
-            $pk = $this->schemaInfo()->getPkFiledName();
-        }
-        if ($joinPk === null) {
-            $joinPk = $ins->schemaInfo()->getPkFiledName();
-        }
-
-        $targetTable = $ins->schemaInfo()->getTable();
-        $currentTable = $this->schemaInfo()->getTable();
-
-        // 支持复杂的构造
-        if ($where) {
-            /** @var QueryBuilder $builder */
-            $builder = call_user_func($where, $builder);
-            $this->preHandleQueryBuilder($builder);
-            $builder->get($targetTable, null, $builder->getField());
-        } else {
-            $targetTableAlias = "ES_INS";
-            // 关联表字段自动别名
-            $fields = $this->parserRelationFields($this, $ins, $targetTableAlias);
-
-            $builder->join($targetTable." AS {$targetTableAlias}", "{$targetTableAlias}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
-                ->where("{$currentTable}.{$pk}", $this->$pk);
-            $this->preHandleQueryBuilder($builder);
-            $builder->get($currentTable, null, $fields);
-        }
-
-        $result = $this->query($builder);
-        if ($result) {
-            $return = [];
-            foreach ($result as $one) {
-                // 分离结果 两个数组
-                $targetData = [];
-                $originData = [];
-                foreach ($one as $key => $value){
-                    if(isset($targetTableAlias)){
-                        // 如果有包含附属别名，则是targetData
-                        if (strpos($key, $targetTableAlias) !==  false){
-                            $trueKey = ltrim($key, $targetTableAlias."_");
-                            $targetData[$trueKey] = $value;
-                        }else{
-                            $originData[$key] = $value;
-                        }
-                    }else{
-                        // callable $where 自行处理字段
-                        $targetData[$key] = $value;
-                    }
-                }
-                $return[] = ($ref->newInstance())->data($targetData);
-            }
-            $this->_joinData[$fileName] = $return;
-
-            return $this->_joinData[$fileName];
-        }
-        return null;
-    }
-
-    /**
-     * 关联查询 字段自动别名解析
-     * @param AbstractModel $model
-     * @param AbstractModel $ins
-     * @param string $insAlias
-     * @return array
-     * @throws Exception
-     */
-    protected function parserRelationFields($model, $ins, $insAlias)
-    {
-        $currentTable = $model->schemaInfo()->getTable();
-        $insFields = array_keys($ins->schemaInfo()->getColumns());
-        $fields    = [];
-        $fields[]  = "{$currentTable}.*";
-        foreach ($insFields as $field){
-            $fields[] = "{$insAlias}.{$field} AS {$insAlias}_{$field}";
-        }
-        return $fields;
-    }
-
-    /**
-     * @param QueryBuilder $builder
-     * @param bool $raw
-     * @return mixed
-     * @throws \Throwable
-     */
-    protected function query(QueryBuilder $builder, bool $raw = false)
-    {
-        $start = microtime(true);
-        $this->lastQuery = clone $builder;
         if ($this->tempConnectionName) {
             $connectionName = $this->tempConnectionName;
         } else {
             $connectionName = $this->connectionName;
         }
-        try {
-            $ret = null;
-            if($this->client){
-                $ret = DbManager::getInstance()->query($builder, $raw, $this->client);
-            }else{
-                $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
-            }
-            $builder->reset();
-            $this->lastQueryResult = $ret;
-            return $ret->getResult();
-        } catch (\Throwable $throwable) {
-            throw $throwable;
-        } finally {
-            $this->reset();
-            if ($this->onQuery) {
-                $temp = clone $builder;
-                call_user_func($this->onQuery, $ret, $temp, $start);
-            }
-        }
+        return $connectionName;
     }
 
     /**
-     * 连贯操作预处理
-     * @param QueryBuilder $builder
-     * @throws Exception
-     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * 获取自动更新时间戳设置
+     * @return bool|string
      */
-    private function preHandleQueryBuilder(QueryBuilder $builder)
+    public function getAutoTimeStamp()
     {
-        // 快速连贯操作
-        if ($this->withTotalCount) {
-            $builder->withTotalCount();
-        }
-        if ($this->order && is_array($this->order)) {
-            foreach ($this->order as $order){
-                $builder->orderBy(...$order);
-            }
-        }
-        if ($this->where) {
-            $whereModel = new static();
-            foreach ($this->where as $whereOne){
-                if (is_array($whereOne[0]) || is_int($whereOne[0])){
-                    $builder = PreProcess::mappingWhere($builder, $whereOne[0], $whereModel);
-                }else{
-                    $builder->where(...$whereOne);
-                }
-            }
-        }
-        if($this->group){
-            $builder->groupBy($this->group);
-        }
-        if($this->join){
-            foreach ($this->join as $joinOne) {
-                $builder->join($joinOne[0], $joinOne[1], $joinOne[2]);
-            }
-        }
-        // 如果在闭包里设置了属性，并且Model没设置，则覆盖Model里的
-        if ( $this->fields == '*' ){
-            $this->fields = implode(', ', $builder->getField());
-        }
-
+        return $this->autoTimeStamp;
     }
 
     /**
-     * @param $type
-     * @param null $field
-     * @return null|mixed
-     * @throws Exception
-     * @throws \Throwable
+     * 获取创建时间的是否开启、字段名
+     * @return bool|string
      */
-    private function queryPolymerization($type, $field = null)
+    public function getCreateTime()
     {
-        if ($field === null){
-            $field = $this->schemaInfo()->getPkFiledName();
-        }
-        // 判断字段中是否带了表名，是否有`
-        if (strstr($field, '`') == false){
-            // 有表名
-            if (strstr($field, '.') !== false){
-                $temArray = explode(".", $field);
-                $field = "`{$temArray[0]}`.`{$temArray[1]}`";
-            }else{
-                if(!is_numeric($field)){
-                    $field = "`{$field}`";
-                }
-            }
-        }
-
-        $fields = "$type({$field})";
-        $this->fields = $fields;
-        $this->limit = 1;
-        $res = $this->all();
-        if (isset($res[0]->$fields)){
-            return $res[0]->$fields;
-        }
-
-        return null;
+        return $this->createTime;
     }
 
     /**
-     * 处理时间戳
-     * @param $data
-     * @param string $doType
-     * @return mixed
-     * @throws Exception
+     *  获取更新时间的是否开启、字段名
+     * @return bool|string
      */
-    private function preHandleTimeStamp($data, $doType = 'insert')
+    public function getUpdateTime()
     {
-        if ($this->autoTimeStamp === false){
-            return $data;
-        }
-        $type = 'int';
-
-        if ( $this->autoTimeStamp === 'datetime'){
-            $type = 'datetime';
-        }
-
-        switch ($doType){
-            case 'insert':
-                if ($this->createTime !== false){
-                    $tem = $this->parseTimeStamp(time(), $type);
-                    $this->setAttr($this->createTime, $tem);
-                    $data[$this->createTime] = $tem;
-                }
-                if ($this->updateTime !== false){
-                    $tem = $this->parseTimeStamp(time(), $type);
-                    $this->setAttr($this->updateTime, $tem);
-                    $data[$this->updateTime] = $tem;
-                }
-                break;
-            case 'update':
-                if ($this->updateTime !== false){
-                    $tem = $this->parseTimeStamp(time(), $type);
-                    $this->setAttr($this->updateTime, $tem);
-                    $data[$this->updateTime] = $tem;
-                }
-                break;
-        }
-
-        return $data;
+        return $this->updateTime;
     }
 
-    private function parseTimeStamp(int $timestamp, $type = 'int')
-    {
-        switch ($type){
-            case 'int':
-                return $timestamp;
-                break;
-            case 'datetime':
-                return date('Y-m-d H:i:s', $timestamp);
-                break;
-            default:
-                return date($type, $timestamp);
-                break;
-        }
-    }
-
-    // ================ 关联预查询  ======================
-    private function preHandleWith($data)
-    {
-        // $data 只有一条 直接foreach调用 $data->$with();
-        if ($data instanceof AbstractModel){// get查询使用
-            foreach ($this->with as $with){
-                $data->$with();
-            }
-            return $data;
-        }else if (is_array($data) && !empty($data)){// all查询使用
-            // $data 是多条，需要先提取主键数组，select 副表 where joinPk in (pk arrays);
-            // foreach 判断主键，设置值
-            foreach ($this->with as $with){
-                $data[0]->preHandleWith = true;
-                list($class, $where, $pk, $joinPk, $joinType, $withType) = $data[0]->$with();
-                if ($pk !== null && $joinPk !== null){
-                    $pks = array_map(function ($v) use ($pk){
-                        return $v->$pk;
-                    }, $data);
-                    /** @var AbstractModel $insClass */
-                    $insClass = new $class;
-                    $insData  = $insClass->where($joinPk, $pks, 'IN')->all();
-                    $temData  = [];
-                    foreach ($insData as $insK => $insV){
-                        if ($withType=='hasOne'){
-                            $temData[$insV[$pk]] = $insV;
-                        }else if($withType=='hasMany'){
-                            $temData[$insV[$pk]][] = $insV;
-                        }
-                    }
-                    foreach ($data as $model){
-                        if (isset($temData[$model[$pk]])){
-                            $model[$with] = $temData[$model[$pk]];
-                        }
-                    }
-                    $data[0]->preHandleWith = false;
-                } else {
-                    // 闭包的只能一个一个调用
-                    foreach ($data as $model){
-                        foreach ($this->with as $with){
-                            $model->$with();
-                        }
-                    }
-                }
-            }
-            return $data;
-        }
-        return $data;
-    }
-
-
-    public static function defer(float $timeout = null)
-    {
-        try {
-            $model = new static();
-        } catch (Exception $e) {
-            return null;
-        }
-        $connectionName = $model->connectionName;
-
-        return DbManager::getInstance()->getConnection($connectionName)->defer($timeout);
-    }
 }

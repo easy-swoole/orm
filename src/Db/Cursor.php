@@ -17,6 +17,7 @@ class Cursor implements CursorInterface
 {
     protected $statement;
     protected $modelName;
+    protected $returnAsArray = false;
 
     public function __construct(Statement $statement)
     {
@@ -29,6 +30,12 @@ class Cursor implements CursorInterface
         $this->modelName = $modelName;
     }
 
+    public function setReturnAsArray(bool $returnAsArray): void
+    {
+        $this->returnAsArray = $returnAsArray;
+    }
+
+
     /**
      * @return mixed
      * @throws \Throwable
@@ -37,7 +44,7 @@ class Cursor implements CursorInterface
     {
         try{
             $data = $this->statement->fetch();
-            if ($data) {
+            if (!$this->returnAsArray && $data) {
                 if (is_null($this->modelName)) {
                     throw new Exception('ModelName can not be null');
                 }
