@@ -67,7 +67,7 @@ trait Attribute
      */
     public function offsetExists($offset)
     {
-        return isset($this->data[$offset]);
+        return $this->__isset($offset);
     }
 
     public function offsetGet($offset)
