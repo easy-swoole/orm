@@ -137,7 +137,6 @@ class RelationToArrayTest extends TestCase
 
         $this->assertEquals(2, count($test[0]['has_many']));
         $this->assertInstanceOf(TestUserListModel::class, $test[0]['has_many'][1]);
-
     }
 
     public function testDeleteAllHasMany()
