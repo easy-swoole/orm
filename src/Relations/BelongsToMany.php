@@ -88,10 +88,59 @@ class BelongsToMany
     }
 
     /**
-     * 预查询，需要考虑是单条还是多条数据
+     * @param $data
+     * @param $with
      */
-    public function preHandleWith()
+    public function preHandleWith($data, $with)
     {
+        // 逻辑跟result方法中查询基本一致，先获取A表主键数组，从中间表中查询所有符合数据，映射成为二维数组
+        // 从B表查询所有数据，根据映射数组设置到A模型数据中
+        $pk      = $this->pk;
+        $pkValue = array_map(function ($v) use ($pk){
+            return $v->$pk;
+        }, $data);
+        $pkValueStr = implode(',', $pkValue);
+        $childPk = $this->childPk;
 
+        $queryBuilder = new QueryBuilder();
+        $queryBuilder->raw("SELECT $pk,$childPk FROM `{$this->middelTableName}` WHERE `{$pk}` IN ({$pkValueStr}) ");
+        $middleQuery = DbManager::getInstance()->query($queryBuilder, true, $this->fatherModel->getConnectionName());
+
+        if (!$middleQuery->getResult()) return $data;
+
+        $middleDataArray = [];
+        $BPkValue = []; // 用于一会IN查询B表
+        foreach ($middleQuery->getResult() as $queryData) {
+            $APkValue                     = $queryData[$pk];
+            $middleDataArray[$APkValue][] = $queryData[$childPk];
+            $BPkValue[]                   = $queryData[$childPk];
+        }
+        // BPK去重 重置下标
+        $BPkValue = array_values(array_unique($BPkValue));
+        $BValue   = $this->childModel->all($BPkValue);
+        // 映射为以BPK为键的数组
+        $BValueByBPK = [];
+        foreach ($BValue as $B){
+            $BValueByBPK[$B->$childPk] = $B;
+        }
+
+        // 更新中间二维数组，把pk值映射成model
+        foreach ($middleDataArray as $key => $middleOne){
+            if (is_array($middleOne)){
+                foreach ($middleOne as $tempKey => $tempValue){
+                    if (isset($BValueByBPK[$tempValue])){
+                        $middleDataArray[$key][$tempKey] = clone $BValueByBPK[$tempValue];
+                    }
+                }
+            }
+        }
+
+        // 遍历$data 原始数据，把属于自己的数据放到自己的属性中
+        foreach ($data as $model){
+            if (isset($middleDataArray[$model->$pk])){
+                $model[$with] = $middleDataArray[$model->$pk];
+            }
+        }
+        return $data;
     }
 }

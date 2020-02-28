@@ -84,7 +84,7 @@ trait RelationShip
     protected function belongsToMany(string $class, $middleTableName, $pk = null, $childPk = null)
     {
         if ($this->preHandleWith === true){
-            return [$class, $middleTableName, 'belongsToMany'];
+            return [$class, null,$pk, $childPk, $middleTableName, 'belongsToMany'];
         }
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
         if (isset($this->_joinData[$fileName])) {
@@ -110,44 +110,37 @@ trait RelationShip
             }
             return $data;
         }else if (is_array($data) && !empty($data)){// all查询使用
-            // $data 是多条，需要先提取主键数组，select 副表 where joinPk in (pk arrays);
-            // foreach 判断主键，设置值
             foreach ($this->with as $with){
                 $data[0]->preHandleWith = true;
                 list($class, $where, $pk, $joinPk, $joinType, $withType) = $data[0]->$with();
-                if ($pk !== null && $joinPk !== null){
-                    $pks = array_map(function ($v) use ($pk){
-                        return $v->$pk;
-                    }, $data);
-                    /** @var AbstractModel $insClass */
-                    $insClass = new $class;
-                    $insData  = $insClass->where($joinPk, $pks, 'IN')->all();
-                    $temData  = [];
-                    foreach ($insData as $insK => $insV){
-                        if ($withType=='hasOne'){
-                            $temData[$insV[$pk]] = $insV;
-                        }else if($withType=='hasMany'){
-                            $temData[$insV[$pk]][] = $insV;
-                        }
-                    }
-                    foreach ($data as $model){
-                        if (isset($temData[$model[$pk]])){
-                            $model[$with] = $temData[$model[$pk]];
-                        }
-                    }
-                    $data[0]->preHandleWith = false;
-                } else {
-                    // 闭包的只能一个一个调用
-                    foreach ($data as $model){
-                        foreach ($this->with as $with){
-                            $model->$with();
-                        }
-                    }
+                $data[0]->preHandleWith = false;
+                switch ($withType){
+                    case 'hasOne':
+                        $data = (new HasOne($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk, $joinType);
+                        break;
+                    case 'hasMany':
+                        $data = (new HasMany($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk, $joinType);
+                        break;
+                    case 'belongsToMany':
+                        $middleTableName = $joinType;
+                        $data = (new BelongsToMany($this, $class, $middleTableName, $pk, $joinPk))->preHandleWith($data, $with);
+                        break;
+                    default:
+                        break;
                 }
             }
             return $data;
         }
         return $data;
+    }
+
+    /**
+     * 返回设置的需要预查询的数组列表
+     * @return array
+     */
+    public function getWith()
+    {
+        return $this->with;
     }
 
 }

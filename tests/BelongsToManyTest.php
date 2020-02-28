@@ -171,6 +171,29 @@ class BelongsToManyTest extends TestCase
         $this->assertEquals($user->toArray(false, false)['roles'][1]['role_name'], '普通用户');
     }
 
+    function testWithGet()
+    {
+        $user = Users::create()->where('name', 'SiamBelongsToManySimpleRole')->with(['roles'])->get();
+        $this->assertInstanceOf(Users::class, $user);
+        $this->assertEquals($user->toArray(false, false)['roles'][0]['role_name'], '管理员');
+
+        $user = Users::create()->where('name', 'SiamBelongsToManyManyRole')->with(['roles'])->get();
+        $this->assertInstanceOf(Users::class, $user);
+        $this->assertEquals($user->toArray(false, false)['roles'][0]['role_name'], '管理员');
+        $this->assertEquals($user->toArray(false, false)['roles'][1]['role_name'], '普通用户');
+    }
+
+    function testWithAll()
+    {
+        $user = Users::create()->with(['roles'])->all();
+        $this->assertInstanceOf(Users::class, $user[0]);
+        $this->assertInstanceOf(Users::class, $user[1]);
+
+        $this->assertEquals($user[0]->toArray(false, false)['roles'][0]['role_name'], '管理员');
+        $this->assertEquals($user[1]->toArray(false, false)['roles'][0]['role_name'], '管理员');
+        $this->assertEquals($user[1]->toArray(false, false)['roles'][1]['role_name'], '普通用户');
+    }
+
     function testDelete()
     {
         Users::create()->destroy(null, true);
