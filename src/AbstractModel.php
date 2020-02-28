@@ -850,7 +850,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public function offsetExists($offset)
     {
-        return isset($this->data[$offset]);
+        return $this->__isset($offset);
     }
 
     public function offsetGet($offset)
