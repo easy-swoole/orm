@@ -133,21 +133,19 @@ trait Attribute
                     unset($temp[$key]);
                 }
             }
-            if (!$strict) {
-                $temp = $this->reToArray($temp);
-            }
-            return $temp;
         }
+
+        if (!$strict) {
+            $temp = $this->reToArray($temp);
+        }
+
         if (is_array($this->fields)) {
             foreach ($temp as $key => $value) {
-                if (in_array($key, $this->fields)) {
+                if (!in_array($key, $this->fields)) {
                     unset($temp[$key]);
                 }
             }
-        }else{
-            if (!$strict) {
-                $temp = $this->reToArray($temp);
-            }
+            $this->reset();
         }
         return $temp;
     }
