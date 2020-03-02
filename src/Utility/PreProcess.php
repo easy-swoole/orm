@@ -73,7 +73,7 @@ class PreProcess
      */
     public static function dataValueFormat($data, Column $column)
     {
-        if (DataType::typeIsTextual($column->getColumnType())) {
+        if (DataType::typeIsTextual($column->getColumnType()) && $data !== null) {
             return strval($data);
         } else {
             return $data;
