@@ -126,7 +126,11 @@ trait Attribute
      */
     public function toArray($notNul = false, $strict = true): array
     {
-        $temp = $this->data ?? [];
+        $temp = [];
+        foreach ($this->data as $key => $value){
+            $temp[$key] = $this->getAttr($key);
+        }
+
         if ($notNul) {
             foreach ($temp as $key => $value) {
                 if ($value === null) {
