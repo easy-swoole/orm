@@ -637,6 +637,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $results ? true : false;
     }
 
+    function chunk(callable $call,int $size = 10,int $chunkIndex = 1)
+    {
+        $list = $this->page($chunkIndex,$size)->all();
+        if(!empty($list)){
+            call_user_func($call,$list);
+            $chunkIndex++;
+            return $this->chunk($call,$size,$chunkIndex);
+        }else{
+            return null;
+        }
+    }
+
 
 
     // ================ Model内部底层支持开始  ======================
