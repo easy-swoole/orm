@@ -13,6 +13,7 @@ class Config extends \EasySwoole\Pool\Config
     protected $port = 3306;
     protected $timeout = 30;
     protected $charset = 'utf8';
+    protected $autoPing = 5;
 
     protected $strict_type = false; // 开启严格模式，返回的字段将自动转为数字类型
     protected $fetch_mode = false;
@@ -141,6 +142,22 @@ class Config extends \EasySwoole\Pool\Config
     {
         $this->charset = $charset;
         return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getAutoPing(): int
+    {
+        return $this->autoPing;
+    }
+
+    /**
+     * @param int $autoPing
+     */
+    public function setAutoPing(int $autoPing): void
+    {
+        $this->autoPing = $autoPing;
     }
 
     /**

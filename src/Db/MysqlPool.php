@@ -21,4 +21,26 @@ class MysqlPool extends AbstractPool
             throw new Exception($client->mysqlClient()->connect_error);
         }
     }
+
+    /**
+     * @param MysqliClient $item
+     * @return bool
+     */
+    public function itemIntervalCheck($item): bool
+    {
+        if($this->getConfig()->getAutoPing() > 0){
+            try{
+                //执行一个sql触发活跃信息
+                $item->rawQuery('select version()');
+                //标记使用时间，避免被再次gc
+                $item->__lastUseTime = time();
+                return true;
+            }catch (\Throwable $throwable){
+                //异常说明该链接出错了，return 进行回收
+                return false;
+            }
+        }else{
+            return true;
+        }
+    }
 }
