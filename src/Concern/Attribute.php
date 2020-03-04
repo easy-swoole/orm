@@ -67,7 +67,7 @@ trait Attribute
      */
     public function offsetExists($offset)
     {
-        return isset($this->data[$offset]);
+        return $this->__isset($offset);
     }
 
     public function offsetGet($offset)
@@ -126,28 +126,30 @@ trait Attribute
      */
     public function toArray($notNul = false, $strict = true): array
     {
-        $temp = $this->data ?? [];
+        $temp = [];
+        foreach ($this->data as $key => $value){
+            $temp[$key] = $this->getAttr($key);
+        }
+
         if ($notNul) {
             foreach ($temp as $key => $value) {
                 if ($value === null) {
                     unset($temp[$key]);
                 }
             }
-            if (!$strict) {
-                $temp = $this->reToArray($temp);
-            }
-            return $temp;
         }
+
+        if (!$strict) {
+            $temp = $this->reToArray($temp);
+        }
+
         if (is_array($this->fields)) {
             foreach ($temp as $key => $value) {
-                if (in_array($key, $this->fields)) {
+                if (!in_array($key, $this->fields)) {
                     unset($temp[$key]);
                 }
             }
-        }else{
-            if (!$strict) {
-                $temp = $this->reToArray($temp);
-            }
+            $this->reset();
         }
         return $temp;
     }

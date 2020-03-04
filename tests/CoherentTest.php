@@ -136,6 +136,13 @@ class CoherentTest extends TestCase
         $this->assertNotEmpty($groupDivField['sum(age)']);
     }
 
+    /** 别名时 判断isset */
+    public function testFieldAlias()
+    {
+        $fieldAlias = TestUserListModel::create()->field(['name as teeeee'])->get();
+        $this->assertTrue(isset($fieldAlias['teeeee']), true);
+    }
+
     public function testColumn()
     {
         $res = TestUserListModel::create()->field('`name`, `age`')->order('age')->column();

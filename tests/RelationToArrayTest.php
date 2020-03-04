@@ -66,6 +66,26 @@ class RelationToArrayTest extends TestCase
         $this->assertIsArray($toArray['user_list']);
     }
 
+    /**
+     * field筛选 toArray
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \EasySwoole\ORM\Exception\Exception
+     * @throws \Throwable
+     */
+    public function testFieldFilterToArray()
+    {
+        $test_user_model = TestRelationModel::create()->get([
+            'name' => 'siam_relation'
+        ]);
+        $relation =  $test_user_model->user_list();
+        $this->assertInstanceOf(TestUserListModel::class, $relation);
+
+        $toArray = $test_user_model->field(['user_list'])->toArray(false, false);
+        $this->assertEquals(1, count($toArray));
+        $this->assertNotEmpty($toArray['user_list']);
+        $this->assertIsArray($toArray['user_list']);
+    }
+
     public function testJson()
     {
         $test_user_model = TestRelationModel::create()->get([
