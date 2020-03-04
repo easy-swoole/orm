@@ -335,7 +335,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if (empty($primaryKey)) {
             throw new Exception('save() needs primaryKey for model ' . static::class);
         }
-        $rawArray = $this->toArray();
+        $rawArray = $this->data;
         // 合并时间戳字段
         $rawArray = TimeStampHandle::preHandleTimeStamp($this, $rawArray, 'insert');
         $builder->insert($this->getTableName(), $rawArray);
