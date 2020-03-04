@@ -31,10 +31,12 @@ class MysqlPool extends AbstractPool
         /*
          * 如果最后一次使用时间超过autoPing间隔
          */
-        if($this->getConfig()->getAutoPing() > 0 && (time() - $item->__lastUseTime > $this->getConfig()->getAutoPing())){
+        /** @var Config $config */
+        $config = $this->getConfig();
+        if($config->getAutoPing() > 0 && (time() - $item->__lastUseTime > $config->getAutoPing())){
             try{
                 //执行一个sql触发活跃信息
-                $item->rawQuery('select version()');
+                $item->rawQuery('select 1');
                 //标记使用时间，避免被再次gc
                 $item->__lastUseTime = time();
                 return true;
