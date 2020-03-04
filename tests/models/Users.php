@@ -17,6 +17,7 @@ class Users extends AbstractModel
 
     public function roles()
     {
-        return $this->belongsToMany(Roles::class, 'user_role');
+		// 被关联模型--关联的中间表--筛选条件--中间表中本模型外键名--中间表中子模型外键名--本模型主键名--子模型主键名--关联关系
+        return $this->belongsToMany(Roles::class, 'user_role', null, 'user_id', 'role_id', 'user_id', 'role_id');
     }
 }

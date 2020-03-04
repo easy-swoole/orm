@@ -81,16 +81,17 @@ trait RelationShip
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    protected function belongsToMany(string $class, $middleTableName, $pk = null, $childPk = null)
+    protected function belongsToMany(string $class, $middleTableName, callable $where = null, $foreignPivotKey = null, $relatedPivotKey = null,
+    $parentKey = null, $relatedKey = null, $joinType = '')
     {
         if ($this->preHandleWith === true){
-            return [$class, null,$pk, $childPk, $middleTableName, 'belongsToMany'];
+            return [$class, $middleTableName, $where, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey, $joinType, 'belongsToMany'];
         }
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
         if (isset($this->_joinData[$fileName])) {
             return $this->_joinData[$fileName];
         }
-        $result = (new BelongsToMany($this, $class, $middleTableName, $pk, $childPk))->result();
+        $result = (new BelongsToMany($this, $class, $middleTableName))->result($where, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey, $joinType);
         $this->_joinData[$fileName] = $result;
         return $result;
     }
@@ -113,6 +114,9 @@ trait RelationShip
             foreach ($this->with as $with){
                 $data[0]->preHandleWith = true;
                 list($class, $where, $pk, $joinPk, $joinType, $withType) = $data[0]->$with();
+                if (!in_array($withType, ['hasOne', 'hasMany'])) {
+                    list($class, $middleTableName, $where, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey, $joinType, $withType) = $data[0]->$with();
+                }
                 $data[0]->preHandleWith = false;
                 switch ($withType){
                     case 'hasOne':
@@ -122,8 +126,7 @@ trait RelationShip
                         $data = (new HasMany($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk, $joinType);
                         break;
                     case 'belongsToMany':
-                        $middleTableName = $joinType;
-                        $data = (new BelongsToMany($this, $class, $middleTableName, $pk, $joinPk))->preHandleWith($data, $with);
+                        $data = (new BelongsToMany($this, $class, $middleTableName))->preHandleWith($data, $with, $where, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey, $joinType);
                         break;
                     default:
                         break;
