@@ -28,7 +28,10 @@ class MysqlPool extends AbstractPool
      */
     public function itemIntervalCheck($item): bool
     {
-        if($this->getConfig()->getAutoPing() > 0){
+        /*
+         * 如果最后一次使用时间超过autoPing间隔
+         */
+        if($this->getConfig()->getAutoPing() > 0 && (time() - $item->__lastUseTime > $this->getConfig()->getAutoPing())){
             try{
                 //执行一个sql触发活跃信息
                 $item->rawQuery('select version()');
