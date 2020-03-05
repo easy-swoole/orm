@@ -132,12 +132,14 @@ class HasMany
         $pks = array_map(function ($v) use ($pk){
             return $v->$pk;
         }, $data);
+        $pks = array_values(array_unique($pks));
+
         /** @var AbstractModel $insClass */
         $insClass = new $this->childModelName;
         $insData  = $insClass->where($joinPk, $pks, 'IN')->all();
         $temData  = [];
         foreach ($insData as $insK => $insV){
-            $temData[$insV[$pk]][] = $insV;// 目标表中 属于A表主键的数据 放到一个二维数组中
+            $temData[$insV[$joinPk]][] = $insV;
         }
         foreach ($data as $model){
             if (isset($temData[$model[$pk]])){ // 如果在二维数组中，有属于A表模型主键的，那么就是它的子数据
