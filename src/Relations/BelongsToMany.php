@@ -14,7 +14,6 @@ use EasySwoole\ORM\AbstractModel;
 
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
-use EasySwoole\ORM\Db\Config;
 
 class BelongsToMany
 {
@@ -63,7 +62,7 @@ class BelongsToMany
         $ins = $ref->newInstance();
 
         if ($foreignPivotKey === null) {
-            $dbName = Config::getInstance()->getDatabase();
+            $dbName = DbManager::getInstance()->getConnection()->getConfig()->getDatabase();
             $queryBuilder = new QueryBuilder();
             $queryBuilder->raw("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA='{$dbName}' AND TABLE_NAME='{$this->middelTableName}' AND REFERENCED_TABLE_NAME='{$this->fatherModel->schemaInfo()->getTable()}' AND CONSTRAINT_NAME like 'fk_%';");
             $tableColumns = DbManager::getInstance()->query($queryBuilder, $raw = true, 'default');
@@ -74,7 +73,7 @@ class BelongsToMany
             }
         }
         if ($relatedPivotKey === null) {
-            $dbName = Config::getInstance()->getDatabase();
+            $dbName = DbManager::getInstance()->getConnection()->getConfig()->getDatabase();
             $queryBuilder = new QueryBuilder();
             $queryBuilder->raw("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA='{$dbName}' AND TABLE_NAME='{$this->middelTableName}' AND REFERENCED_TABLE_NAME='{$ins->schemaInfo()->getTable()}' AND CONSTRAINT_NAME like 'fk_%';");
             $tableColumns = DbManager::getInstance()->query($queryBuilder, $raw = true, 'default');
@@ -142,7 +141,7 @@ class BelongsToMany
         $ins = $ref->newInstance();
 
         if ($foreignPivotKey === null) {
-            $dbName = Config::getInstance()->getDatabase();
+            $dbName = DbManager::getInstance()->getConnection()->getConfig()->getDatabase();
             $queryBuilder = new QueryBuilder();
             $queryBuilder->raw("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA='{$dbName}' AND TABLE_NAME='{$this->middelTableName}' AND REFERENCED_TABLE_NAME='{$this->fatherModel->schemaInfo()->getTable()}' AND CONSTRAINT_NAME like 'fk_%';");
             $tableColumns = DbManager::getInstance()->query($queryBuilder, $raw = true, 'default');
@@ -153,7 +152,7 @@ class BelongsToMany
             }
         }
         if ($relatedPivotKey === null) {
-            $dbName = Config::getInstance()->getDatabase();
+            $dbName = DbManager::getInstance()->getConnection()->getConfig()->getDatabase();
             $queryBuilder = new QueryBuilder();
             $queryBuilder->raw("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA='{$dbName}' AND TABLE_NAME='{$this->middelTableName}' AND REFERENCED_TABLE_NAME='{$ins->schemaInfo()->getTable()}' AND CONSTRAINT_NAME like 'fk_%';");
             $tableColumns = DbManager::getInstance()->query($queryBuilder, $raw = true, 'default');
