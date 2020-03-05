@@ -132,12 +132,14 @@ class HasOne
         $pks = array_map(function ($v) use ($pk){
             return $v->$pk;
         }, $data);
+        $pks = array_values(array_unique($pks));
+
         /** @var AbstractModel $insClass */
         $insClass = new $this->childModelName;
         $insData  = $insClass->where($joinPk, $pks, 'IN')->all();
         $temData  = [];
         foreach ($insData as $insK => $insV){
-            $temData[$insV[$pk]] = $insV;// 目标表中 属于A表主键的数据  就是它的子数据
+            $temData[$insV[$joinPk]] = $insV;// 以子表主键映射数组
         }
         foreach ($data as $model){
             if (isset($temData[$model[$pk]])){
