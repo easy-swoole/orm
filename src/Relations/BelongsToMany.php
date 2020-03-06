@@ -64,13 +64,15 @@ class BelongsToMany
 
     /**
      * 直接查询，单条数据适用
+     * @param callable|null $callable
+     * @return array|bool|\EasySwoole\ORM\Db\Cursor|null
      * @throws Exception
      * @throws \Throwable
      */
-    public function result()
+    public function result(callable $callable = null)
     {
         $pk      = $this->pk;
-        $pkValue = $this->fatherModel->getAttr($pk);
+        $pkValue = $this->fatherModel->getAttr($this->fatherModel->schemaInfo()->getPkFiledName());
         $childPk = $this->childPk;
 
         $queryBuilder = new QueryBuilder();
@@ -82,6 +84,9 @@ class BelongsToMany
         // in查询目标表
         $childPkValue = array_column($middleQuery->getResult(), $childPk);
 
+        if ($callable !== null){
+            call_user_func($callable, $this->childModel);
+        }
         $childRes = $this->childModel->all($childPkValue);
 
         return $childRes;
@@ -90,17 +95,27 @@ class BelongsToMany
     /**
      * @param $data
      * @param $with
+     * @param $callable
+     * @return mixed
+     * @throws Exception
+     * @throws \Throwable
      */
-    public function preHandleWith($data, $with)
+    public function preHandleWith($data, $with, callable $callable = null)
     {
         // 逻辑跟result方法中查询基本一致，先获取A表主键数组，从中间表中查询所有符合数据，映射成为二维数组
         // 从B表查询所有数据，根据映射数组设置到A模型数据中
+
+        // 中间表的键名
         $pk      = $this->pk;
-        $pkValue = array_map(function ($v) use ($pk){
-            return $v->$pk;
+        $childPk = $this->childPk;
+        // 真实主键名
+        $realyPk      = $this->fatherModel->schemaInfo()->getPkFiledName();
+        $realyChildPk = $this->childModel->schemaInfo()->getPkFiledName();
+
+        $pkValue = array_map(function ($v) use($realyPk){
+            return $v->$realyPk;
         }, $data);
         $pkValueStr = implode(',', $pkValue);
-        $childPk = $this->childPk;
 
         $queryBuilder = new QueryBuilder();
         $queryBuilder->raw("SELECT $pk,$childPk FROM `{$this->middelTableName}` WHERE `{$pk}` IN ({$pkValueStr}) ");
@@ -117,11 +132,15 @@ class BelongsToMany
         }
         // BPK去重 重置下标
         $BPkValue = array_values(array_unique($BPkValue));
+
+        if ($callable !== null){
+            call_user_func($callable, $this->childModel);
+        }
         $BValue   = $this->childModel->all($BPkValue);
         // 映射为以BPK为键的数组
         $BValueByBPK = [];
         foreach ($BValue as $B){
-            $BValueByBPK[$B->$childPk] = $B;
+            $BValueByBPK[$B->$realyChildPk] = $B;
         }
 
         // 更新中间二维数组，把pk值映射成model
@@ -137,8 +156,8 @@ class BelongsToMany
 
         // 遍历$data 原始数据，把属于自己的数据放到自己的属性中
         foreach ($data as $model){
-            if (isset($middleDataArray[$model->$pk])){
-                $model[$with] = $middleDataArray[$model->$pk];
+            if (isset($middleDataArray[$model->$realyPk])){
+                $model[$with] = $middleDataArray[$model->$realyPk];
             }
         }
         return $data;
