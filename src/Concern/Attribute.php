@@ -229,7 +229,7 @@ trait Attribute
     {
         $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
         if (method_exists($this, $method)) {
-            return $this->$method($this->data[$attrName] ?? null, $this->data);
+            return call_user_func([$this,$method],$this->data[$attrName] ?? null, $this->data);
         }
         // 判断是否有关联查询
         if (method_exists($this, $attrName)) {
@@ -257,7 +257,7 @@ trait Attribute
             $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             $method = 'set' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
             if ($setter && method_exists($this, $method)) {
-                $attrValue = $this->$method($attrValue, $this->data);
+                $attrValue = call_user_func([$this,$method],$attrValue, $this->data);
             }
             $this->data[$attrName] = $attrValue;
             return true;
