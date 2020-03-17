@@ -66,11 +66,7 @@ class HasMany
         if ($result) {
             $return = [];
             foreach ($result as $one) {
-                $targetData = [];
-                foreach ($one as $key => $value){
-                    $targetData[$key] = $value;
-                }
-                $return[] = ($ref->newInstance())->data($targetData);
+                $return[] = ($ref->newInstance())->data($one);
             }
 
             return $return;
