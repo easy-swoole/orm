@@ -64,7 +64,7 @@ trait RelationShip
         if (isset($this->_joinData[$fileName])) {
             return $this->_joinData[$fileName];
         }
-        $result = (new HasMany($this, $class))->result($where, $pk, $joinPk, $joinType);
+        $result = (new HasMany($this, $class))->result($where, $pk, $joinPk);
         $this->_joinData[$fileName] = $result;
         return $result;
     }

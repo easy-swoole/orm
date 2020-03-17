@@ -87,7 +87,12 @@ class BelongsToMany
         if ($callable !== null){
             call_user_func($callable, $this->childModel);
         }
-        $childRes = $this->childModel->all($childPkValue);
+        $childRes = $this->childModel->all(function (QueryBuilder $builder) use($childPk, $childPkValue, $callable){
+            $builder->where($childPk, $childPkValue, "IN");
+            if (is_callable($callable)){
+                call_user_func($callable, $builder);
+            }
+        });
 
         return $childRes;
     }
@@ -133,10 +138,12 @@ class BelongsToMany
         // BPK去重 重置下标
         $BPkValue = array_values(array_unique($BPkValue));
 
-        if ($callable !== null){
-            call_user_func($callable, $this->childModel);
-        }
-        $BValue   = $this->childModel->all($BPkValue);
+        $BValue   = $this->childModel->all(function (QueryBuilder $builder) use($childPk, $BPkValue, $callable){
+            $builder->where($childPk, $BPkValue, "IN");
+            if ($callable !== null){
+                call_user_func($callable, $builder);
+            }
+        });
         // 映射为以BPK为键的数组
         $BValueByBPK = [];
         foreach ($BValue as $B){
