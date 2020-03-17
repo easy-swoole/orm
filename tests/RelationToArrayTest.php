@@ -137,6 +137,17 @@ class RelationToArrayTest extends TestCase
         $this->assertInstanceOf(TestUserListModel::class, $hasMany[1]);
     }
 
+    public function testHasManyWhere()
+    {
+        $test_user_model = TestRelationModel::create()->get([
+            'name' => 'siam'
+        ]);
+        $hasMany =  $test_user_model->has_many_where();
+        $this->assertEquals(1, count($hasMany));
+        $this->assertEquals(21, $hasMany[0]->age);
+        $this->assertInstanceOf(TestUserListModel::class, $hasMany[0]);
+    }
+
     public function testGetWith()
     {
         $test = TestRelationModel::create()->with(['user_list', 'has_many'])->get([

@@ -26,17 +26,16 @@ class HasOne
     }
 
     /**
-     * @param $where
-     * @param $pk
-     * @param $joinPk
-     * @param $joinType
+     * @param $where callable 可以闭包调用where、order、field
+     * @param $pk string 主表条件字段名
+     * @param $insPk string 附表条件字段名
      * @return mixed
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function result($where, $pk, $joinPk, $joinType)
+    public function result($where, $pk, $insPk)
     {
         $ref = new \ReflectionClass($this->childModelName);
 
@@ -51,52 +50,28 @@ class HasOne
         if ($pk === null) {
             $pk = $this->fatherModel->schemaInfo()->getPkFiledName();
         }
-        if ($joinPk === null) {
-            $joinPk = $ins->schemaInfo()->getPkFiledName();
+        if ($insPk === null) {
+            $insPk = $ins->schemaInfo()->getPkFiledName();
         }
 
         $targetTable = $ins->schemaInfo()->getTable();
-        $currentTable = $this->fatherModel->schemaInfo()->getTable();
 
-        // 支持复杂的构造
-        if ($where) {
-            /** @var QueryBuilder $builder */
-            $builder = call_user_func($where, $builder);
-            $this->fatherModel->preHandleQueryBuilder($builder);
-            $builder->getOne($targetTable, $builder->getField());
-        } else {
-            $targetTableAlias = "ES_INS";
-            // 关联表字段自动别名
-            $fields = FieldHandle::parserRelationFields($this->fatherModel, $ins, $targetTableAlias);
+        $builder->where("$insPk", $this->fatherModel->$pk);
 
-            $builder->join($targetTable." AS {$targetTableAlias}", "{$targetTableAlias}.{$joinPk} = {$currentTable}.{$pk}", $joinType)
-                ->where("{$currentTable}.{$pk}", $this->fatherModel->$pk);
-            $this->fatherModel->preHandleQueryBuilder($builder);
-            $builder->getOne($currentTable, $fields);
+        if (!empty($where) && is_callable($where)){
+            call_user_func($where, $builder);
         }
 
-        $result = $this->fatherModel->query($builder);
+        $builder->getOne($targetTable, $builder->getField());
+
+        $result = $ins->query($builder);
         if ($result) {
-            // 分离结果 两个数组
             $targetData = [];
-            $originData = [];
             foreach ($result[0] as $key => $value){
-                if (isset($targetTableAlias)) {
-                    // 如果有包含附属别名，则是targetData
-                    if (strpos($key, $targetTableAlias) !==  false){
-                        $trueKey = substr($key,strpos($key,$targetTableAlias."_")+ strlen($targetTableAlias) + 1);
-                        $targetData[$trueKey] = $value;
-                    }else{
-                        $originData[$key] = $value;
-                    }
-                }else{
-                    $targetData[$key] = $value;
-                }
+                $targetData[$key] = $value;
             }
 
-            $this->fatherModel->data($originData, false);
-            $ins->data($targetData, false);
-
+            $ins->data($targetData, true);
             return $ins;
         }
         return null;
@@ -108,25 +83,14 @@ class HasOne
      * @param $withName string 预查询字段名
      * @param $where
      * @param $pk
-     * @param $joinPk
+     * @param $insPk
      * @param $joinType
      * @return array
      * @throws Exception
      * @throws \Throwable
      */
-    public function preHandleWith(array $data, $withName, $where, $pk, $joinPk, $joinType)
+    public function preHandleWith(array $data, $withName, $where, $pk, $insPk)
     {
-        // 如果闭包不为空，则只能执行闭包
-        if ($where !== null && is_callable($where)){
-            // 闭包的只能一个一个调用
-            foreach ($data as $model){
-                foreach ($this->fatherModel->getWith() as $with){
-                    $model->$with();
-                }
-            }
-            return $data;
-        }
-
         // 需要先提取主键数组，select 副表 where joinPk in (pk arrays);
         // foreach 判断主键，设置值
         $pks = array_map(function ($v) use ($pk){
@@ -136,11 +100,17 @@ class HasOne
 
         /** @var AbstractModel $insClass */
         $insClass = new $this->childModelName;
-        $insData  = $insClass->where($joinPk, $pks, 'IN')->all();
+        $insData  = $insClass->where($insPk, $pks, 'IN')->all(function (QueryBuilder $queryBuilder) use ($where){
+            if (is_callable($where)){
+                call_user_func($where, $queryBuilder);
+            }
+        });
+
         $temData  = [];
         foreach ($insData as $insK => $insV){
-            $temData[$insV[$joinPk]] = $insV;// 以子表主键映射数组
+            $temData[$insV[$insPk]] = $insV;// 以子表主键映射数组
         }
+        // 附表insPk的值 = 主表pk的值 这是查询条件
         foreach ($data as $model){
             if (isset($temData[$model[$pk]])){
                 $model[$withName] = $temData[$model[$pk]];

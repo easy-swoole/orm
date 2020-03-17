@@ -9,6 +9,7 @@
 namespace EasySwoole\ORM\Tests\models;
 
 
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\AbstractModel;
 
 /**
@@ -27,6 +28,13 @@ class TestRelationModel extends AbstractModel
     public function user_list()
     {
         return $this->hasOne(TestUserListModel::class, null, 'name', 'name');
+    }
+
+    public function has_many_where()
+    {
+        return $this->hasMany(TestUserListModel::class, function (QueryBuilder $builder){
+            $builder->where("age", 21);
+        }, 'name', 'name');
     }
 
     public function has_many()

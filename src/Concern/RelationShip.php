@@ -26,22 +26,21 @@ trait RelationShip
      * @param string        $class
      * @param callable|null $where
      * @param null          $pk
-     * @param null          $joinPk
-     * @param string        $joinType
+     * @param null          $insPk
      * @return mixed|null
      * @throws \Throwable
      */
-    protected function hasOne(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
+    protected function hasOne(string $class, callable $where = null, $pk = null, $insPk = null)
     {
         if ($this->preHandleWith === true){
-            return [$class, $where, $pk, $joinPk, $joinType, 'hasOne'];
+            return [$class, $where, $pk, $insPk, '', 'hasOne'];
         }
 
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
         if (isset($this->_joinData[$fileName])) {
             return $this->_joinData[$fileName];
         }
-        $result = (new HasOne($this, $class))->result($where, $pk, $joinPk, $joinType);
+        $result = (new HasOne($this, $class))->result($where, $pk, $insPk);
         $this->_joinData[$fileName] = $result;
         return $result;
     }
@@ -116,10 +115,10 @@ trait RelationShip
                 $data[0]->preHandleWith = false;
                 switch ($withType){
                     case 'hasOne':
-                        $data = (new HasOne($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk, $joinType);
+                        $data = (new HasOne($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk);
                         break;
                     case 'hasMany':
-                        $data = (new HasMany($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk, $joinType);
+                        $data = (new HasMany($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk);
                         break;
                     case 'belongsToMany':
                         $middleTableName = $joinType;
