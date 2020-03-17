@@ -9,6 +9,7 @@
 namespace EasySwoole\ORM\Tests\models;
 
 
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\AbstractModel;
 
 class Users extends AbstractModel
@@ -27,9 +28,9 @@ class Users extends AbstractModel
 
     public function roles_different_field_call()
     {
-        return $this->belongsToMany(Roles::class, 'user_role_different_field', 'u_id', 'r_id', function($model){
+        return $this->belongsToMany(Roles::class, 'user_role_different_field', 'u_id', 'r_id', function(QueryBuilder $builder){
             // 是目标表
-            $model->field("role_id");
+            $builder->fields("role_id");
         });
     }
 }
