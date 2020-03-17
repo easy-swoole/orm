@@ -51,14 +51,13 @@ trait RelationShip
      * @param callable|null $where
      * @param null          $pk
      * @param null          $joinPk
-     * @param string        $joinType
      * @return mixed|null
      * @throws
      */
-    protected function hasMany(string $class, callable $where = null, $pk = null, $joinPk = null, $joinType = '')
+    protected function hasMany(string $class, callable $where = null, $pk = null, $joinPk = null)
     {
         if ($this->preHandleWith === true){
-            return [$class, $where, $pk, $joinPk, $joinType, 'hasMany'];
+            return [$class, $where, $pk, $joinPk, '', 'hasMany'];
         }
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
         if (isset($this->_joinData[$fileName])) {
