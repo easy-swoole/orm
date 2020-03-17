@@ -15,6 +15,7 @@ use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Tests\models\Roles;
 use EasySwoole\ORM\Tests\models\UserRole;
+use EasySwoole\ORM\Tests\models\UserRoleDifferentField;
 use EasySwoole\ORM\Tests\models\Users;
 use EasySwoole\ORM\Utility\Schema\Table;
 use PHPUnit\Framework\TestCase;
@@ -76,6 +77,23 @@ class BelongsToManyTest extends TestCase
             $data = $this->connection->defer()->query($query);
             $this->assertTrue($data->getResult());
         }
+        // 创建一个中间表，主键名不同的
+        $sql = "SHOW TABLES LIKE 'user_role_different_field';";
+        $query = new QueryBuilder();
+        $query->raw($sql);
+        $data = $this->connection->defer()->query($query);
+
+        if (empty($data->getResult())){
+            $tableDDL = new Table('user_role_different_field');
+            $tableDDL->colInt('id',11)->setIsPrimaryKey()->setIsAutoIncrement();
+            $tableDDL->colInt('u_id',11);
+            $tableDDL->colInt('r_id',11);
+            $tableDDL->setIfNotExists();
+            $sql = $tableDDL->__createDDL();
+            $query->raw($sql);
+            $data = $this->connection->defer()->query($query);
+            $this->assertTrue($data->getResult());
+        }
     }
     function createRoleTable()
     {
@@ -121,6 +139,11 @@ class BelongsToManyTest extends TestCase
 
         $this->assertIsInt($userRole);
 
+        UserRoleDifferentField::create([
+            'u_id' => $user,
+            'r_id' => 1
+        ])->save();
+
 
         $userManyRole = Users::create([
             'name' => 'SiamBelongsToManyManyRole'
@@ -131,10 +154,18 @@ class BelongsToManyTest extends TestCase
             'user_id' => $userManyRole,
             'role_id' => 1
         ])->save();
+        UserRoleDifferentField::create([
+            'u_id' => $userManyRole,
+            'r_id' => 1
+        ])->save();
 
         UserRole::create([
             'user_id' => $userManyRole,
             'role_id' => 3
+        ])->save();
+        UserRoleDifferentField::create([
+            'u_id' => $userManyRole,
+            'r_id' => 3
         ])->save();
     }
 
@@ -154,6 +185,21 @@ class BelongsToManyTest extends TestCase
         $this->assertInstanceOf(Roles::class, $userMany->roles()[1]);
         $this->assertEquals('管理员', $userMany->roles()[0]->role_name);
         $this->assertEquals('普通用户', $userMany->roles()[1]->role_name);
+
+        // 自定义键名
+        $user = Users::create()->where('name', 'SiamBelongsToManySimpleRole')->get();
+        $this->assertInstanceOf(Users::class, $user);
+
+        $this->assertEquals(count($user->roles_different_field()), 1);
+        $this->assertInstanceOf(Roles::class, $user->roles_different_field()[0]);
+        $this->assertEquals('管理员', $user->roles_different_field()[0]->role_name);
+
+        $userMany = Users::create()->where('name', 'SiamBelongsToManyManyRole')->get();
+        $this->assertEquals(count($userMany->roles_different_field()), 2);
+        $this->assertInstanceOf(Roles::class, $userMany->roles_different_field()[0]);
+        $this->assertInstanceOf(Roles::class, $userMany->roles_different_field()[1]);
+        $this->assertEquals('管理员', $userMany->roles_different_field()[0]->role_name);
+        $this->assertEquals('普通用户', $userMany->roles_different_field()[1]->role_name);
     }
 
 
@@ -169,6 +215,18 @@ class BelongsToManyTest extends TestCase
         $this->assertInstanceOf(Users::class, $user);
         $this->assertEquals($user->toArray(false, false)['roles'][0]['role_name'], '管理员');
         $this->assertEquals($user->toArray(false, false)['roles'][1]['role_name'], '普通用户');
+
+        // 自定义键名
+        $user = Users::create()->where('name', 'SiamBelongsToManySimpleRole')->get();
+        $user->roles_different_field();
+        $this->assertInstanceOf(Users::class, $user);
+        $this->assertEquals($user->toArray(false, false)['roles_different_field'][0]['role_name'], '管理员');
+
+        $user = Users::create()->where('name', 'SiamBelongsToManyManyRole')->get();
+        $user->roles_different_field();
+        $this->assertInstanceOf(Users::class, $user);
+        $this->assertEquals($user->toArray(false, false)['roles_different_field'][0]['role_name'], '管理员');
+        $this->assertEquals($user->toArray(false, false)['roles_different_field'][1]['role_name'], '普通用户');
     }
 
     function testWithGet()
@@ -181,6 +239,15 @@ class BelongsToManyTest extends TestCase
         $this->assertInstanceOf(Users::class, $user);
         $this->assertEquals($user->toArray(false, false)['roles'][0]['role_name'], '管理员');
         $this->assertEquals($user->toArray(false, false)['roles'][1]['role_name'], '普通用户');
+        // 自定义键名
+        $user = Users::create()->where('name', 'SiamBelongsToManySimpleRole')->with(['roles_different_field'])->get();
+        $this->assertInstanceOf(Users::class, $user);
+        $this->assertEquals($user->toArray(false, false)['roles_different_field'][0]['role_name'], '管理员');
+
+        $user = Users::create()->where('name', 'SiamBelongsToManyManyRole')->with(['roles_different_field'])->get();
+        $this->assertInstanceOf(Users::class, $user);
+        $this->assertEquals($user->toArray(false, false)['roles_different_field'][0]['role_name'], '管理员');
+        $this->assertEquals($user->toArray(false, false)['roles_different_field'][1]['role_name'], '普通用户');
     }
 
     function testWithAll()
@@ -192,12 +259,32 @@ class BelongsToManyTest extends TestCase
         $this->assertEquals($user[0]->toArray(false, false)['roles'][0]['role_name'], '管理员');
         $this->assertEquals($user[1]->toArray(false, false)['roles'][0]['role_name'], '管理员');
         $this->assertEquals($user[1]->toArray(false, false)['roles'][1]['role_name'], '普通用户');
+
+        $user = Users::create()->with(['roles_different_field'])->all();
+        $this->assertInstanceOf(Users::class, $user[0]);
+        $this->assertInstanceOf(Users::class, $user[1]);
+
+        $this->assertEquals($user[0]->toArray(false, false)['roles_different_field'][0]['role_name'], '管理员');
+        $this->assertEquals($user[1]->toArray(false, false)['roles_different_field'][0]['role_name'], '管理员');
+        $this->assertEquals($user[1]->toArray(false, false)['roles_different_field'][1]['role_name'], '普通用户');
+    }
+
+    function testCallCondition()
+    {
+        $user = Users::create()->with(['roles_different_field_call'])->all();
+        $this->assertInstanceOf(Users::class, $user[0]);
+        $this->assertInstanceOf(Users::class, $user[1]);
+        // 在模型中设置了field  没有role_name
+        $this->assertTrue(!isset($user[0]->toArray(false, false)['roles_different_field_call'][0]['role_name']));
+        $this->assertTrue(!isset($user[1]->toArray(false, false)['roles_different_field_call'][0]['role_name']));
+        $this->assertTrue(!isset($user[1]->toArray(false, false)['roles_different_field_call'][1]['role_name']));
     }
 
     function testDelete()
     {
         Users::create()->destroy(null, true);
         UserRole::create()->destroy(null, true);
+        UserRoleDifferentField::create()->destroy(null, true);
 
         $this->assertIsInt(1);
     }

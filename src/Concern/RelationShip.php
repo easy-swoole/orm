@@ -80,16 +80,16 @@ trait RelationShip
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    protected function belongsToMany(string $class, $middleTableName, $pk = null, $childPk = null)
+    protected function belongsToMany(string $class, $middleTableName, $pk = null, $childPk = null, callable $callable = null)
     {
         if ($this->preHandleWith === true){
-            return [$class, null,$pk, $childPk, $middleTableName, 'belongsToMany'];
+            return [$class, $callable, $pk, $childPk, $middleTableName, 'belongsToMany'];
         }
         $fileName = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
         if (isset($this->_joinData[$fileName])) {
             return $this->_joinData[$fileName];
         }
-        $result = (new BelongsToMany($this, $class, $middleTableName, $pk, $childPk))->result();
+        $result = (new BelongsToMany($this, $class, $middleTableName, $pk, $childPk))->result($callable);
         $this->_joinData[$fileName] = $result;
         return $result;
     }
@@ -122,7 +122,8 @@ trait RelationShip
                         break;
                     case 'belongsToMany':
                         $middleTableName = $joinType;
-                        $data = (new BelongsToMany($this, $class, $middleTableName, $pk, $joinPk))->preHandleWith($data, $with);
+                        $callable = $where;
+                        $data = (new BelongsToMany($this, $class, $middleTableName, $pk, $joinPk))->preHandleWith($data, $with, $callable);
                         break;
                     default:
                         break;

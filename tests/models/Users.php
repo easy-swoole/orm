@@ -19,4 +19,17 @@ class Users extends AbstractModel
     {
         return $this->belongsToMany(Roles::class, 'user_role');
     }
+
+    public function roles_different_field()
+    {
+        return $this->belongsToMany(Roles::class, 'user_role_different_field', 'u_id', 'r_id');
+    }
+
+    public function roles_different_field_call()
+    {
+        return $this->belongsToMany(Roles::class, 'user_role_different_field', 'u_id', 'r_id', function($model){
+            // 是目标表
+            $model->field("role_id");
+        });
+    }
 }
