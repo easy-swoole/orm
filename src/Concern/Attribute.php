@@ -232,7 +232,8 @@ trait Attribute
             return call_user_func([$this,$method],$this->data[$attrName] ?? null, $this->data);
         }
         // 判断是否有关联查询
-        if (method_exists($this, $attrName)) {
+        $notWhile = ['count', 'where', 'order', 'alias', 'join', 'with', 'max', 'min', 'avg','sum', 'field', 'get', 'all', 'delete', 'result'];
+        if (method_exists($this, $attrName) && !in_array($attrName, $notWhile) ) {
             return $this->$attrName();
         }
         // 是否是附加字段
@@ -254,11 +255,11 @@ trait Attribute
     {
         if (isset($this->schemaInfo()->getColumns()[$attrName])) {
             $col = $this->schemaInfo()->getColumns()[$attrName];
-            $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             $method = 'set' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
             if ($setter && method_exists($this, $method)) {
                 $attrValue = call_user_func([$this,$method],$attrValue, $this->data);
             }
+            $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             $this->data[$attrName] = $attrValue;
             return true;
         } else {
