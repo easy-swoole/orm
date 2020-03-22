@@ -155,6 +155,39 @@ trait Attribute
     }
 
     /**
+     * 获取模型当前数据，不经过获取器
+     * @param bool $notNul
+     * @param bool $strict
+     * @return array
+     */
+    public function toRawArray($notNul = false, $strict = true)
+    {
+        $tem = $this->data;
+        if ($notNul){
+            foreach ($this->data as $key => $value){
+                if ($value !== null){
+                    $tem[$key] = $value;
+                }
+            }
+        }
+
+        if (!$strict){
+            $tem = $this->reToArray($tem);
+        }
+
+        if (is_array($this->fields)) {
+            foreach ($tem as $key => $value) {
+                if (!in_array($key, $this->fields)) {
+                    unset($tem[$key]);
+                }
+            }
+            $this->reset();
+        }
+
+        return $tem;
+    }
+
+    /**
      * 循环处理附加数据的toArray
      * @param $temp
      * @return mixed
