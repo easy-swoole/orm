@@ -155,6 +155,39 @@ trait Attribute
     }
 
     /**
+     * 获取模型当前数据，不经过获取器
+     * @param bool $notNul
+     * @param bool $strict
+     * @return array
+     */
+    public function toRawArray($notNul = false, $strict = true)
+    {
+        $tem = $this->data;
+        if ($notNul){
+            foreach ($this->data as $key => $value){
+                if ($value !== null){
+                    $tem[$key] = $value;
+                }
+            }
+        }
+
+        if (!$strict){
+            $tem = $this->reToArray($tem);
+        }
+
+        if (is_array($this->fields)) {
+            foreach ($tem as $key => $value) {
+                if (!in_array($key, $this->fields)) {
+                    unset($tem[$key]);
+                }
+            }
+            $this->reset();
+        }
+
+        return $tem;
+    }
+
+    /**
      * 循环处理附加数据的toArray
      * @param $temp
      * @return mixed
@@ -232,7 +265,8 @@ trait Attribute
             return call_user_func([$this,$method],$this->data[$attrName] ?? null, $this->data);
         }
         // 判断是否有关联查询
-        if (method_exists($this, $attrName)) {
+        $notWhile = ['count', 'where', 'order', 'alias', 'join', 'with', 'max', 'min', 'avg','sum', 'field', 'get', 'all', 'delete', 'result'];
+        if (method_exists($this, $attrName) && !in_array($attrName, $notWhile) ) {
             return $this->$attrName();
         }
         // 是否是附加字段
@@ -254,11 +288,11 @@ trait Attribute
     {
         if (isset($this->schemaInfo()->getColumns()[$attrName])) {
             $col = $this->schemaInfo()->getColumns()[$attrName];
-            $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             $method = 'set' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
             if ($setter && method_exists($this, $method)) {
                 $attrValue = call_user_func([$this,$method],$attrValue, $this->data);
             }
+            $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             $this->data[$attrName] = $attrValue;
             return true;
         } else {
