@@ -11,7 +11,7 @@ class Config extends \EasySwoole\Pool\Config
     protected $password;
     protected $database;
     protected $port = 3306;
-    protected $timeout = 30;
+    protected $timeout = 45;
     protected $charset = 'utf8';
     protected $autoPing = 5;
 
