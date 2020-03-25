@@ -88,7 +88,7 @@ class BelongsToMany
             call_user_func($callable, $this->childModel);
         }
         $childRes = $this->childModel->all(function (QueryBuilder $builder) use($childPk, $childPkValue, $callable){
-            $builder->where($childPk, $childPkValue, "IN");
+            $builder->where($this->childModel->schemaInfo()->getPkFiledName(), $childPkValue, "IN");
             if (is_callable($callable)){
                 call_user_func($callable, $builder);
             }
@@ -139,7 +139,7 @@ class BelongsToMany
         $BPkValue = array_values(array_unique($BPkValue));
 
         $BValue   = $this->childModel->all(function (QueryBuilder $builder) use($childPk, $BPkValue, $callable){
-            $builder->where($childPk, $BPkValue, "IN");
+            $builder->where($this->childModel->schemaInfo()->getPkFiledName(), $BPkValue, "IN");
             if ($callable !== null){
                 call_user_func($callable, $builder);
             }
