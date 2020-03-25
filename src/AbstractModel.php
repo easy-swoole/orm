@@ -555,12 +555,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $data = $this->get();
         if (!$data) return $data;
 
-        $data = $data->getAttr($column);
-        if (!empty($data)) {
-            return $data;
-        } else {
-            return NULL;
-        }
+        return  $data->getAttr($column);
     }
 
     /**
