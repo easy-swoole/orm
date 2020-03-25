@@ -620,7 +620,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder->update($this->getTableName(), $data);
 
         // beforeUpdate事件
-        $beforeRes = $this->callEvent('onBeforeUpdate');
+        $beforeRes = $this->callEvent('onBeforeUpdate', $data);
         if ($beforeRes === false){
             $this->callEvent('onAfterUpdate', false);
             return false;
