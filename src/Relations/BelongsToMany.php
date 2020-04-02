@@ -50,6 +50,11 @@ class BelongsToMany
         $this->childModel      = new $class;
         $this->middelTableName = $middleTableName;
 
+        // 如果父级设置客户端，则继承
+        if ($this->fatherModel->getExecClient()){
+            $this->childModel->setExecClient($this->fatherModel->getExecClient());
+        }
+
         if ($pk!==null){
             $this->pk = $pk;
         }else{
@@ -77,7 +82,13 @@ class BelongsToMany
 
         $queryBuilder = new QueryBuilder();
         $queryBuilder->raw("SELECT $pk,$childPk FROM `{$this->middelTableName}` WHERE `{$pk}` = ? ", [$pkValue]);
-        $middleQuery = DbManager::getInstance()->query($queryBuilder, true, $this->fatherModel->getConnectionName());
+
+        // 如果父级设置客户端，则继承
+        if ($this->fatherModel->getExecClient()){
+            $middleQuery = DbManager::getInstance()->query($queryBuilder, true, $this->fatherModel->getExecClient());
+        }else{
+            $middleQuery = DbManager::getInstance()->query($queryBuilder, true, $this->fatherModel->getConnectionName());
+        }
 
         if (!$middleQuery->getResult()) return null;
 
@@ -124,7 +135,13 @@ class BelongsToMany
 
         $queryBuilder = new QueryBuilder();
         $queryBuilder->raw("SELECT $pk,$childPk FROM `{$this->middelTableName}` WHERE `{$pk}` IN ({$pkValueStr}) ");
-        $middleQuery = DbManager::getInstance()->query($queryBuilder, true, $this->fatherModel->getConnectionName());
+
+        // 如果父级设置客户端，则继承
+        if ($this->fatherModel->getExecClient()){
+            $middleQuery = DbManager::getInstance()->query($queryBuilder, true, $this->fatherModel->getExecClient());
+        }else{
+            $middleQuery = DbManager::getInstance()->query($queryBuilder, true, $this->fatherModel->getConnectionName());
+        }
 
         if (!$middleQuery->getResult()) return $data;
 

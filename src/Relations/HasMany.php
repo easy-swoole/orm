@@ -44,6 +44,11 @@ class HasMany
         $ins = $ref->newInstance();
         $builder = new QueryBuilder();
 
+        // 如果父级设置客户端，则继承
+        if ($this->fatherModel->getExecClient()){
+            $ins->setExecClient($this->fatherModel->getExecClient());
+        }
+
         if ($pk === null) {
             $pk = $this->fatherModel->schemaInfo()->getPkFiledName();
         }
@@ -96,6 +101,12 @@ class HasMany
 
         /** @var AbstractModel $insClass */
         $insClass = new $this->childModelName;
+
+        // 如果父级设置客户端，则继承
+        if ($this->fatherModel->getExecClient()){
+            $insClass->setExecClient($this->fatherModel->getExecClient());
+        }
+
         $insData  = $insClass->where($insPk, $pks, 'IN')->all(function (QueryBuilder $queryBuilder) use($where){
             if (is_callable($where)){
                 call_user_func($where, $queryBuilder);

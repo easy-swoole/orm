@@ -100,6 +100,20 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->fields = $fields;
         return $this;
     }
+
+    /**
+     * toArray时 隐藏字段
+     * @param array|string $fields
+     * @return $this
+     */
+    public function hidden($fields)
+    {
+        if (!is_array($fields)) {
+            $fields = [$fields];
+        }
+        $this->hidden = $fields;
+        return $this;
+    }
     /**
      * @return $this
      */
@@ -451,13 +465,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         $model = new static();
-
         $model->data($res[0], false);
         $model->lastQuery = $model->lastQuery();
+        if ($this->client){
+            $model->setExecClient($this->client);
+        }
         // 预查询
         if (!empty($this->with)){
             $model->with($this->with);
-            $model->preHandleWith($model);
+            $model = $model->preHandleWith($model);
         }
         return $model;
     }
@@ -487,7 +503,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         if (is_array($results)) {
             foreach ($results as $result) {
-                $resultSet[] = (new static)->connection($this->connectionName)->data($result, false);
+                $tem = (new static)->connection($this->connectionName)->data($result, false);
+                if ($this->client){
+                    $tem->setExecClient($this->client);
+                }
+                $resultSet[] = $tem;
             }
             if (!empty($this->with)){
                 $resultSet = $this->preHandleWith($resultSet);
@@ -692,6 +712,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->group  = null;
         $this->alias  = null;
         $this->tempTableName = null;
+        $this->hidden = [];
     }
 
     /**
@@ -850,6 +871,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public static function invoke(ClientInterface $client,array $data = []): AbstractModel
     {
         return (static::create($data))->setExecClient($client);
+    }
+
+    /**
+     * 获取invoke注入的客户端
+     * @return ClientInterface|null
+     */
+    public function getExecClient()
+    {
+        if ($this->client){
+            return $this->client;
+        }
+        return null;
     }
 
 }
