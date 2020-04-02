@@ -145,22 +145,8 @@ trait Attribute
             $temp = $this->reToArray($temp);
         }
 
-        if (is_array($this->fields)) {
-            foreach ($temp as $key => $value) {
-                if (!in_array($key, $this->fields)) {
-                    unset($temp[$key]);
-                }
-            }
-            $this->fields = "*";
-        }
-        if (is_array($this->hidden)){
-            foreach ($temp as $key => $value) {
-                if (in_array($key, $this->hidden)) {
-                    unset($temp[$key]);
-                }
-            }
-            $this->hidden = [];
-        }
+        $temp = $this->filterData($temp);
+
         return $temp;
     }
 
@@ -185,16 +171,31 @@ trait Attribute
             $tem = $this->reToArray($tem);
         }
 
-        if (is_array($this->fields)) {
-            foreach ($tem as $key => $value) {
-                if (!in_array($key, $this->fields)) {
-                    unset($tem[$key]);
-                }
-            }
-            $this->reset();
-        }
+        $tem = $this->filterData($tem);
 
         return $tem;
+    }
+
+    protected function filterData($data)
+    {
+        if (is_array($this->fields)) {
+            foreach ($data as $key => $value) {
+                if (!in_array($key, $this->fields)) {
+                    unset($data[$key]);
+                }
+            }
+            $this->fields = "*";
+        }
+
+        if (is_array($this->hidden)){
+            foreach ($data as $key => $value) {
+                if (in_array($key, $this->hidden)) {
+                    unset($data[$key]);
+                }
+            }
+            $this->hidden = [];
+        }
+        return $data;
     }
 
     /**
