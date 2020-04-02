@@ -34,7 +34,7 @@ trait Attribute
     /** @var array 未应用修改器和获取器之前的原始数据 */
     private $originData;
     /** @var array toArray时候需要隐藏的字段 */
-    private $hidden;
+    private $hidden = [];
 
     /**
      * 表结构信息
@@ -151,7 +151,7 @@ trait Attribute
                     unset($temp[$key]);
                 }
             }
-            $this->reset();
+            $this->fields = "*";
         }
         if (is_array($this->hidden)){
             foreach ($temp as $key => $value) {
@@ -159,6 +159,7 @@ trait Attribute
                     unset($temp[$key]);
                 }
             }
+            $this->hidden = [];
         }
         return $temp;
     }
