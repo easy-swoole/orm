@@ -155,7 +155,7 @@ trait Attribute
         }
         if (is_array($this->hidden)){
             foreach ($temp as $key => $value) {
-                if (!in_array($key, $this->hidden)) {
+                if (in_array($key, $this->hidden)) {
                     unset($temp[$key]);
                 }
             }

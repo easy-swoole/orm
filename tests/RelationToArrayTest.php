@@ -108,8 +108,9 @@ class RelationToArrayTest extends TestCase
         $test_user_model = TestRelationModel::create()->get([
             'name' => 'siam_relation'
         ]);
+        $test_user_model->user_list();
 
-        $toArray = $test_user_model->toArray(false, false);
+        $toArray = $test_user_model->hidden('user_list')->toArray(false, false);
         $this->assertEquals(5, count($toArray));
         $this->assertArrayNotHasKey("user_list", $toArray);
     }
