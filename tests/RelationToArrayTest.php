@@ -67,6 +67,19 @@ class RelationToArrayTest extends TestCase
     }
 
     /**
+     * 在invoke中触发关联
+     * @throws \Throwable
+     */
+    public function testGetInvokeRelation()
+    {
+        DbManager::getInstance()->invoke(function ($client) {
+            $testUserModel = TestRelationModel::invoke($client)->with('user_list')->get();
+            $this->assertNotEmpty($testUserModel['user_list']);
+            $this->assertInstanceOf(TestUserListModel::class, $testUserModel['user_list']);
+        });
+    }
+
+    /**
      * field筛选 toArray
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \EasySwoole\ORM\Exception\Exception
@@ -84,6 +97,21 @@ class RelationToArrayTest extends TestCase
         $this->assertEquals(1, count($toArray));
         $this->assertNotEmpty($toArray['user_list']);
         $this->assertIsArray($toArray['user_list']);
+    }
+
+    /**
+     * hidden隐藏
+     * @throws
+     */
+    public function testHiddenFilterToArray()
+    {
+        $test_user_model = TestRelationModel::create()->get([
+            'name' => 'siam_relation'
+        ]);
+
+        $toArray = $test_user_model->toArray(false, false);
+        $this->assertEquals(5, count($toArray));
+        $this->assertArrayNotHasKey("user_list", $toArray);
     }
 
     public function testJson()

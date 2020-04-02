@@ -33,6 +33,8 @@ trait Attribute
     private $_joinData = [];
     /** @var array 未应用修改器和获取器之前的原始数据 */
     private $originData;
+    /** @var array toArray时候需要隐藏的字段 */
+    private $hidden;
 
     /**
      * 表结构信息
@@ -150,6 +152,13 @@ trait Attribute
                 }
             }
             $this->reset();
+        }
+        if (is_array($this->hidden)){
+            foreach ($temp as $key => $value) {
+                if (!in_array($key, $this->hidden)) {
+                    unset($temp[$key]);
+                }
+            }
         }
         return $temp;
     }

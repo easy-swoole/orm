@@ -8,6 +8,7 @@ use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Relations\BelongsToMany;
 use EasySwoole\ORM\Relations\HasMany;
 use EasySwoole\ORM\Relations\HasOne;
+use SebastianBergmann\CodeCoverage\Report\PHP;
 
 /**
  * 模型关联处理
