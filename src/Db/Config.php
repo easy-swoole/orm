@@ -14,7 +14,7 @@ class Config extends \EasySwoole\Pool\Config
     protected $timeout = 45;
     protected $charset = 'utf8';
     protected $autoPing = 5;
-    protected $autoRecycleObj = true;
+    protected $autoRecycleObj = false;
 
     protected $strict_type = false; // 开启严格模式，返回的字段将自动转为数字类型
     protected $fetch_mode = false;
