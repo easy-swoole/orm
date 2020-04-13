@@ -54,6 +54,9 @@ class DbManager
      */
     function query(QueryBuilder $builder, bool $raw = false, $connection = 'default', float $timeout = null):Result
     {
+        $cid = Coroutine::getCid();
+        $isTransaction = isset($this->transactionContext[$cid]);
+
         if(is_string($connection)){
             $conTemp = $this->getConnection($connection);
             if(!$conTemp){
@@ -82,6 +85,12 @@ class DbManager
             }
             $ret->setTotalCount($count->getResult()[0]['count']);
         }
+
+        // 非事务环境，并且非invoke注入客户端  同时配置了自动回收
+        if (!$isTransaction && is_string($connection) && $this->getConnection($connection)->getConfig()->isAutoRecycleObj() ){
+            $this->getConnection($connection)->getClientPool()->recycleObj($client);
+        }
+
         return $ret;
     }
 
@@ -135,12 +144,15 @@ class DbManager
          */
         $cid = Coroutine::getCid();
         foreach ($connections as $name) {
+            //  先行设置事务管理器的状态（为了在query执行的时候 不回收客户端）
+            $this->transactionContext[$cid][] = $name;
             $builder = new QueryBuilder();
             $builder->starTtransaction();
             $res = $this->query($builder,true,$name);
             if ($res->getResult() === true){
                 $this->transactionContext[$cid][] = $name;
             }else{
+                $this->clearTransactionContext($name);
                 $this->rollback();
                 return false;
             }
