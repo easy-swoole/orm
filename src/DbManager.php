@@ -149,9 +149,7 @@ class DbManager
             $builder = new QueryBuilder();
             $builder->starTtransaction();
             $res = $this->query($builder,true,$name);
-            if ($res->getResult() === true){
-                $this->transactionContext[$cid][] = $name;
-            }else{
+            if ($res->getResult() !== true){
                 $this->clearTransactionContext($name);
                 $this->rollback();
                 return false;
