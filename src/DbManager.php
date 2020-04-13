@@ -87,7 +87,7 @@ class DbManager
         }
 
         // 非事务环境，并且非invoke注入客户端  同时配置了自动回收
-        if ($isTransaction && is_string($connection) && $this->getConnection($connection)->getConfig()->isAutoRecycleObj() ){
+        if (!$isTransaction && is_string($connection) && $this->getConnection($connection)->getConfig()->isAutoRecycleObj() ){
             $this->getConnection($connection)->getClientPool()->recycleObj($client);
         }
 
