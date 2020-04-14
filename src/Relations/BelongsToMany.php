@@ -95,9 +95,6 @@ class BelongsToMany
         // in查询目标表
         $childPkValue = array_column($middleQuery->getResult(), $childPk);
 
-        if ($callable !== null){
-            call_user_func($callable, $this->childModel);
-        }
         $childRes = $this->childModel->all(function (QueryBuilder $builder) use($childPk, $childPkValue, $callable){
             $builder->where($this->childModel->schemaInfo()->getPkFiledName(), $childPkValue, "IN");
             if (is_callable($callable)){
