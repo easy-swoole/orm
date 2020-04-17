@@ -25,4 +25,11 @@ class TestUserListModel extends AbstractModel
 {
     protected $tableName='user_test_list';
 
+    /**
+     * 非模型属性字段 获取器，可用于append
+     */
+    public function getAppendOneAttr()
+    {
+        return "siam_append";
+    }
 }

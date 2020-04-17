@@ -41,4 +41,12 @@ class TestRelationModel extends AbstractModel
     {
         return $this->hasMany(TestUserListModel::class, null, 'name', 'name');
     }
+
+    /**
+     * 非模型属性字段 获取器，可用于append
+     */
+    public function getAppendOneAttr()
+    {
+        return "siam_append";
+    }
 }

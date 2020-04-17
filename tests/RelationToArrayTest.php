@@ -115,6 +115,37 @@ class RelationToArrayTest extends TestCase
         $this->assertArrayNotHasKey("user_list", $toArray);
     }
 
+    /**
+     * append 追加非模型属性字段（自定义获取器）
+     * @throws
+     */
+    public function testAppenFilterToArray()
+    {
+        $test_user_model = TestRelationModel::create()->get([
+            'name' => 'siam_relation'
+        ]);
+        $test_user_model->user_list();
+        $toArray = $test_user_model->append(['append_one'])->toArray(false, false);
+
+        $this->assertEquals(7, count($toArray));
+        $this->assertArrayHasKey("append_one", $toArray);
+    }
+
+    /**
+     * visible 筛选显示
+     * @throws
+     */
+    public function testVisibleFilterToArray()
+    {
+        $test_user_model = TestRelationModel::create()->get([
+            'name' => 'siam_relation'
+        ]);
+        $test_user_model->user_list();
+        $toArray = $test_user_model->visible(['name'])->toArray(false, false);
+
+        $this->assertEquals(1, count($toArray));
+    }
+
     public function testJson()
     {
         $test_user_model = TestRelationModel::create()->get([
@@ -122,6 +153,22 @@ class RelationToArrayTest extends TestCase
         ]);
         $relation =  $test_user_model->user_list();
         // echo json_encode($test_user_model);
+        $this->assertIsString(json_encode($test_user_model));
+    }
+
+    /**
+     * 测试 指定字段 json
+     * @throws
+     */
+    public function testVisibleJson()
+    {
+        $test_user_model = TestRelationModel::create()->get([
+            'name' => 'siam_relation'
+        ])->visible(['name']);
+        $relation =  $test_user_model->user_list();
+        $array  = json_decode(json_encode($test_user_model), true);
+
+        $this->assertEquals(1, count($array));
         $this->assertIsString(json_encode($test_user_model));
     }
 
