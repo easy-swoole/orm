@@ -13,4 +13,8 @@ interface ClientInterface
     public function lastQuery():? QueryBuilder;
     public function lastQueryResult():? Result;
 
+    public function startTransaction();
+    public function commit();
+    public function rollback();
+    public function setTransactionStatus(bool $bool);
 }

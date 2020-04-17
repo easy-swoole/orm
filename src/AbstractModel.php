@@ -84,7 +84,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function page(int $page,int $limit = 10)
     {
         $this->limit(($page - 1) * $limit , $limit);
-        $this->withTotalCount();
         return $this;
     }
 
