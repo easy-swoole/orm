@@ -69,6 +69,8 @@ class DbManager
         }else{
             $client = $connection;
         }
+        // 判断是否为事务，是则处理client的事务标识
+        $this->preTransactionIdentify($client, $builder, $raw);
 
         $start = microtime(true);
         $ret = $client->query($builder,$raw);
@@ -125,13 +127,7 @@ class DbManager
     public function startTransaction($connections = 'default'):bool
     {
         if ($connections instanceof ClientInterface){
-            $builder = new QueryBuilder();
-            $builder->startTransaction();
-            $res = $this->query($builder, true,$connections);
-            if ($res->getResult() !== true){
-                return false;
-            }
-            return true;
+            return $connections->startTransaction();
         }
 
         if(!is_array($connections)){
@@ -168,13 +164,7 @@ class DbManager
     public function commit($connectName = NULL):bool
     {
         if ($connectName instanceof ClientInterface){
-            $builder = new QueryBuilder();
-            $builder->commit();
-            $res = $this->query($builder, true,$connectName);
-            if ($res->getResult() !== true){
-                return false;
-            }
-            return true;
+            return $connectName->commit();
         }
 
         $cid = Coroutine::getCid();
@@ -210,13 +200,7 @@ class DbManager
     public function rollback($connectName = NULL):bool
     {
         if ($connectName instanceof ClientInterface){
-            $builder = new QueryBuilder();
-            $builder->rollback();
-            $res = $this->query($builder, true,$connectName);
-            if ($res->getResult() !== true){
-                return false;
-            }
-            return true;
+            return $connectName->rollback();
         }
 
         $cid = Coroutine::getCid();
@@ -264,6 +248,33 @@ class DbManager
         }
 
         unset($this->transactionContext[$cid]);
+        return true;
+    }
+
+    /**
+     * 预处理客户端储存事务标识状态
+     * @param ClientInterface $client
+     * @param QueryBuilder $builder
+     * @param bool $raw
+     * @return bool
+     */
+    private function preTransactionIdentify(ClientInterface $client, QueryBuilder $builder, bool $raw)
+    {
+        // 事务操作都是raw执行
+        if (!$raw){
+            return true;
+        }
+        $lastQuery = $builder->getLastQuery();
+
+        // 判断build的lastQuey是否跟事务有关
+        if ($lastQuery === "start transaction"){
+            return $client->setTransactionStatus(true);
+        }else if ($lastQuery === "commit"){
+            return $client->setTransactionStatus(false);
+        }else if ($lastQuery === "rollback"){
+            return $client->setTransactionStatus(false);
+        }
+
         return true;
     }
 

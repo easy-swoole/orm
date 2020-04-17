@@ -14,6 +14,8 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
 
     protected $lastQuery;
     protected $lastQueryResult;
+    /** @var bool 是否事务当中 */
+    public $isTransaction = false;
 
     public function query(QueryBuilder $builder, bool $rawQuery = false): Result
     {
@@ -62,9 +64,9 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
             throw $throwable;
         }finally{
             if($errno){
-                /*
-                    * 断线的时候回收链接
-                */
+                /**
+                 * 断线收回链接
+                 */
                 if(in_array($errno,[2006,2013])){
                     $this->close();
                 }
@@ -82,7 +84,14 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
 
     function objectRestore()
     {
-        // TODO: Implement objectRestore() method.
+        if ($this->isTransaction){
+            try {
+                $this->rollback();
+            } catch (\Throwable $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+        $this->reset();
     }
 
     function beforeUse(): ?bool
@@ -108,4 +117,56 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
         return $this->lastQueryResult;
     }
 
+    /***
+     * @return bool
+     * @throws Exception
+     * @throws \Throwable
+     */
+    public function startTransaction(){
+        $this->isTransaction = true;
+
+        $builder = new QueryBuilder();
+        $builder->startTransaction();
+        $res = $this->query($builder, TRUE);
+        return $res->getResult() == true;
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     * @throws \Throwable
+     */
+    public function commit(){
+        $builder = new QueryBuilder();
+        $builder->commit();
+        $res = $this->query($builder, TRUE);
+
+        if ($res->getResult() == true){
+            $this->isTransaction = false;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     * @throws \Throwable
+     */
+    public function rollback(){
+        $builder = new QueryBuilder();
+        $builder->rollback();
+        $res = $this->query($builder, TRUE);
+
+        if ($res->getResult() == true){
+            $this->isTransaction = false;
+            return true;
+        }
+        return false;
+    }
+
+    public function setTransactionStatus(bool $bool)
+    {
+        $this->isTransaction = $bool;
+    }
 }
