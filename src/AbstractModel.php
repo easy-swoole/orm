@@ -6,6 +6,7 @@ namespace EasySwoole\ORM;
 use ArrayAccess;
 use EasySwoole\Mysqli\Client;
 use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\Collection\Collection;
 use EasySwoole\ORM\Db\ClientInterface;
 use EasySwoole\ORM\Db\Cursor;
 use EasySwoole\ORM\Db\CursorInterface;
@@ -113,6 +114,35 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->hidden = $fields;
         return $this;
     }
+
+    /**
+     * toArray时 追加显示的字段
+     * @param array $append
+     * @return $this
+     */
+    public function append(array $append)
+    {
+        if (!is_array($append)) {
+            $append = [$append];
+        }
+        $this->append = $append;
+        return $this;
+    }
+
+    /**
+     * toArray时 规定要显示的字段
+     * @param array $visible
+     * @return $this
+     */
+    public function visible(array $visible)
+    {
+        if (!is_array($visible)) {
+            $visible = [$visible];
+        }
+        $this->visible = $visible;
+        return $this;
+    }
+
     /**
      * @return $this
      */
@@ -481,7 +511,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 批量查询
      * @param null $where
-     * @return array|bool|Cursor
+     * @return array|bool|Cursor|Collection
      * @throws Exception
      * @throws \Throwable
      */
@@ -512,6 +542,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $resultSet = $this->preHandleWith($resultSet);
             }
         }
+        if (DbManager::getInstance()->getConnection($this->connectionName)->getConfig()->isReturnCollection()){
+            return new Collection($resultSet);
+        }
+
         return $resultSet;
     }
 
@@ -712,6 +746,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->alias  = null;
         $this->tempTableName = null;
         $this->hidden = [];
+        $this->append = [];
+        $this->visible = [];
     }
 
     /**

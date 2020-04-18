@@ -35,6 +35,10 @@ trait Attribute
     private $originData;
     /** @var array toArray时候需要隐藏的字段 */
     private $hidden = [];
+    /** @var array toArray时候追加显示的字段 */
+    private $append = [];
+    /** @var array toArray时候需要显示的字段 */
+    private $visible = [];
 
     /**
      * 表结构信息
@@ -105,19 +109,7 @@ trait Attribute
      */
     public function jsonSerialize()
     {
-        $return = [];
-        foreach ($this->data as $key => $data){
-            if (method_exists($this, $key)){
-                $return[$key] = $this->data[$key];
-            }else{
-                $return[$key] = $this->getAttr($key);
-            }
-        }
-        foreach ($this->_joinData as $key => $data)
-        {
-            $return[$key] = $data;
-        }
-        return $return;
+        return $this->toArray(false, false);
     }
 
     /**
@@ -176,8 +168,14 @@ trait Attribute
         return $tem;
     }
 
+    /**
+     * toArray时 执行数据过滤
+     * @param $data
+     * @return mixed
+     */
     protected function filterData($data)
     {
+        /** fields 是临时筛选显示用 */
         if (is_array($this->fields)) {
             foreach ($data as $key => $value) {
                 if (!in_array($key, $this->fields)) {
@@ -186,14 +184,30 @@ trait Attribute
             }
             $this->fields = "*";
         }
-
-        if (is_array($this->hidden)){
+        /** 筛选显示 */
+        if (is_array($this->visible) && !empty($this->visible) ){
+            foreach ($data as $key => $value) {
+                if (!in_array($key, $this->visible)) {
+                    unset($data[$key]);
+                }
+            }
+        }
+        /** 筛选隐藏 */
+        if (is_array($this->hidden) && !empty($this->hidden) ){
             foreach ($data as $key => $value) {
                 if (in_array($key, $this->hidden)) {
                     unset($data[$key]);
                 }
             }
-            $this->hidden = [];
+        }
+        // 追加非模型字段的属性，必须设置获取器。
+        if (is_array($this->append) && !empty($this->append) ){
+            foreach ($this->append as $appendKey){
+                $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $appendKey ) ) ) . 'Attr';
+                if (method_exists($this, $method)){
+                    $data[$appendKey] = $this->$method();
+                }
+            }
         }
         return $data;
     }
@@ -258,7 +272,8 @@ trait Attribute
         if (method_exists($this, $method)) return true;
 
         // 判断是否有关联查询
-        if (method_exists($this, $name)) return true;
+        $notWhile = ['count', 'where', 'order', 'alias', 'join', 'with', 'max', 'min', 'avg','sum', 'field', 'get', 'all', 'delete', 'result', 'hidden', 'visible', 'append'];
+        if (method_exists($this, $name)  && !in_array($name, $notWhile) ) return true;
 
         return false;
     }
@@ -266,6 +281,7 @@ trait Attribute
 
     /**
      * 获取器
+     * @tip 关联查询的名字不可以为关键字
      * @param $attrName
      * @return mixed|null
      */
@@ -276,7 +292,7 @@ trait Attribute
             return call_user_func([$this,$method],$this->data[$attrName] ?? null, $this->data);
         }
         // 判断是否有关联查询
-        $notWhile = ['count', 'where', 'order', 'alias', 'join', 'with', 'max', 'min', 'avg','sum', 'field', 'get', 'all', 'delete', 'result'];
+        $notWhile = ['count', 'where', 'order', 'alias', 'join', 'with', 'max', 'min', 'avg','sum', 'field', 'get', 'all', 'delete', 'result', 'hidden', 'visible', 'append'];
         if (method_exists($this, $attrName) && !in_array($attrName, $notWhile) ) {
             return $this->$attrName();
         }

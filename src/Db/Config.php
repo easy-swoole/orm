@@ -18,6 +18,7 @@ class Config extends \EasySwoole\Pool\Config
 
     protected $strict_type = false; // 开启严格模式，返回的字段将自动转为数字类型
     protected $fetch_mode = false;
+    protected $returnCollection = false; // 返回结果为结果集
 
     /**
      * @return mixed
@@ -211,6 +212,22 @@ class Config extends \EasySwoole\Pool\Config
     public function setAutoRecycleObj(bool $autoRecycleObj): void
     {
         $this->autoRecycleObj = $autoRecycleObj;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isReturnCollection(): bool
+    {
+        return $this->returnCollection;
+    }
+
+    /**
+     * @param bool $returnCollection
+     */
+    public function setReturnCollection(bool $returnCollection): void
+    {
+        $this->returnCollection = $returnCollection;
     }
 
 }
