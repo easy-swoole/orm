@@ -28,17 +28,18 @@ class MysqlPool extends AbstractPool
      */
     public function itemIntervalCheck($item): bool
     {
-        /*
-         * 如果最后一次使用时间超过autoPing间隔
+        /**
+         * 已经达到ping的时间间隔
          */
         /** @var Config $config */
         $config = $this->getConfig();
-        if($config->getAutoPing() > 0 && (time() - $item->__lastUseTime > $config->getAutoPing())){
+        if($config->getAutoPing() > 0 && (time() - $item->__lastPingTime > $config->getAutoPing())){
             try{
                 //执行一个sql触发活跃信息
                 $item->rawQuery('select 1');
-                //标记使用时间，避免被再次gc
-                $item->__lastUseTime = time();
+                // 标记最后一次ping的时间  不修改__lastUseTime是为了让idleCheck 在空闲的时候正常回收
+                // auto ping是为了保证在 idleMaxTime周期内的可用性 （如果超出了周期还没使用，则代表现在进程空闲，可以先回收）
+                $item->__lastPingTime = time();
                 return true;
             }catch (\Throwable $throwable){
                 //异常说明该链接出错了，return 进行回收
