@@ -16,6 +16,7 @@ class MysqlPool extends AbstractPool
         $config = $this->getConfig();
         $client = new MysqliClient(new MysqlConfig($config->toArray()));
         if($client->connect()){
+            $config->__lastPingTime = 0;
             return $client;
         }else{
             throw new Exception($client->mysqlClient()->connect_error);
