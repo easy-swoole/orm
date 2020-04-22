@@ -293,7 +293,7 @@ trait Attribute
         if (isset($this->_joinData[$attrName])) return $this->_joinData[$attrName];
 
         // 判断是否有关联查询
-        // todo 还需要判断非Model基类方法
+        // 这里不用担心关联查询的时候会触发基类方法，用户在定义的时候就会冲突了，如query(){ }
         if ( method_exists($this, $attrName) ) {
             return $this->$attrName();
         }
