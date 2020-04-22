@@ -271,16 +271,14 @@ trait Attribute
         $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $name ) ) ) . 'Attr';
         if (method_exists($this, $method)) return true;
 
-        // 判断是否有关联查询
-        $notWhile = ['count', 'where', 'order', 'alias', 'join', 'with', 'max', 'min', 'avg','sum', 'field', 'get', 'all', 'delete', 'result', 'hidden', 'visible', 'append'];
-        if (method_exists($this, $name)  && !in_array($name, $notWhile) ) return true;
+        if ( method_exists($this, $name) ) return true;
 
         return false;
     }
 
 
     /**
-     * 获取器
+     * 获取属性：获取器 > 原始字段 > 附加字段 > 关联查询
      * @tip 关联查询的名字不可以为关键字
      * @param $attrName
      * @return mixed|null
@@ -291,20 +289,18 @@ trait Attribute
         if (method_exists($this, $method)) {
             return call_user_func([$this,$method],$this->data[$attrName] ?? null, $this->data);
         }
+        if (isset($this->data[$attrName])) return $this->data[$attrName];
+        if (isset($this->_joinData[$attrName])) return $this->_joinData[$attrName];
+
         // 判断是否有关联查询
-        $notWhile = ['count', 'where', 'order', 'alias', 'join', 'with', 'max', 'min', 'avg','sum', 'field', 'get', 'all', 'delete', 'result', 'hidden', 'visible', 'append'];
-        if (method_exists($this, $attrName) && !in_array($attrName, $notWhile) ) {
+        if ( method_exists($this, $attrName) ) {
             return $this->$attrName();
         }
-        // 是否是附加字段
-        if (isset($this->_joinData[$attrName])){
-            return $this->_joinData[$attrName];
-        }
-        return $this->data[$attrName] ?? null;
+        return null;
     }
 
     /**
-     * 设置器
+     * 设置属性
      * @param $attrName
      * @param $attrValue
      * @param bool $setter
