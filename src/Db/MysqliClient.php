@@ -122,9 +122,9 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
      * @throws Exception
      * @throws \Throwable
      */
-    public function startTransaction(){
+    public function startTransaction()
+    {
         $this->isTransaction = true;
-
         $builder = new QueryBuilder();
         $builder->startTransaction();
         $res = $this->query($builder, TRUE);
@@ -136,7 +136,8 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
      * @throws Exception
      * @throws \Throwable
      */
-    public function commit(){
+    public function commit()
+    {
         $builder = new QueryBuilder();
         $builder->commit();
         $res = $this->query($builder, TRUE);
@@ -153,11 +154,11 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
      * @throws Exception
      * @throws \Throwable
      */
-    public function rollback(){
+    public function rollback()
+    {
         $builder = new QueryBuilder();
         $builder->rollback();
         $res = $this->query($builder, TRUE);
-
         if ($res->getResult() == true){
             $this->isTransaction = false;
             return true;
