@@ -12,11 +12,6 @@ use EasySwoole\Pool\ObjectInterface;
 class MysqliClient extends Client implements ClientInterface,ObjectInterface
 {
 
-    protected $lastQuery;
-    protected $lastQueryResult;
-    /** @var bool 是否事务当中 */
-    public $isTransaction = false;
-
     public function query(QueryBuilder $builder, bool $rawQuery = false): Result
     {
         $result = new Result();
@@ -57,9 +52,9 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
             $result->setLastErrorNo($errno);
             $result->setLastInsertId($insert_id);
             $result->setAffectedRows($affected_rows);
-
-            $this->lastQueryResult = $result;
-            $this->lastQuery       = $builder;
+//
+//            $this->lastQueryResult = $result;
+//            $this->lastQuery       = $builder;
         }catch (\Throwable $throwable){
             throw $throwable;
         }finally{
@@ -72,7 +67,6 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
                 }
                 throw new Exception($error);
             }
-
         }
         return $result;
     }
@@ -84,90 +78,11 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
 
     function objectRestore()
     {
-        if ($this->isTransaction){
-            try {
-                $this->rollback();
-            } catch (\Throwable $e) {
-                trigger_error($e->getMessage());
-            }
-        }
         $this->reset();
     }
 
     function beforeUse(): ?bool
     {
         return $this->connect();
-    }
-
-    /**
-     * 最后的sql构造
-     * @return mixed
-     */
-    public function lastQuery():? QueryBuilder
-    {
-        return $this->lastQuery;
-    }
-
-    /**
-     * 最后的查询结果
-     * @return mixed
-     */
-    public function lastQueryResult():? Result
-    {
-        return $this->lastQueryResult;
-    }
-
-    /***
-     * @return bool
-     * @throws Exception
-     * @throws \Throwable
-     */
-    public function startTransaction()
-    {
-        $this->isTransaction = true;
-        $builder = new QueryBuilder();
-        $builder->startTransaction();
-        $res = $this->query($builder, TRUE);
-        return $res->getResult() == true;
-    }
-
-    /**
-     * @return bool
-     * @throws Exception
-     * @throws \Throwable
-     */
-    public function commit()
-    {
-        $builder = new QueryBuilder();
-        $builder->commit();
-        $res = $this->query($builder, TRUE);
-
-        if ($res->getResult() == true){
-            $this->isTransaction = false;
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * @return bool
-     * @throws Exception
-     * @throws \Throwable
-     */
-    public function rollback()
-    {
-        $builder = new QueryBuilder();
-        $builder->rollback();
-        $res = $this->query($builder, TRUE);
-        if ($res->getResult() == true){
-            $this->isTransaction = false;
-            return true;
-        }
-        return false;
-    }
-
-    public function setTransactionStatus(bool $bool)
-    {
-        $this->isTransaction = $bool;
     }
 }
