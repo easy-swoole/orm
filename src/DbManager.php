@@ -157,15 +157,17 @@ class DbManager
             $client = $this->getClient($name,$timeout);
         }
         try{
-            $ret = $client->startTransaction();
+            $builder = new QueryBuilder();
+            $builder->startTransaction();
+            $ret = $this->query($builder,true,$client);
             //外部连接不需要帮忙注册defer清理，需要外部注册者自己做。
-            if($ret && $defer){
+            if($ret->getResult() && $defer){
                 $this->transactionContext[$cid][$name] = $client;
                 Coroutine::defer(function (){
                    $this->transactionDeferExit();
                 });
             }
-            return $ret;
+            return $ret->getResult();
         }catch (\Throwable $exception){
             $this->recycleClient($name,$client);
             throw $exception;
@@ -191,12 +193,14 @@ class DbManager
             }
         }
         try{
-            $res = $client->commit();
-            if($res){
+            $builder = new QueryBuilder();
+            $builder->commit();
+            $ret = $this->query($builder,true,$client);
+            if($ret->getResult()){
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
             }
-            return $res;
+            return $ret->getResult();
         }catch (\Throwable $exception){
             throw $exception;
         }
@@ -221,12 +225,14 @@ class DbManager
             }
         }
         try{
-            $res = $client->rollback();
-            if($res){
+            $builder = new QueryBuilder();
+            $builder->rollback();
+            $ret = $this->query($builder,true,$client);
+            if($ret->getResult()){
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
             }
-            return $res;
+            return $ret->getResult();
         }catch (\Throwable $exception){
             throw $exception;
         }
