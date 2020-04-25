@@ -244,15 +244,22 @@ class DbManager
 
     protected function transactionDeferExit()
     {
+
         $cid = Coroutine::getCid();
         if(isset($this->transactionContext[$cid])){
             foreach ($this->transactionContext[$cid] as $con){
+                $res = false;
                 try{
-                    $this->rollback($con);
+                    $res = $this->rollback($con);
                 }catch (\Throwable $exception){
                     trigger_error($exception->getMessage());
                 } finally {
-                    $this->recycleClient($con->__connectionName,$con);
+                    if($res){
+                        $this->recycleClient($con->__connectionName,$con);
+                    }else{
+                        //如果这个阶段的回滚还依旧失败，则废弃这个连接
+                        $this->getConnection($con->__connectionName)->getClientPool()->unsetObj($con);
+                    }
                 }
             }
         }
