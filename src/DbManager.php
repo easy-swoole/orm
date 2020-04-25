@@ -84,6 +84,7 @@ class DbManager
      */
     function query(QueryBuilder $builder, bool $raw = false, $connection = 'default', float $timeout = null):Result
     {
+        $name = null;
         if(is_string($connection)){
             $client = $this->getClient($connection,$timeout);
         }else if($connection instanceof ClientInterface){
@@ -110,8 +111,6 @@ class DbManager
             return $ret;
         }catch (\Throwable $exception){
             throw $exception;
-        } finally {
-            $this->recycleClient($client);
         }
     }
 
