@@ -86,6 +86,7 @@ class DbManager
     {
         $name = null;
         if(is_string($connection)){
+            $name = $connection;
             $client = $this->getClient($connection,$timeout);
         }else if($connection instanceof ClientInterface){
             $client = $connection;
@@ -111,6 +112,10 @@ class DbManager
             return $ret;
         }catch (\Throwable $exception){
             throw $exception;
+        } finally {
+            if($name){
+                $this->recycleClient($name,$client);
+            }
         }
     }
 
