@@ -39,7 +39,7 @@ class Config extends \EasySwoole\Pool\Config
             $this->host = $host;
         }else{
             $this->host = substr($host, 0, $index);
-            $this->port = substr($host, $index + 1);
+            $this->port = intval(substr($host, $index + 1));
         }
         return $this;        
     }
