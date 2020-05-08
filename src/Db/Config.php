@@ -34,8 +34,14 @@ class Config extends \EasySwoole\Pool\Config
      */
     public function setHost($host): Config
     {
-        $this->host = $host;
-        return $this;
+        $index = strpos($host, ':');
+        if($index === false){
+            $this->host = $host;
+        }else{
+            $this->host = substr($host, 0, $index);
+            $this->port = substr($host, $index + 1);
+        }
+        return $this;        
     }
 
     /**
