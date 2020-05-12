@@ -21,10 +21,6 @@ trait Attribute
     private $join   = NULL;
     private $group  = NULL;
     private $alias  = NULL;
-    /** @var string 表名 */
-    protected $tableName = '';
-    /** @var string 临时表名 */
-    private $tempTableName = null;
     /** @var Table */
     private static $schemaInfoList;
     /** @var array 当前的数据 */
