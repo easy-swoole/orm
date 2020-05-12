@@ -57,13 +57,18 @@ trait Attribute
         } else {
             $connectionName = $this->connectionName;
         }
-        if(empty($this->tableName)){
+        if(empty($this->tableName())){
             throw new Exception("Table name is require for model ".static::class);
         }
-        $tableObjectGeneration = new TableObjectGeneration(DbManager::getInstance()->getConnection($connectionName), $this->tableName);
+        $tableObjectGeneration = new TableObjectGeneration(DbManager::getInstance()->getConnection($connectionName), $this->tableName());
         $schemaInfo = $tableObjectGeneration->generationTable();
         self::$schemaInfoList[$key] = $schemaInfo;
         return self::$schemaInfoList[$key];
+    }
+
+    function tableName():string
+    {
+        return $this->tableName;
     }
 
     /**
