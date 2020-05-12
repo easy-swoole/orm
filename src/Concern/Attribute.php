@@ -68,6 +68,7 @@ trait Attribute
 
     function tableName():string
     {
+
         return $this->tableName;
     }
 
