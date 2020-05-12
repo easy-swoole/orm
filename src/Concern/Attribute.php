@@ -66,12 +66,6 @@ trait Attribute
         return self::$schemaInfoList[$key];
     }
 
-    function tableName():string
-    {
-
-        return $this->tableName;
-    }
-
     /**
      * ArrayAccess Exists
      * @param mixed $offset

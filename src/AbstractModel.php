@@ -223,11 +223,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 设置表名(一般用于分表)
      * @param string $name
      * @param bool $is_temp
-     * @return $this
+     * @return string|$this
      * @throws Exception
      */
-    public function tableName(string $name, bool $is_temp = false)
+    public function tableName(?string $name = null, bool $is_temp = false)
     {
+        if($name == null){
+            return $this->tableName;
+        }
         if ($is_temp){
             $this->tempTableName = $name;
         }else{
