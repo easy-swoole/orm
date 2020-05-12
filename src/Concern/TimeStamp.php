@@ -6,11 +6,11 @@ trait TimeStamp
 {
 
     /** @var bool|string 是否开启时间戳 */
-    protected  $autoTimeStamp = false;
+    private  $autoTimeStamp = false;
     /** @var bool|string 创建时间字段名 false不设置 */
-    protected  $createTime = 'create_time';
+    private  $createTime = 'create_time';
     /** @var bool|string 更新时间字段名 false不设置 */
-    protected  $updateTime = 'update_time';
+    private  $updateTime = 'update_time';
 
     /**
      * 获取自动更新时间戳设置
