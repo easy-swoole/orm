@@ -634,17 +634,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         $attachData = [];
         // 遍历属性，把inc 和dec 的属性先处理
+        // 能进入这里，证明在setter预算不了，只能通过字段名去数据库更新
         foreach ($this->data as $tem_key => $tem_data){
-            if (is_array($tem_data)){
-                if (isset($tem_data["[I]"])){
-                    // 如果已经查询出来过 则直接计算
-                    if ( isset($this->originData[$tem_key])){
-                        $this->data[$tem_key] = $this->originData[$tem_key] + $tem_data["[I]"];
-                    }else{//  直接传参 没有查询出来，则只能通过字段名去执行
-                        $attachData[$tem_key] = $tem_data;
-                        unset($this->data[$tem_key]);
-                    }
-                }
+            if (is_array($tem_data) && isset($tem_data["[I]"]) ){
+                $attachData[$tem_key] = $tem_data;
+                unset($this->data[$tem_key]);
             }
         }
 
