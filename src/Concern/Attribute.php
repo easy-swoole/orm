@@ -314,6 +314,12 @@ trait Attribute
                 $attrValue = call_user_func([$this,$method],$attrValue, $this->data);
             }
             $attrValue = PreProcess::dataValueFormat($attrValue, $col);
+            // 提前预算inc dec
+            if (is_array($attrValue) && isset($attrValue["[I]"]) ){
+                if ( isset($this->originData[$attrName]) ){
+                    $attrValue = $this->originData[$attrName] + $attrValue["[I]"];
+                }
+            }
             $this->data[$attrName] = $attrValue;
             return true;
         } else {
