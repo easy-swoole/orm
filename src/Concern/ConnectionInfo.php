@@ -7,7 +7,7 @@ use EasySwoole\ORM\AbstractModel;
 trait ConnectionInfo
 {
     /** @var string 连接池名称 */
-    private $connectionName = 'default';
+    protected $connectionName = 'default';
     /** @var null|string 临时连接名 */
     private $tempConnectionName = null;
 
