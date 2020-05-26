@@ -393,6 +393,7 @@ trait Attribute
                     return $this->asDateTime($value);
                 case 'timestamp':
                     return $this->asTimestamp($value);
+                    // todo 支持小数，并且定义小数后几位 decimal:<digits>
                 default:
                     return $value;
             }
