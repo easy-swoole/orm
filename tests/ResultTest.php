@@ -97,9 +97,11 @@ class ResultTest extends TestCase
     public function testTotalCount()
     {
         $model = TestRelationModel::create();
-        $test = $model->withTotalCount()->all();
+        $model->withTotalCount()->all();
         $count = $model->lastQueryResult()->getTotalCount();
+        $sql   = DbManager::getInstance()->getLastQuery()->getLastQuery();
+
         $this->assertEquals(0, $count);
-        
+        $this->assertEquals("SELECT SQL_CALC_FOUND_ROWS * FROM `test_user_model`", $sql);
     }
 }
