@@ -21,6 +21,7 @@ class DbManager
 
     protected $connections = [];
     protected $transactionContext = [];
+    protected $lastQueryContext = [];
     protected $onQuery;
 
     public function onQuery(callable $call):DbManager
@@ -88,6 +89,15 @@ class DbManager
         }
     }
 
+    function getLastQuery():?QueryBuilder
+    {
+        $cid = Coroutine::getCid();
+        if(isset($this->lastQueryContext[$cid])){
+            return $this->lastQueryContext[$cid];
+        }
+        return null;
+    }
+
     /**
      * @param QueryBuilder $builder
      * @param bool $raw
@@ -99,6 +109,14 @@ class DbManager
      */
     function query(QueryBuilder $builder, bool $raw = false, $connection = 'default', float $timeout = null):Result
     {
+        $cid = Coroutine::getCid();
+        if(!isset($this->lastQueryContext[$cid])){
+            Coroutine::defer(function ()use($cid){
+                unset($this->lastQueryContext[$cid]);
+            });
+        }
+        $this->lastQueryContext[$cid] = $builder;
+
         $name = null;
         if(is_string($connection)){
             $name = $connection;
