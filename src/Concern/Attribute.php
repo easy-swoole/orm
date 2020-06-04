@@ -202,7 +202,7 @@ trait Attribute
             foreach ($this->append as $appendKey){
                 $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $appendKey ) ) ) . 'Attr';
                 if (method_exists($this, $method)){
-                    $data[$appendKey] = $this->$method();
+                    $data[$appendKey] = call_user_func([$this,$method], null, $this->data);
                 }
             }
         }
