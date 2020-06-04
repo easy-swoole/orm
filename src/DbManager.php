@@ -83,6 +83,7 @@ class DbManager
     {
         $cid = Coroutine::getCid();
         if(isset($this->transactionContext[$cid][$connectionName])){
+            //处于事务中的连接暂时不回收
             return;
         }else if($client){
             $this->getConnection($connectionName)->getClientPool()->recycleObj($client);
@@ -210,6 +211,7 @@ class DbManager
             $ret = $this->query($builder,true,$client);
             //外部连接不需要帮忙注册defer清理，需要外部注册者自己做。
             if($ret->getResult() && $defer){
+                $client->__inTransaction = true;
                 $this->transactionContext[$cid][$name] = $client;
                 Coroutine::defer(function (){
                     $this->transactionDeferExit();
@@ -250,6 +252,7 @@ class DbManager
             $builder->commit();
             $ret = $this->query($builder,true,$client);
             if($ret->getResult()){
+                $client->__inTransaction = false;
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
             }
@@ -287,6 +290,7 @@ class DbManager
             $builder->rollback();
             $ret = $this->query($builder,true,$client, $timeout);
             if($ret->getResult()){
+                $client->__inTransaction = false;
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
             }
@@ -320,5 +324,15 @@ class DbManager
             }
         }
         unset($this->transactionContext[$cid]);
+    }
+
+
+    public static function isInTransaction(ClientInterface $client):bool
+    {
+        if(isset($client->__inTransaction)){
+            return (bool)$client->__inTransaction;
+        }else{
+            return false;
+        }
     }
 }
