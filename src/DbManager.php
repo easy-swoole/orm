@@ -310,7 +310,7 @@ class DbManager
                     // 回滚里会删除上下文 下面可以正常回收
                     $res = $this->rollback($con);
                 }catch (\Throwable $exception){
-                    trigger_error($exception->getMessage());
+                    throw $exception;
                 } finally {
                     if(!$res){// 在rollback里会回收客户端了
                         //如果这个阶段的回滚还依旧失败，则废弃这个连接
