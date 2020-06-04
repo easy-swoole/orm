@@ -8,6 +8,8 @@ namespace EasySwoole\ORM\Tests;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
+use EasySwoole\ORM\Tests\models\TestRelationModel;
+use EasySwoole\ORM\Tests\models\TestUserListModel;
 use PHPUnit\Framework\TestCase;
 use EasySwoole\Mysqli\QueryBuilder;
 
@@ -90,5 +92,16 @@ class ResultTest extends TestCase
         $this->assertTrue(isset($result['二']));
         $this->assertTrue($result['二']['name'] === '二');
         $this->assertTrue($result['二']['age'] === 11);
+    }
+
+    public function testTotalCount()
+    {
+        $model = TestRelationModel::create();
+        $model->withTotalCount()->all();
+        $count = $model->lastQueryResult()->getTotalCount();
+        $sql   = DbManager::getInstance()->getLastQuery()->getLastQuery();
+
+        $this->assertEquals(0, $count);
+        $this->assertEquals("SELECT SQL_CALC_FOUND_ROWS * FROM `test_user_model`", $sql);
     }
 }

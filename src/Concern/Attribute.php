@@ -36,6 +36,9 @@ trait Attribute
     /** @var array toArray时候需要显示的字段 */
     private $visible = [];
 
+    /** @var array 类型映射设置 */
+    protected $casts = [];
+
     /**
      * 表结构信息
      * @param bool $isCache
@@ -286,8 +289,8 @@ trait Attribute
         if (method_exists($this, $method)) {
             return call_user_func([$this,$method],$this->data[$attrName] ?? null, $this->data);
         }
-        if (isset($this->data[$attrName])) return $this->data[$attrName];
-        if (isset($this->_joinData[$attrName])) return $this->_joinData[$attrName];
+        if (isset($this->data[$attrName])) return $this->preCast($attrName, $this->data[$attrName]);
+        if (isset($this->_joinData[$attrName])) return $this->preCast($attrName, $this->_joinData[$attrName]);
 
         // 判断是否有关联查询
         // 这里不用担心关联查询的时候会触发基类方法，用户在定义的时候就会冲突了，如query(){ }
@@ -320,12 +323,140 @@ trait Attribute
                     $attrValue = $this->originData[$attrName] + $attrValue["[I]"];
                 }
             }
+            $attrValue = $this->preCastToJson($attrName, $attrValue);
+
             $this->data[$attrName] = $attrValue;
             return true;
         } else {
+            $attrValue = $this->preCastToJson($attrName, $attrValue);
             $this->_joinData[$attrName] = $attrValue;
             return false;
         }
     }
+
+    /**
+     * 预先转换cast为json字符
+     * 如果设置的cast是数字、对象等类型，不可以直接储存在数据库，需要转换为json字符串
+     * @param $attrName
+     * @param $attrValue
+     * @return mixed
+     * @throws Exception
+     */
+    private function preCastToJson($attrName, $attrValue)
+    {
+        if ($this->isJsonCast($attrName) && ! is_null($attrValue)) {
+            $attrValue = $this->castAttributeAsJson($attrName, $attrValue);
+        }
+        return $attrValue;
+    }
+    /**
+     * 判断是否json类型cast
+     * @param $key
+     * @return bool
+     */
+    private function isJsonCast($key)
+    {
+        return $this->hasCast($key, ['array', 'json', 'object', 'collection']);
+    }
+
+    /**
+     * 预先转换cast设置
+     * @param $key
+     * @param $value
+     * @return mixed
+     */
+    private function preCast($key, $value)
+    {
+        if ($this->hasCast($key)){
+            $type = $this->casts[$key];
+            switch ($type){
+                case 'int':
+                case 'integer':
+                    return (int) $value;
+                case 'real':
+                case 'float':
+                case 'double':
+                    return (float) $value;
+                case 'string':
+                    return (string) $value;
+                case 'bool':
+                case 'boolean':
+                    return (bool) $value;
+                case 'object':
+                    return $this->fromJson($value, true);
+                case 'array':
+                case 'json':
+                    return $this->fromJson($value);
+                case 'date':// todo date需要扩展为 date:Y-m-d... 自定义转换格式
+                    return $this->asDate($value);
+                case 'datetime':
+                    return $this->asDateTime($value);
+                case 'timestamp':
+                    return $this->asTimestamp($value);
+                    // todo 支持小数，并且定义小数后几位 decimal:<digits>
+                default:
+                    return $value;
+            }
+        }
+        return $value;
+    }
+
+    /**
+     * 判断是否设置cast
+     * @param $key
+     * @param array $types
+     * @return bool
+     */
+    private function hasCast($key, $types = [])
+    {
+        if (!empty($types) && is_array($types)){
+            return isset($this->casts[$key]) && in_array($this->casts[$key], $types);
+        }
+        return isset($this->casts[$key]);
+    }
+
+    /**
+     * @param $key
+     * @param $value
+     * @return mixed
+     * @throws Exception
+     */
+    private function castAttributeAsJson($key, $value)
+    {
+        $value = $this->asJson($value);
+
+        if ($value === false) {
+            $error = json_last_error_msg() ?? "";
+            throw new Exception("{$key} cast to json fail {$error}");
+        }
+
+        return $value;
+    }
+
+    private function asJson($value)
+    {
+        return json_encode($value, 256);
+    }
+
+    private function fromJson($value, $assoc = false)
+    {
+        return json_decode($value, $assoc);
+    }
+
+    private function asDate($value)
+    {
+        return date("Y-m-d", $value);
+    }
+
+    private function asDateTime($value)
+    {
+        return date("Y-m-d H:i:s", $value);
+    }
+
+    private function asTimestamp($value)
+    {
+        return strtotime($value);
+    }
+
 
 }

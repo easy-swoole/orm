@@ -21,6 +21,7 @@ class DbManager
 
     protected $connections = [];
     protected $transactionContext = [];
+    protected $lastQueryContext = [];
     protected $onQuery;
 
     public function onQuery(callable $call):DbManager
@@ -43,6 +44,14 @@ class DbManager
         return null;
     }
 
+    /**
+     * @param string $connectionName
+     * @param float|NULL $timeout
+     * @return ClientInterface
+     * @throws Exception
+     * @throws PoolEmpty
+     * @throws \Throwable
+     */
     protected function getClient(string $connectionName,float $timeout = null):ClientInterface
     {
         $cid = Coroutine::getCid();
@@ -64,13 +73,29 @@ class DbManager
         }
     }
 
+    /**
+     * 回收客户端
+     * @param string $connectionName
+     * @param ClientInterface|null $client
+     * @throws \Throwable
+     */
     protected function recycleClient(string $connectionName,?ClientInterface $client)
     {
-        if(isset($this->transactionContext[$connectionName])){
+        $cid = Coroutine::getCid();
+        if(isset($this->transactionContext[$cid][$connectionName])){
             return;
         }else if($client){
             $this->getConnection($connectionName)->getClientPool()->recycleObj($client);
         }
+    }
+
+    function getLastQuery():?QueryBuilder
+    {
+        $cid = Coroutine::getCid();
+        if(isset($this->lastQueryContext[$cid])){
+            return $this->lastQueryContext[$cid];
+        }
+        return null;
     }
 
     /**
@@ -84,6 +109,14 @@ class DbManager
      */
     function query(QueryBuilder $builder, bool $raw = false, $connection = 'default', float $timeout = null):Result
     {
+        $cid = Coroutine::getCid();
+        if(!isset($this->lastQueryContext[$cid])){
+            Coroutine::defer(function ()use($cid){
+                unset($this->lastQueryContext[$cid]);
+            });
+        }
+        $this->lastQueryContext[$cid] = $builder;
+
         $name = null;
         if(is_string($connection)){
             $name = $connection;
@@ -119,6 +152,15 @@ class DbManager
         }
     }
 
+    /**
+     * @param callable $call
+     * @param string $connectionName
+     * @param float|NULL $timeout
+     * @return mixed|void
+     * @throws Exception
+     * @throws PoolEmpty
+     * @throws \Throwable
+     */
     function invoke(callable $call,string $connectionName = 'default',float $timeout = null)
     {
         $client = $this->getClient($connectionName,$timeout);
@@ -136,8 +178,10 @@ class DbManager
 
     /**
      * @param string|ClientInterface $con
+     * @param float|null $timeout
      * @return bool
      * @throws Exception
+     * @throws PoolEmpty
      * @throws \Throwable
      */
     public function startTransaction($con = 'default',float $timeout = null):bool
@@ -168,7 +212,7 @@ class DbManager
             if($ret->getResult() && $defer){
                 $this->transactionContext[$cid][$name] = $client;
                 Coroutine::defer(function (){
-                   $this->transactionDeferExit();
+                    $this->transactionDeferExit();
                 });
             }
             return $ret->getResult();
@@ -178,6 +222,11 @@ class DbManager
         }
     }
 
+    /**
+     * @param string $con
+     * @return bool
+     * @throws \Throwable
+     */
     public function commit($con = 'default'):bool
     {
         $outSideClient = false;
@@ -210,7 +259,12 @@ class DbManager
         }
     }
 
-
+    /**
+     * @param string $con
+     * @param float|NULL $timeout
+     * @return bool
+     * @throws \Throwable
+     */
     public function rollback($con = 'default',float $timeout = null):bool
     {
         $cid = Coroutine::getCid();
@@ -231,7 +285,7 @@ class DbManager
         try{
             $builder = new QueryBuilder();
             $builder->rollback();
-            $ret = $this->query($builder,true,$client);
+            $ret = $this->query($builder,true,$client, $timeout);
             if($ret->getResult()){
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
@@ -242,6 +296,9 @@ class DbManager
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     protected function transactionDeferExit()
     {
 
@@ -250,13 +307,12 @@ class DbManager
             foreach ($this->transactionContext[$cid] as $con){
                 $res = false;
                 try{
+                    // 回滚里会删除上下文 下面可以正常回收
                     $res = $this->rollback($con);
                 }catch (\Throwable $exception){
                     trigger_error($exception->getMessage());
                 } finally {
-                    if($res){
-                        $this->recycleClient($con->__connectionName,$con);
-                    }else{
+                    if(!$res){// 在rollback里会回收客户端了
                         //如果这个阶段的回滚还依旧失败，则废弃这个连接
                         $this->getConnection($con->__connectionName)->getClientPool()->unsetObj($con);
                     }

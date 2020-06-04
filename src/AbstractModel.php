@@ -35,6 +35,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**@var ClientInterface */
     private $client;
 
+    protected $tableName;
+    protected $tempTableName;
+
     /**
      * AbstractModel constructor.
      * @param array $data
