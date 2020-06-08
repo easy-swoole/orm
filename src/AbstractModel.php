@@ -41,7 +41,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * AbstractModel constructor.
      * @param array $data
-     * @throws Exception
      */
     public function __construct(array $data = [])
     {
@@ -712,7 +711,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 实例化Model
      * @param array $data
      * @return AbstractModel|$this
-     * @throws Exception
      */
     public static function create(array $data = []): AbstractModel
     {

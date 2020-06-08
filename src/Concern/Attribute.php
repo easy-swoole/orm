@@ -382,9 +382,10 @@ trait Attribute
                 case 'bool':
                 case 'boolean':
                     return (bool) $value;
-                case 'object':
-                    return $this->fromJson($value, true);
                 case 'array':
+                    $temp =  $this->fromJson($value, true);
+                    return $temp;
+                case 'object':
                 case 'json':
                     return $this->fromJson($value);
                 case 'date':// todo date需要扩展为 date:Y-m-d... 自定义转换格式
