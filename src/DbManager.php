@@ -21,6 +21,7 @@ class DbManager
 
     protected $connections = [];
     protected $transactionContext = [];
+    protected $transactionCountContext = [];
     protected $lastQueryContext = [];
     protected $onQuery;
 
@@ -220,6 +221,80 @@ class DbManager
             $this->recycleClient($name,$client);
             throw $exception;
         }
+    }
+
+    /**
+     * @param string $con
+     * @param float|NULL $timeout
+     * @return bool
+     * @throws Exception
+     * @throws PoolEmpty
+     * @throws \Throwable
+     */
+    public function startTransactionWithCount($con = 'default', float $timeout = null)
+    {
+        if($con instanceof ClientInterface){
+            $client = $con;
+            $name = $client->__connectionName;
+        }else{
+            $name = $con;
+        }
+
+        $cid = Coroutine::getCid();
+
+        if (!isset($this->transactionCountContext[$cid][$name]) || $this->transactionCountContext[$cid][$name] === 0){
+            $this->transactionCountContext[$cid][$name] = 1;
+            return $this->startTransaction($con, $timeout);
+        }
+
+        $this->transactionCountContext[$cid][$name]++;
+        return true;
+    }
+
+    /**
+     * @param $con
+     * @return bool
+     * @throws \Throwable
+     */
+    public function commitWithCount($con = 'default')
+    {
+        if($con instanceof ClientInterface){
+            $client = $con;
+            $name = $client->__connectionName;
+        }else{
+            $name = $con;
+        }
+
+        $cid = Coroutine::getCid();
+        $this->transactionCountContext[$cid][$name]--;
+
+        if ($this->transactionCountContext[$cid][$name] === 0){
+            return $this->commit($con);
+        }
+        return true;
+    }
+
+    /**
+     * @param string $con
+     * @param float|NULL $timeout
+     * @return bool
+     * @throws \Throwable
+     */
+    public function rollbackWithCount($con = 'default',float $timeout = null)
+    {
+        if($con instanceof ClientInterface){
+            $client = $con;
+            $name = $client->__connectionName;
+        }else{
+            $name = $con;
+        }
+
+        $cid = Coroutine::getCid();
+        $this->transactionCountContext[$cid][$name]--;
+        if ($this->transactionCountContext[$cid][$name] === 0){
+            return $this->rollback($con, $timeout);
+        }
+        return true;
     }
 
     /**
