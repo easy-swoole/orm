@@ -50,7 +50,7 @@ class ErrorTest extends TestCase
                 $this->assertIsString($model->lastQueryResult()->getLastError());
             }
         } catch (Exception $e) {
-            $this->assertEquals("SQLSTATE[42S22] [1054] Unknown column 'xxx' in 'where clause'", $e->getMessage());
+            $this->assertNotFalse(strpos($e->getMessage(),"SQLSTATE[42S22] [1054] Unknown column 'xxx' in 'where clause'"));
         } catch (\Throwable $e) {
         }
 
@@ -73,7 +73,7 @@ class ErrorTest extends TestCase
                 'fuck_life' => 1
             ]);
         }catch (Exception $e) {
-            $this->assertEquals("SQLSTATE[42S22] [1054] Unknown column 'fuck_life' in 'where clause'", $e->getMessage());
+            $this->assertEquals("SQLSTATE[42S22] [1054] Unknown column 'fuck_life' in 'where clause' [SELECT  * FROM `test_user_model` WHERE  `fuck_life` = 1  LIMIT 1]", $e->getMessage());
         } catch (\Throwable $e) {
         }
 
