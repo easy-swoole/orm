@@ -21,6 +21,8 @@ class DbManager
 
     protected $connections = [];
     protected $transactionContext = [];
+    protected $transactionCountContext = [];
+    protected $lastQueryContext = [];
     protected $onQuery;
 
     public function onQuery(callable $call):DbManager
@@ -82,10 +84,20 @@ class DbManager
     {
         $cid = Coroutine::getCid();
         if(isset($this->transactionContext[$cid][$connectionName])){
+            //处于事务中的连接暂时不回收
             return;
         }else if($client){
             $this->getConnection($connectionName)->getClientPool()->recycleObj($client);
         }
+    }
+
+    function getLastQuery():?QueryBuilder
+    {
+        $cid = Coroutine::getCid();
+        if(isset($this->lastQueryContext[$cid])){
+            return $this->lastQueryContext[$cid];
+        }
+        return null;
     }
 
     /**
@@ -99,6 +111,14 @@ class DbManager
      */
     function query(QueryBuilder $builder, bool $raw = false, $connection = 'default', float $timeout = null):Result
     {
+        $cid = Coroutine::getCid();
+        if(!isset($this->lastQueryContext[$cid])){
+            Coroutine::defer(function ()use($cid){
+                unset($this->lastQueryContext[$cid]);
+            });
+        }
+        $this->lastQueryContext[$cid] = $builder;
+
         $name = null;
         if(is_string($connection)){
             $name = $connection;
@@ -192,6 +212,7 @@ class DbManager
             $ret = $this->query($builder,true,$client);
             //外部连接不需要帮忙注册defer清理，需要外部注册者自己做。
             if($ret->getResult() && $defer){
+                $client->__inTransaction = true;
                 $this->transactionContext[$cid][$name] = $client;
                 Coroutine::defer(function (){
                     $this->transactionDeferExit();
@@ -202,6 +223,80 @@ class DbManager
             $this->recycleClient($name,$client);
             throw $exception;
         }
+    }
+
+    /**
+     * @param string $con
+     * @param float|NULL $timeout
+     * @return bool
+     * @throws Exception
+     * @throws PoolEmpty
+     * @throws \Throwable
+     */
+    public function startTransactionWithCount($con = 'default', float $timeout = null)
+    {
+        if($con instanceof ClientInterface){
+            $client = $con;
+            $name = $client->__connectionName;
+        }else{
+            $name = $con;
+        }
+
+        $cid = Coroutine::getCid();
+
+        if (!isset($this->transactionCountContext[$cid][$name]) || $this->transactionCountContext[$cid][$name] === 0){
+            $this->transactionCountContext[$cid][$name] = 1;
+            return $this->startTransaction($con, $timeout);
+        }
+
+        $this->transactionCountContext[$cid][$name]++;
+        return true;
+    }
+
+    /**
+     * @param $con
+     * @return bool
+     * @throws \Throwable
+     */
+    public function commitWithCount($con = 'default')
+    {
+        if($con instanceof ClientInterface){
+            $client = $con;
+            $name = $client->__connectionName;
+        }else{
+            $name = $con;
+        }
+
+        $cid = Coroutine::getCid();
+        $this->transactionCountContext[$cid][$name]--;
+
+        if ($this->transactionCountContext[$cid][$name] === 0){
+            return $this->commit($con);
+        }
+        return true;
+    }
+
+    /**
+     * @param string $con
+     * @param float|NULL $timeout
+     * @return bool
+     * @throws \Throwable
+     */
+    public function rollbackWithCount($con = 'default',float $timeout = null)
+    {
+        if($con instanceof ClientInterface){
+            $client = $con;
+            $name = $client->__connectionName;
+        }else{
+            $name = $con;
+        }
+
+        $cid = Coroutine::getCid();
+        $this->transactionCountContext[$cid][$name]--;
+        if ($this->transactionCountContext[$cid][$name] === 0){
+            return $this->rollback($con, $timeout);
+        }
+        return true;
     }
 
     /**
@@ -232,6 +327,7 @@ class DbManager
             $builder->commit();
             $ret = $this->query($builder,true,$client);
             if($ret->getResult()){
+                $client->__inTransaction = false;
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
             }
@@ -269,6 +365,7 @@ class DbManager
             $builder->rollback();
             $ret = $this->query($builder,true,$client, $timeout);
             if($ret->getResult()){
+                $client->__inTransaction = false;
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
             }
@@ -292,7 +389,7 @@ class DbManager
                     // 回滚里会删除上下文 下面可以正常回收
                     $res = $this->rollback($con);
                 }catch (\Throwable $exception){
-                    trigger_error($exception->getMessage());
+                    throw $exception;
                 } finally {
                     if(!$res){// 在rollback里会回收客户端了
                         //如果这个阶段的回滚还依旧失败，则废弃这个连接
@@ -302,5 +399,15 @@ class DbManager
             }
         }
         unset($this->transactionContext[$cid]);
+    }
+
+
+    public static function isInTransaction(ClientInterface $client):bool
+    {
+        if(isset($client->__inTransaction)){
+            return (bool)$client->__inTransaction;
+        }else{
+            return false;
+        }
     }
 }

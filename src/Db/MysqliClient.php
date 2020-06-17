@@ -65,7 +65,7 @@ class MysqliClient extends Client implements ClientInterface,ObjectInterface
                 if(in_array($errno,[2006,2013])){
                     $this->close();
                 }
-                throw new Exception($error);
+                throw new Exception($error." [{$builder->getLastQuery()}]");
             }
         }
         return $result;
