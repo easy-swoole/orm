@@ -644,6 +644,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
         }
 
+        if (is_null($this->originData)) {
+            $this->originData = [];
+        }
+
         $data = array_diff_assoc($this->data, $this->originData);
         $data = array_merge($data, $attachData);
 
