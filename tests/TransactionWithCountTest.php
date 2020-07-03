@@ -45,12 +45,12 @@ class TransactionWithCountTest extends TestCase
     public function testNormalCommit()
     {
         DbManager::getInstance()->startTransactionWithCount();
-        $id = TestCastsModel::create()->save([
+        $id = TestCastsModel::create([
             "name"    => "siam",
             "age"     => 21,
             "addTime" => "2020-6-8 10:11:05",
             "state"   => 0,
-        ]);
+        ])->save();
         $this->assertIsInt($id);
 
         DbManager::getInstance()->commitWithCount();
@@ -63,12 +63,12 @@ class TransactionWithCountTest extends TestCase
     public function testNormalRollback()
     {
         DbManager::getInstance()->startTransactionWithCount();
-        $id = TestCastsModel::create()->save([
+        $id = TestCastsModel::create([
             "name"    => "siam",
             "age"     => 21,
             "addTime" => "2020-6-8 10:11:05",
             "state"   => 0,
-        ]);
+        ])->save();
         $this->assertIsInt($id);
 
         DbManager::getInstance()->rollbackWithCount();
@@ -82,12 +82,12 @@ class TransactionWithCountTest extends TestCase
     public function testNestingCommit()
     {
         DbManager::getInstance()->startTransactionWithCount();
-            $id = TestCastsModel::create()->save([
-                "name"    => "siam",
-                "age"     => 21,
-                "addTime" => "2020-6-8 10:11:05",
-                "state"   => 0,
-            ]);
+        $id = TestCastsModel::create([
+            "name"    => "siam",
+            "age"     => 21,
+            "addTime" => "2020-6-8 10:11:05",
+            "state"   => 0,
+        ])->save();
             $this->assertIsInt($id);
 
             $nestingRes = TestTransationService::getUser();
@@ -110,12 +110,12 @@ class TransactionWithCountTest extends TestCase
         TestTransationService::$res = false;
 
         DbManager::getInstance()->startTransactionWithCount();
-        $id = TestCastsModel::create()->save([
+        $id = TestCastsModel::create([
             "name"    => "siam",
             "age"     => 21,
             "addTime" => "2020-6-8 10:11:05",
             "state"   => 0,
-        ]);
+        ])->save();
         $this->assertIsInt($id);
         $nestingRes = TestTransationService::getUser();
         if (!$nestingRes){
@@ -148,12 +148,12 @@ class TransactionWithCountTest extends TestCase
     {
         go(function(){
             DbManager::getInstance()->startTransactionWithCount();
-            $id = TestCastsModel::create()->save([
+            $id = TestCastsModel::create([
                 "name"    => "siam",
                 "age"     => 21,
                 "addTime" => "2020-6-8 10:11:05",
                 "state"   => 0,
-            ]);
+            ])->save();
             $this->assertIsInt($id);
             $this->lastId = $id;
         });

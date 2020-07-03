@@ -119,7 +119,8 @@ class SaveAllTest extends TestCase
             $this->assertIsInt($res[1]['id']);
         } catch (Exception $e) {
         } catch (\EasySwoole\ORM\Exception\Exception $e) {
-            $this->assertEquals($e->getMessage(), "SQLSTATE[22007] [1292] Incorrect datetime value: 'error' for column 'addTime' at row 1");
+            $res = strpos($e->getMessage(), "SQLSTATE[22007] [1292] Incorrect datetime value: 'error' for column 'addTime' at row 1") !== false;
+            $this->assertTrue($res);
         } catch (\Throwable $e) {
         }
 
