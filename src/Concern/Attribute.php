@@ -2,6 +2,7 @@
 
 namespace EasySwoole\ORM\Concern;
 
+use EasySwoole\ORM\AbstractModel;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\PreProcess;
@@ -294,7 +295,8 @@ trait Attribute
 
         // 判断是否有关联查询
         // 这里不用担心关联查询的时候会触发基类方法，用户在定义的时候就会冲突了，如query(){ }
-        if ( method_exists($this, $attrName) ) {
+
+        if ( method_exists($this, $attrName) && !method_exists(AbstractModel::class, $attrName) ) {
             return $this->$attrName();
         }
         return null;
