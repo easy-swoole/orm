@@ -245,6 +245,31 @@ class RelationToArrayTest extends TestCase
         $this->assertEquals(2, count($test[0]['has_many']));
         $this->assertInstanceOf(TestUserListModel::class, $test[0]['has_many'][1]);
     }
+    
+    // 需要的field没有在fields中 自动补充
+    public function testGetWithNoneField()
+    {
+        $test = TestRelationModel::create()->field(['id', 'age'])->with(['user_list', 'has_many'])->get([
+            'name' => 'siam'
+        ]);
+        $this->assertNotEmpty($test['user_list']);
+        $this->assertNotEmpty($test['name']);
+        $this->assertInstanceOf(TestUserListModel::class, $test['user_list']);
+        
+        $this->assertEquals(2, count($test['has_many']));
+        $this->assertInstanceOf(TestUserListModel::class, $test['has_many'][1]);
+    }
+    
+    public function testAllWithNOneField()
+    {
+        $test = TestRelationModel::create()->field(['id'])->with(['user_list', 'has_many'])->all();
+        $this->assertNotEmpty($test[0]['user_list']);
+        $this->assertNotEmpty($test[0]['name']);
+        $this->assertInstanceOf(TestUserListModel::class, $test[0]['user_list']);
+        
+        $this->assertEquals(2, count($test[0]['has_many']));
+        $this->assertInstanceOf(TestUserListModel::class, $test[0]['has_many'][1]);
+    }
 
     public function testDeleteAllHasMany()
     {
