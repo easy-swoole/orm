@@ -289,7 +289,7 @@ class CoherentTest extends TestCase
         $user->age = QueryBuilder::inc(3);
         $res = $user->update();
         $this->assertEquals($res, true);
-        $this->assertEquals(1, $user->lastQueryResult->getAffectedRows());
+        $this->assertEquals(1, $user->lastQueryResult()->getAffectedRows());
     }
 
     public function testWhereDelete()

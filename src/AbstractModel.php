@@ -833,6 +833,17 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ( $this->fields == '*' ){
             $this->fields = implode(', ', $builder->getField());
         }
+        // 设置了with预查询 并且设置了fields  但fields中不包含需要的主键，则自动补充
+        if (!empty($this->with) && $this->fields !== '*'){
+            $this->preHandleWith = true;
+            foreach ($this->with as $with){
+                $pk = $this->$with()[2];
+                if (!in_array($pk, $this->fields)){
+                    $this->fields[] = $pk;
+                }
+            }
+            $this->preHandleWith = false;
+        }
 
     }
 
