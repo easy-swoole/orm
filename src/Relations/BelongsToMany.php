@@ -78,6 +78,11 @@ class BelongsToMany
     {
         $pk      = $this->pk;
         $pkValue = $this->fatherModel->getAttr($this->fatherModel->schemaInfo()->getPkFiledName());
+        
+        if (empty($pkValue)){
+            throw new Exception("relation pk value must be set");
+        }
+        
         $childPk = $this->childPk;
 
         $queryBuilder = new QueryBuilder();
@@ -128,6 +133,11 @@ class BelongsToMany
         $pkValue = array_map(function ($v) use($realyPk){
             return $v->$realyPk;
         }, $data);
+        // 没有数据
+        if (empty($pkValue)){
+            return $data;
+        }
+        
         $pkValueStr = implode(',', $pkValue);
 
         $queryBuilder = new QueryBuilder();
