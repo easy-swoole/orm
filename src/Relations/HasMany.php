@@ -52,6 +52,11 @@ class HasMany
         if ($pk === null) {
             $pk = $this->fatherModel->schemaInfo()->getPkFiledName();
         }
+        
+        if (empty($this->fatherModel->$pk)){
+            throw new Exception("relation pk value must be set");
+        }
+        
         if ($insPk === null) {
             $insPk = $ins->schemaInfo()->getPkFiledName();
         }
