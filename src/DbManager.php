@@ -313,6 +313,7 @@ class DbManager
         if($con instanceof ClientInterface){
             $client = $con;
             $name = $client->__connectionName;
+            $outSideClient = true;
         }else{
             $name = $con;
             //没有上下文说明没有声明连接事务
@@ -326,7 +327,7 @@ class DbManager
             $builder = new QueryBuilder();
             $builder->commit();
             $ret = $this->query($builder,true,$client);
-            if($ret->getResult()){
+            if($ret->getResult() && !$outSideClient){
                 $client->__inTransaction = false;
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
