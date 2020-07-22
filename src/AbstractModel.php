@@ -32,8 +32,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     private $lastQueryResult;
     private $lastQuery;
 
-    /**@var ClientInterface */
-    private $client;
 
     protected $tableName;
     protected $tempTableName;
@@ -47,16 +45,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->data($data);
     }
 
-    /**
-     * 设置执行client
-     * @param ClientInterface|null $client
-     * @return $this
-     */
-    public function setExecClient(?ClientInterface $client)
-    {
-        $this->client = $client;
-        return $this;
-    }
 
 
     /*  ==============    快速支持连贯操作    ==================   */
@@ -919,23 +907,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @param ClientInterface|Client $client
      * @param array $data
      * @return AbstractModel|$this
-     * @throws Exception
      */
     public static function invoke(ClientInterface $client,array $data = []): AbstractModel
     {
         return (static::create($data))->setExecClient($client);
     }
 
-    /**
-     * 获取invoke注入的客户端
-     * @return ClientInterface|null
-     */
-    public function getExecClient()
-    {
-        if ($this->client){
-            return $this->client;
-        }
-        return null;
-    }
 
 }

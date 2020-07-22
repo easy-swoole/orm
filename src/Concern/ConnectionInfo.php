@@ -3,6 +3,7 @@
 namespace EasySwoole\ORM\Concern;
 
 use EasySwoole\ORM\AbstractModel;
+use EasySwoole\ORM\Db\ClientInterface;
 
 trait ConnectionInfo
 {
@@ -11,6 +12,9 @@ trait ConnectionInfo
     /** @var null|string 临时连接名 */
     private $tempConnectionName = null;
 
+
+    /**@var ClientInterface */
+    private $client;
 
     /**
      * 连接名设置
@@ -41,5 +45,28 @@ trait ConnectionInfo
             $connectionName = $this->connectionName;
         }
         return $connectionName;
+    }
+
+    /**
+     * 设置执行client
+     * @param ClientInterface|null $client
+     * @return $this
+     */
+    public function setExecClient(?ClientInterface $client)
+    {
+        $this->client = $client;
+        return $this;
+    }
+
+    /**
+     * 获取invoke注入的客户端
+     * @return ClientInterface|null
+     */
+    public function getExecClient()
+    {
+        if ($this->client){
+            return $this->client;
+        }
+        return null;
     }
 }
