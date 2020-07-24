@@ -770,17 +770,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
             }
 
-            // 是否清除where条件
-            if ($this->resetQuery) {
-                $builder->reset();
-            }
+            $builder->reset();
 
             $this->lastQueryResult = $ret;
             return $ret->getResult();
         } catch (\Throwable $throwable) {
             throw $throwable;
         } finally {
-            $this->reset();
+            // 是否清除where条件
+            if ($this->resetQuery) {
+                $this->reset();
+            }
+
             if ($this->onQuery) {
                 $temp = clone $builder;
                 call_user_func($this->onQuery, $ret, $temp, $start);
