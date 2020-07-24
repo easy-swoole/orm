@@ -683,6 +683,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     function chunk(callable $call,int $size = 10,int $chunkIndex = 1)
     {
+        $this->resetQuery = false;
         $list = $this->page($chunkIndex,$size)->all();
         if(!empty($list)){
             foreach ($list as $value){
@@ -768,7 +769,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }else{
                 $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
             }
-            $builder->reset();
+
+            // 是否清除where条件
+            if ($this->resetQuery) {
+                $builder->reset();
+            }
+
             $this->lastQueryResult = $ret;
             return $ret->getResult();
         } catch (\Throwable $throwable) {

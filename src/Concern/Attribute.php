@@ -22,6 +22,7 @@ trait Attribute
     private $join   = NULL;
     private $group  = NULL;
     private $alias  = NULL;
+    private $resetQuery = true;
     /** @var Table */
     private static $schemaInfoList;
     /** @var array 当前的数据 */
@@ -465,6 +466,22 @@ trait Attribute
     private function asTimestamp($value)
     {
         return strtotime($value);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isResetQuery(): bool
+    {
+        return $this->resetQuery;
+    }
+
+    /**
+     * @param bool $resetQuery
+     */
+    public function setResetQuery(bool $resetQuery): void
+    {
+        $this->resetQuery = $resetQuery;
     }
 
 
