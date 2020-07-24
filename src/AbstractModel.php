@@ -681,9 +681,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $results ? true : false;
     }
 
-    function chunk(callable $call,int $size = 10,int $chunkIndex = 1,bool $resetQuery = true)
+    function chunk(callable $call,int $size = 10,int $chunkIndex = 1)
     {
-        $this->resetQuery = $resetQuery;
+        $this->resetQuery = false;
         $list = $this->page($chunkIndex,$size)->all();
         if(!empty($list)){
             foreach ($list as $value){
