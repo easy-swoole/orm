@@ -22,6 +22,7 @@ trait Attribute
     private $join   = NULL;
     private $group  = NULL;
     private $alias  = NULL;
+    private $resetQuery = true;
     /** @var Table */
     private static $schemaInfoList;
     /** @var array 当前的数据 */
