@@ -69,4 +69,14 @@ trait ConnectionInfo
         }
         return null;
     }
+
+    /**
+     * 获取当前模型的执行链接
+     * @return ClientInterface|null|string
+     */
+    public function getQueryConnection()
+    {
+        if ($this->client) return $this->client;
+        return $this->getConnectionName();
+    }
 }

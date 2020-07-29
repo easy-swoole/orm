@@ -414,11 +414,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             throw new Exception('saveAll() needs primaryKey for model ' . static::class);
         }
 
-        if ($this->tempConnectionName) {
-            $connectionName = $this->tempConnectionName;
-        } else {
-            $connectionName = $this->connectionName;
-        }
+        $connectionName = $this->getQueryConnection();
 
         // 开启事务
         if ($transaction){
@@ -430,12 +426,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             foreach ($data as $key => $row){
                 // 如果有设置更新
                 if ($replace && isset($row[$pk])){
-                    $model = static::create()->connection($connectionName)->get($row[$pk]);
+                    $model = $this->_clone()->get($row[$pk]);
                     unset($row[$pk]);
                     $model->update($row);
                     $result[$key] = $model;
                 }else{
-                    $model = static::create($row)->connection($connectionName);
+                    $model = $this->_clone()->data($row);
                     $model->save();
                     $result[$key] = $model;
                 }
@@ -486,12 +482,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             return $res;
         }
 
-        $model = new static();
+        $model = $this->_clone();
         $model->data($res[0], false);
         $model->lastQuery = $model->lastQuery();
-        if ($this->client){
-            $model->setExecClient($this->client);
-        }
+
         // 预查询
         if (!empty($this->with)){
             $model->with($this->with);
@@ -525,10 +519,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         if (is_array($results)) {
             foreach ($results as $result) {
-                $tem = (new static)->connection($this->connectionName)->data($result, false);
-                if ($this->client){
-                    $tem->setExecClient($this->client);
-                }
+                $tem = $this->_clone()->data($result, false);
                 $resultSet[] = $tem;
             }
             if (!empty($this->with)){
@@ -711,6 +702,26 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * 继承式创建
+     * @return AbstractModel|$this
+     */
+    public function _clone(): AbstractModel
+    {
+        $model = new static();
+        if ($this->connectionName !== $model->connectionName){
+            $model->connection($this->connectionName);
+        }
+        if ($this->tableName !== $model->tableName){
+            $model->tableName($this->tableName);
+        }
+        if (isset($this->client)){
+            $model->setExecClient($this->client);
+        }
+
+        return $model;
+    }
+
+    /**
      * 数据赋值
      * @param array $data
      * @param bool $setter 是否调用setter
@@ -757,18 +768,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     {
         $start = microtime(true);
         $this->lastQuery = clone $builder;
-        if ($this->tempConnectionName) {
-            $connectionName = $this->tempConnectionName;
-        } else {
-            $connectionName = $this->connectionName;
-        }
+        $connection = $this->getQueryConnection();
         try {
-            $ret = null;
-            if($this->client){
-                $ret = DbManager::getInstance()->query($builder, $raw, $this->client);
-            }else{
-                $ret = DbManager::getInstance()->query($builder, $raw, $connectionName);
-            }
+            $ret = DbManager::getInstance()->query($builder, $raw, $connection);
 
             $builder->reset();
 
@@ -807,10 +809,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
         }
         if ($this->where) {
-            $whereModel = new static();
             foreach ($this->where as $whereOne){
                 if (is_array($whereOne[0]) || is_int($whereOne[0])){
-                    $builder = PreProcess::mappingWhere($builder, $whereOne[0], $whereModel);
+                    $builder = PreProcess::mappingWhere($builder, $whereOne[0], $this);
                 }else{
                     $builder->where(...$whereOne);
                 }
