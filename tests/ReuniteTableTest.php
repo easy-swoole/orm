@@ -59,31 +59,31 @@ sql;
         ])->save();
         $this->assertIsInt($model);
 
-        // $model = ReuniteTableModel::create([
-        //     'pk_1' => 1,
-        //     'pk_2' => 1
-        // ])->save();
-        // $this->assertIsInt($model);
+        $model = ReuniteTableModel::create([
+            'pk_1' => 1,
+            'pk_2' => 1
+        ])->save();
+        $this->assertIsInt($model);
     }
 
-    // /**
-    //  * @throws \EasySwoole\Mysqli\Exception\Exception
-    //  * @throws \EasySwoole\ORM\Exception\Exception
-    //  * @throws \Throwable
-    //  */
-    // function testGet()
-    // {
-    //     $model = ReuniteTableModel::create()->get();
-    //     $this->assertInstanceOf(ReuniteTableModel::class,$model );
-    //
-    //     $model = ReuniteTableModel::create()->get([
-    //         'pk_1' => 1,
-    //         'pk_2' => 1
-    //     ]);
-    //     $this->assertInstanceOf(ReuniteTableModel::class,$model );
-    //     $deleteOne = $model->destroy();
-    //     $this->assertEquals(1, $deleteOne);
-    // }
+    /**
+     * @throws \EasySwoole\Mysqli\Exception\Exception
+     * @throws \EasySwoole\ORM\Exception\Exception
+     * @throws \Throwable
+     */
+    function testGet()
+    {
+        $model = ReuniteTableModel::create()->get();
+        $this->assertInstanceOf(ReuniteTableModel::class,$model );
+
+        $model = ReuniteTableModel::create()->get([
+            'pk_1' => 1,
+            'pk_2' => 1
+        ]);
+        $this->assertInstanceOf(ReuniteTableModel::class,$model );
+        $deleteOne = $model->destroy();
+        $this->assertEquals(1, $deleteOne);
+    }
 
     function testUpdate()
     {
