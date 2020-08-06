@@ -134,19 +134,41 @@ class Table extends \EasySwoole\DDL\Blueprint\Table
     public function getPkFiledName()
     {
         // 首先查找是否有PrimaryKey索引
+        $return = [];
         foreach ($this->indexes as $indexName => $index) {
             if ($index instanceof Index && $index->getIndexType() === \EasySwoole\DDL\Enum\Index::PRIMARY) {
-                return $index->getIndexName();
+                $return[] =  $index->getIndexName();
             }
         }
+
+        if (!empty($return)) return $return;
 
         // 然后查找每个字段是否设置了Primary属性
         foreach ($this->columns as $columnName => $column) {
             if ($column instanceof Column && $column->getIsPrimaryKey()) {
-                return $column->getColumnName();
+                $return[] =  $column->getColumnName();
             }
         }
 
+        if (!empty($return)){
+            if (count($return) === 1) return $return[0];
+            return $return;
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取自增字段名  mysql规定只有一个
+     * @return mixed|null
+     */
+    public function getAutoIncrementFiledName()
+    {
+        foreach ($this->columns as $columnName => $column) {
+            if ($column instanceof Column && $column->getAutoIncrement()) {
+                return $column->getColumnName();
+            }
+        }
         return null;
     }
 }

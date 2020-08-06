@@ -319,21 +319,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public function destroy($where = null, $allow = false)
     {
         $builder = new QueryBuilder();
-        $primaryKey = $this->schemaInfo()->getPkFiledName();
 
         if (is_null($where) && $allow == false) {
-            if (empty($primaryKey)) {
-                throw new Exception('Table not have primary key, so can\'t use Model::destroy($pk)');
-            } else {
-                $whereVal = $this->getAttr($primaryKey);
-                if (empty($whereVal)) {
-                    if (empty($this->where)){
-                        throw new Exception('Table not have primary value');
-                    }
-                }else{
-                    $builder->where($primaryKey, $whereVal);
-                }
-            }
+            $this->preSetWhereFromExistModel($builder);
         }
 
         PreProcess::mappingWhere($builder, $where, $this);
@@ -393,7 +381,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         $this->callEvent('onAfterInsert', true);
         if ($this->lastQueryResult()->getLastInsertId()) {
-            $this->data[$primaryKey] = $this->lastQueryResult()->getLastInsertId();
+            // 自增id
+            $autoIncrementField = $this->schemaInfo()->getAutoIncrementFiledName();
+            if ($autoIncrementField){
+                $this->data[$autoIncrementField] = $this->lastQueryResult()->getLastInsertId();
+            }
+
             $this->originData = $this->data;
             return $this->lastQueryResult()->getLastInsertId();
         }
@@ -634,6 +627,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         if (empty($data)){
             $this->originData = $this->data;
+            $this->callEvent('onBeforeUpdate', null);
+            $this->callEvent('onAfterUpdate', true);
             return true;
         }
 
@@ -641,15 +636,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ($where) {
             PreProcess::mappingWhere($builder, $where, $this);
         } else if (!$allow) {
-            $pk = $this->schemaInfo()->getPkFiledName();
-            if (isset($this->data[$pk])) {
-                $pkVal = $this->data[$pk];
-                $builder->where($pk, $pkVal);
-            } else {
-                if (empty($this->where)){
-                    throw new Exception("update error,pkValue is require");
-                }
-            }
+            $this->preSetWhereFromExistModel($builder);
         }
         $this->preHandleQueryBuilder($builder);
         // 合并时间戳字段
@@ -921,6 +908,45 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     public static function invoke(ClientInterface $client,array $data = []): AbstractModel
     {
         return (static::create($data))->setExecClient($client);
+    }
+
+    /**
+     * 从已经存在值的模型(get 或者 all 或者自己手动传递条件的) 预设回where条件
+     * @param QueryBuilder $builder
+     * @throws Exception
+     */
+    private function preSetWhereFromExistModel(QueryBuilder $builder)
+    {
+        try {
+            $primaryKey = $this->schemaInfo()->getPkFiledName();
+
+            if (empty($primaryKey)) {
+                throw new Exception("Table not have primary key, so can\'t use Model::destroy(pk) or Model::update(pk)");
+            }
+
+            // tip: $this->originData[$primaryKeyOne] ?? $this->data[$primaryKeyOne] ?? null
+            // 正常情况下pk不应该更新，所以从originData取
+            // 用户不从get或者all获取model ，而是create(['pk'=> xx]) 所以也要从data取
+            // 两个值都取不到 那就是空
+            if (is_array($primaryKey)){// 复合主键
+                foreach ($primaryKey as $primaryKeyOne){
+                    $whereVal = $this->originData[$primaryKeyOne] ?? $this->data[$primaryKeyOne] ?? null;
+                    if (empty($whereVal)){
+                        throw new Exception("reunite table's primary key [{$primaryKeyOne}] value is empty, can't destroy or update");
+                    }
+                    $builder->where($primaryKeyOne, $whereVal);
+                }
+            }else{
+                $whereVal = $this->originData[$primaryKey] ?? $this->data[$primaryKey] ?? null;
+                if (empty($whereVal)) {
+                    throw new Exception("table's primary key [{$primaryKey}] value is empty, can't destroy or update");
+                }
+                $builder->where($primaryKey, $whereVal);
+            }
+        } catch (Exception $e) {
+            // 有任何异常抛出，则判断是否有设置了where条件
+            if (empty($this->where)) throw $e;
+        }
     }
 
 
