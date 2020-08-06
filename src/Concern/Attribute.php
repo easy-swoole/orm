@@ -284,6 +284,13 @@ trait Attribute
         return false;
     }
 
+    /**
+     * @return array
+     */
+    public function getOriginData(): array
+    {
+        return $this->originData;
+    }
 
     /**
      * 获取属性：获取器 > 原始字段 > 附加字段 > 关联查询
