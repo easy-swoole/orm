@@ -185,14 +185,16 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 预查询
      * @param $with
+     * @param bool $supplyPk 设置了fields  但fields中不包含需要的主键，则自动补充
      * @return $this
      */
-    public function with($with){
+    public function with($with, $supplyPk = true){
         if (is_string($with)){
             $this->with = explode(',', $with);
         } else if (is_array($with)){
             $this->with = $with;
         }
+        $this->supplyPk = $supplyPk;
         return $this;
     }
 
@@ -205,7 +207,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if($this->tempTableName !== null){
             return $this->tempTableName;
         }else{
-           return $this->schemaInfo()->getTable();
+            return $this->schemaInfo()->getTable();
         }
     }
 
@@ -359,20 +361,20 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if (empty($primaryKey)) {
             throw new Exception('save() needs primaryKey for model ' . static::class);
         }
-        
+
         // beforeInsert事件
         $beforeRes = $this->callEvent('onBeforeInsert');
         if ($beforeRes === false){
             $this->callEvent('onAfterInsert', false);
             return false;
         }
-        
+
         $rawArray = $this->data;
         // 合并时间戳字段
         $rawArray = TimeStampHandle::preHandleTimeStamp($this, $rawArray, 'insert');
         $builder->insert($this->getTableName(), $rawArray);
         $this->preHandleQueryBuilder($builder);
-        
+
         $this->query($builder);
         if ($this->lastQueryResult()->getResult() === false) {
             $this->callEvent('onAfterInsert', false);
@@ -471,7 +473,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             return null;
         }
-        
+
         if ($res instanceof CursorInterface){
             $res->setModelName(static::class);
             return $res;
@@ -823,7 +825,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $this->preHandleWith = true;
             foreach ($this->with as $with){
                 $pk = $this->$with()[2];
-                if (!in_array($pk, $this->fields)){
+                if (!in_array($pk, $this->fields) && $this->supplyPk == true){
                     $this->fields[] = $pk;
                 }
             }

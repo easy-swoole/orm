@@ -21,6 +21,9 @@ trait RelationShip
     /** @var array 预查询 */
     private $with;
 
+    /** @var bool $supplyPk 设置了fields  但fields中不包含需要的主键，则自动补充 */
+    private $supplyPk = true;
+
     /**
      * 一对一关联
      * @param string        $class
