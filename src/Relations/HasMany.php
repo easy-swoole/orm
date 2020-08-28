@@ -52,11 +52,11 @@ class HasMany
         if ($pk === null) {
             $pk = $this->fatherModel->schemaInfo()->getPkFiledName();
         }
-        
+
         if (empty($this->fatherModel->$pk)){
             throw new Exception("relation pk value must be set");
         }
-        
+
         if ($insPk === null) {
             $insPk = $ins->schemaInfo()->getPkFiledName();
         }
@@ -119,7 +119,10 @@ class HasMany
         });
         $temData  = [];
         foreach ($insData as $insK => $insV){
-            $temData[$insV[$insPk]][] = $insV;
+            /**
+             * @var $insV AbstractModel
+             */
+            $temData[$insV[$insPk]][] = $insV->toArray(null,false);
         }
         // ins表中的insPk = 主表.pk  这是查询条件
         foreach ($data as $model){
