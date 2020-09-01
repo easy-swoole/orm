@@ -39,6 +39,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * AbstractModel constructor.
      * @param array $data
+     * @throws Exception
      */
     public function __construct(array $data = [])
     {
@@ -48,15 +49,17 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
 
     /*  ==============    快速支持连贯操作    ==================   */
+
     /**
      * @param mixed ...$args
-     * @return AbstractModel
+     * @return $this
      */
     public function order(...$args)
     {
         $this->order[] = $args;
         return $this;
     }
+
     /**
      * @param int $one
      * @param int|null $two
@@ -72,6 +75,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
+    /**
+     * @param int $page
+     * @param int $limit
+     * @return $this
+     */
     public function page(int $page,int $limit = 10)
     {
         $this->limit(($page - 1) * $limit , $limit);
@@ -141,8 +149,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->withTotalCount = true;
         return $this;
     }
+
     /**
-     * @param $where
+     * @param mixed ...$where
      * @return $this
      */
     public function where(...$where)
@@ -150,6 +159,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->where[] = $where;
         return $this;
     }
+
     /**
      * @param string $group
      * @return $this
@@ -159,6 +169,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->group = $group;
         return $this;
     }
+
     /**
      * @param $joinTable
      * @param $joinCondition
@@ -301,10 +312,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /*  ==============    Builder 和 Result    ==================   */
+
+    /**
+     * @return Result|null
+     */
     public function lastQueryResult(): ?Result
     {
         return $this->lastQueryResult;
     }
+
+    /**
+     * @return QueryBuilder|null
+     */
     public function lastQuery(): ?QueryBuilder
     {
         return $this->lastQuery;
@@ -454,7 +473,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 获取数据
      * @param null $where
-     * @return $this|null|array|bool
+     * @return $this|null|array|bool|CursorInterface|Cursor
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
@@ -495,7 +514,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 批量查询
      * @param null $where
-     * @return array|bool|Cursor|Collection
+     * @return array|bool|Cursor|CursorInterface|Collection
      * @throws Exception
      * @throws \Throwable
      */
@@ -531,7 +550,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * @param string $column
+     * @param string|null $column
      * @return array|null
      * @throws Exception
      * @throws \Throwable
@@ -547,8 +566,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * @param string $column
-     * @return mixed
+     * @param string|null $column
+     * @return mixed|null
      * @throws Exception
      * @throws \Throwable
      */
@@ -663,6 +682,14 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $results ? true : false;
     }
 
+    /**
+     * @param callable $call
+     * @param int $size
+     * @param int $chunkIndex
+     * @return mixed|null
+     * @throws Exception
+     * @throws \Throwable
+     */
     function chunk(callable $call,int $size = 10,int $chunkIndex = 1)
     {
         $this->resetQuery = false;
@@ -686,6 +713,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 实例化Model
      * @param array $data
      * @return AbstractModel|$this
+     * @throws Exception
      */
     public static function create(array $data = []): AbstractModel
     {
@@ -695,6 +723,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     /**
      * 继承式创建
      * @return AbstractModel|$this
+     * @throws Exception
      */
     public function _clone(): AbstractModel
     {
@@ -906,6 +935,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @param ClientInterface|Client $client
      * @param array $data
      * @return AbstractModel|$this
+     * @throws Exception
      */
     public static function invoke(ClientInterface $client,array $data = []): AbstractModel
     {
