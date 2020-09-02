@@ -119,7 +119,7 @@ class RelationToArrayTest extends TestCase
      * append 追加非模型属性字段（自定义获取器）
      * @throws
      */
-    public function testAppenFilterToArray()
+    public function testAppendFilterToArray()
     {
         $test_user_model = TestRelationModel::create()->get([
             'name' => 'siam_relation'
