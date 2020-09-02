@@ -109,23 +109,25 @@ trait RelationShip
             foreach ($this->with as $with => $params){
                 // with为数字 无需传递参数 直接调用该方法
                 if (is_numeric($with)) {
-                    $with = $params;
-                    $params = [];
+                    $data->$params();
+                } else {
+                    call_user_func_array([$data,$with], $params);
                 }
-                call_user_func_array([$data,$with], $params);
             }
             return $data;
         }else if (is_array($data) && !empty($data)){// all查询使用
             foreach ($this->with as $with => $params){
 
+                $data[0]->preHandleWith = true;
                 if (is_numeric($with)) {
                     $with = $params;
-                    $params = [];
+                    $withFuncResult = $data[0]->$with();
+                }else{
+                    $withFuncResult = call_user_func_array([$data[0],$with], $params);
                 }
-
-                $data[0]->preHandleWith = true;
-                list($class, $where, $pk, $joinPk, $joinType, $withType) = call_user_func_array([$data[0],$with], $params);
+                list($class, $where, $pk, $joinPk, $joinType, $withType) = $withFuncResult;
                 $data[0]->preHandleWith = false;
+
                 switch ($withType){
                     case 'hasOne':
                         $data = (new HasOne($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk);
