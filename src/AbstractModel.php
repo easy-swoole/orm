@@ -701,6 +701,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $chunkIndex++;
             return $this->chunk($call,$size,$chunkIndex);
         }else{
+            $this->resetQuery = true;
             return null;
         }
     }
