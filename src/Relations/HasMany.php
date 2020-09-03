@@ -122,7 +122,7 @@ class HasMany
             /**
              * @var $insV AbstractModel
              */
-            $temData[$insV[$insPk]][] = $insV->toArray(null,false);
+            $temData[$insV[$insPk]][] = $insV;
         }
         // ins表中的insPk = 主表.pk  这是查询条件
         foreach ($data as $model){

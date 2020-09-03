@@ -106,15 +106,28 @@ trait RelationShip
     {
         // $data 只有一条 直接foreach调用 $data->$with();
         if ($data instanceof AbstractModel){// get查询使用
-            foreach ($this->with as $with){
-                $data->$with();
+            foreach ($this->with as $with => $params){
+                // with为数字 无需传递参数 直接调用该方法
+                if (is_numeric($with)) {
+                    call_user_func([$data, $params]);
+                } else {
+                    call_user_func_array([$data,$with], $params);
+                }
             }
             return $data;
         }else if (is_array($data) && !empty($data)){// all查询使用
-            foreach ($this->with as $with){
+            foreach ($this->with as $with => $params){
+
                 $data[0]->preHandleWith = true;
-                list($class, $where, $pk, $joinPk, $joinType, $withType) = $data[0]->$with();
+                if (is_numeric($with)) {
+                    $with = $params;
+                    $withFuncResult = call_user_func([$data[0], $with]);
+                }else{
+                    $withFuncResult = call_user_func_array([$data[0], $with], $params);
+                }
+                list($class, $where, $pk, $joinPk, $joinType, $withType) = $withFuncResult;
                 $data[0]->preHandleWith = false;
+
                 switch ($withType){
                     case 'hasOne':
                         $data = (new HasOne($this, $class))->preHandleWith($data, $with, $where, $pk, $joinPk);
