@@ -506,6 +506,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if (!empty($this->with)){
             $model->with($this->with);
             $model = $model->preHandleWith($model);
+            $this->with = [];
         }
         return $model;
     }
@@ -540,6 +541,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             if (!empty($this->with)){
                 $resultSet = $this->preHandleWith($resultSet);
+                $this->with = [];
             }
         }
         if (DbManager::getInstance()->getConnection($this->connectionName)->getConfig()->isReturnCollection()){
