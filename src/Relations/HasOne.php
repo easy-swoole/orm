@@ -16,6 +16,7 @@ use EasySwoole\ORM\Utility\FieldHandle;
 
 class HasOne
 {
+    /** @var AbstractModel $fatherModel */
     private $fatherModel;
     private $childModelName;
 
@@ -55,8 +56,20 @@ class HasOne
         if ($pk === null) {
             $pk = $this->fatherModel->schemaInfo()->getPkFiledName();
         }
-        if (empty($this->fatherModel->$pk)){
+
+        // 代码执行到这一步 说明父级数据是肯定存在的
+        $data = $this->fatherModel->toRawArray();
+
+        $pkVal = $this->fatherModel->$pk;
+
+        // 此pk不存在 data 中
+        if (!isset($data[$pk])){
             throw new Exception("relation pk value must be set");    
+        }
+
+        // 此pk val为空 直接返回null
+        if (empty($pkVal) || is_null($pkVal)) {
+            return null;
         }
         
         if ($insPk === null) {
@@ -65,7 +78,7 @@ class HasOne
 
         $targetTable = $ins->schemaInfo()->getTable();
 
-        $builder->where("$insPk", $this->fatherModel->$pk);
+        $builder->where("$insPk", $pkVal);
 
         if (!empty($where) && is_callable($where)){
             call_user_func($where, $builder);
