@@ -69,6 +69,10 @@ class QueryBuilderTest extends TestCase
             $model->where('id', $id)->update(['name' => 'gaobinzhan1']);
             $this->assertEquals("UPDATE `test_user_model` SET `name` = 'gaobinzhan1' WHERE  `id` = {$id} ", $model->lastQuery()->getLastQuery());
         }
+        $id = current($this->ids);
+        $model->where('id', $id)->update(['age' => '22']);
+        $this->assertEquals("UPDATE `test_user_model` SET `age` = '22' WHERE  `id` = {$id} ", $model->lastQuery()->getLastQuery());
+
     }
 
     public function testDelete()

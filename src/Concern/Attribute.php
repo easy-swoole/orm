@@ -164,10 +164,12 @@ trait Attribute
      * @param bool $strict
      * @return array
      */
-    public function toRawArray($notNul = false, $strict = true)
+    public function toRawArray($notNull = false, $strict = true)
     {
+        $this->toArrayNotNull = $notNull;
+        $this->toArrayStrict = $strict;
         $tem = $this->data;
-        if ($notNul){
+        if ($notNull){
             foreach ($this->data as $key => $value){
                 if ($value !== null){
                     $tem[$key] = $value;
