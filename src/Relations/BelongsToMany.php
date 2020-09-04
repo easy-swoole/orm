@@ -78,9 +78,17 @@ class BelongsToMany
     {
         $pk      = $this->pk;
         $pkValue = $this->fatherModel->getAttr($this->fatherModel->schemaInfo()->getPkFiledName());
-        
-        if (empty($pkValue)){
+
+        // 代码执行到这一步 说明父级数据是肯定存在的
+        $data = $this->fatherModel->toRawArray();
+        // 此pk不存在 data 中
+        if (!isset($data[$this->fatherModel->schemaInfo()->getPkFiledName()])){
             throw new Exception("relation pk value must be set");
+        }
+
+        // 此pk val为空 直接返回null
+        if (empty($pkValue) || is_null($pkValue)) {
+            return null;
         }
         
         $childPk = $this->childPk;

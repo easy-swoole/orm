@@ -64,10 +64,14 @@ class WithTest extends TestCase
 
     public function testHasOne()
     {
-        $result = TestRelationModel::create()->with(['hasOneEqName' => ['gaobinzhan1']])->where(['name' => 'gaobinzhan'])->get()->toArray(null, false);
+        $model = TestRelationModel::create();
+        $result = $model->with(['hasOneEqName' => ['gaobinzhan1']])->where(['name' => 'gaobinzhan'])->get()->toArray(null, false);
         $this->assertEmpty($result['hasOneEqName']);
-        $result = TestRelationModel::create()->with(['hasOneEqName' => ['gaobinzhan']])->where(['name' => 'gaobinzhan'])->get()->toArray(null, false);
+        $result = $model->with(['hasOneEqName' => ['gaobinzhan']])->where(['name' => 'gaobinzhan'])->get()->toArray(null, false);
         $this->assertEquals($result['hasOneEqName']['name'], 'gaobinzhan');
+
+        $result = $model->where(['name' => 'gaobinzhan'])->get()->toArray(null,false);
+        $this->assertFalse(isset($result['hasOneEqName']));
     }
 
     public function testHasMany()

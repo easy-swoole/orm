@@ -500,12 +500,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
         $model = $this->_clone();
         $model->data($res[0], false);
-        $model->lastQuery = $model->lastQuery();
+        $model->lastQuery = $this->lastQuery();
 
         // 预查询
         if (!empty($this->with)){
             $model->with($this->with);
             $model = $model->preHandleWith($model);
+            $this->with = [];
         }
         return $model;
     }
@@ -540,6 +541,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             }
             if (!empty($this->with)){
                 $resultSet = $this->preHandleWith($resultSet);
+                $this->with = [];
             }
         }
         if (DbManager::getInstance()->getConnection($this->connectionName)->getConfig()->isReturnCollection()){
@@ -643,7 +645,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $this->originData = [];
         }
 
-        $data = array_diff_assoc($this->data, $this->originData);
+        if (!($this->where || $where)) {
+            $data = array_diff_assoc($this->data, $this->originData);
+        }
+
         $data = array_merge($data, $attachData);
 
         if (empty($data)){
@@ -701,6 +706,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $chunkIndex++;
             return $this->chunk($call,$size,$chunkIndex);
         }else{
+            $this->resetQuery = true;
             return null;
         }
     }
@@ -852,8 +858,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         // 设置了with预查询 并且设置了fields  但fields中不包含需要的主键，则自动补充
         if (!empty($this->with) && $this->fields !== '*'){
             $this->preHandleWith = true;
-            foreach ($this->with as $with){
-                $pk = $this->$with()[2];
+            foreach ($this->with as $with => $params){
+
+                if (is_numeric($with)) {
+                    $withFuncResult = call_user_func([$this, $params]);
+                }else{
+                    $withFuncResult = call_user_func_array([$this, $with], $params);
+                }
+
+                $pk = $withFuncResult[2];
                 if (!in_array($pk, $this->fields) && $this->supplyPk == true){
                     $this->fields[] = $pk;
                 }

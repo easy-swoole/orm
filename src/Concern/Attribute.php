@@ -38,6 +38,11 @@ trait Attribute
     /** @var array toArray时候需要显示的字段 */
     private $visible = [];
 
+    /** @var bool $toArrayNotNull toArray参数 */
+    private $toArrayNotNull = false;
+    /** @var bool $toArrayScript toArray参数 */
+    private $toArrayStrict = true;
+
     /** @var array 类型映射设置 */
     protected $casts = [];
 
@@ -122,18 +127,21 @@ trait Attribute
 
     /**
      * Model数据转数组格式返回
-     * @param bool $notNul
+     * @param bool $notNull
      * @param bool $strict
      * @return array
      */
-    public function toArray($notNul = false, $strict = true): array
+    public function toArray($notNull = false, $strict = true): array
     {
+        $this->toArrayNotNull = $notNull;
+        $this->toArrayStrict = $strict;
+
         $temp = [];
         foreach ($this->data as $key => $value){
             $temp[$key] = $this->getAttr($key);
         }
 
-        if ($notNul) {
+        if ($notNull) {
             foreach ($temp as $key => $value) {
                 if ($value === null) {
                     unset($temp[$key]);
@@ -156,10 +164,12 @@ trait Attribute
      * @param bool $strict
      * @return array
      */
-    public function toRawArray($notNul = false, $strict = true)
+    public function toRawArray($notNull = false, $strict = true)
     {
+        $this->toArrayNotNull = $notNull;
+        $this->toArrayStrict = $strict;
         $tem = $this->data;
-        if ($notNul){
+        if ($notNull){
             foreach ($this->data as $key => $value){
                 if ($value !== null){
                     $tem[$key] = $value;
@@ -229,14 +239,14 @@ trait Attribute
     {
         foreach ($this->_joinData as $joinField => $joinData){
             if (is_object($joinData) && method_exists($joinData, 'toArray')){
-                $temp[$joinField] = $joinData->toArray();
+                $temp[$joinField] = $joinData->toArray($this->toArrayNotNull, $this->toArrayStrict);
             }else{
                 $joinDataTem = $joinData;
                 if(is_array($joinData)){
                     $joinDataTem = [];
                     foreach ($joinData as $key => $one){
                         if (is_object($one) && method_exists($one, 'toArray')){
-                            $joinDataTem[$key] = $one->toArray();
+                            $joinDataTem[$key] = $one->toArray($this->toArrayNotNull, $this->toArrayStrict);
                         }else{
                             $joinDataTem[$key] = $one;
                         }
