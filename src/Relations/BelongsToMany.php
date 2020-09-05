@@ -117,8 +117,9 @@ class BelongsToMany
 
         /** @var AbstractModel $child */
         foreach ($childRes as $child) {
-            $child->setToArrayNotNull($this->fatherModel->isToArrayNotNull());
-            $child->setToArrayStrict($this->fatherModel->isToArrayStrict());
+            // 强制toArray参数
+            $child->setToArrayNotNull(false);
+            $child->setToArrayStrict(false);
         }
 
         return $childRes;
@@ -186,8 +187,9 @@ class BelongsToMany
         $BValueByBPK = [];
         foreach ($BValue as $B){
 
-            $B->setToArrayNotNull($this->fatherModel->isToArrayNotNull());
-            $B->setToArrayStrict($this->fatherModel->isToArrayStrict());
+            // 强制toArray参数
+            $B->setToArrayNotNull(false);
+            $B->setToArrayStrict(false);
 
             $BValueByBPK[$B->$realyChildPk] = $B;
         }

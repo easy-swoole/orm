@@ -90,8 +90,9 @@ class HasMany
             foreach ($result as $one) {
                 /** @var AbstractModel $childModel */
                 $childModel = $ref->newInstance();
-                $childModel->setToArrayNotNull($this->fatherModel->isToArrayNotNull());
-                $childModel->setToArrayStrict($this->fatherModel->isToArrayStrict());
+                // 强制toArray参数
+                $childModel->setToArrayNotNull(false);
+                $childModel->setToArrayStrict(false);
 
                 $return[] = $childModel->data($one);
             }
@@ -139,8 +140,9 @@ class HasMany
         /** @var AbstractModel $insV */
         foreach ($insData as $insK => $insV){
 
-            $insV->setToArrayNotNull($this->fatherModel->isToArrayNotNull());
-            $insV->setToArrayStrict($this->fatherModel->isToArrayStrict());
+            // 强制toArray参数
+            $insV->setToArrayNotNull(false);
+            $insV->setToArrayStrict(false);
 
             $temData[$insV[$insPk]][] = $insV;
         }

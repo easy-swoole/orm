@@ -7,11 +7,16 @@
 namespace EasySwoole\ORM\Tests;
 
 
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
+use EasySwoole\ORM\Tests\models\TestA;
+use EasySwoole\ORM\Tests\models\TestB;
+use EasySwoole\ORM\Tests\models\TestC;
 use EasySwoole\ORM\Tests\models\TestRelationModel;
 use EasySwoole\ORM\Tests\models\TestUserListModel;
+use EasySwoole\ORM\Utility\Schema\Table;
 use PHPUnit\Framework\TestCase;
 
 
@@ -70,7 +75,7 @@ class WithTest extends TestCase
         $result = $model->with(['hasOneEqName' => 'gaobinzhan'])->where(['name' => 'gaobinzhan'])->get()->toArray(null, false);
         $this->assertEquals($result['hasOneEqName']['name'], 'gaobinzhan');
 
-        $result = $model->where(['name' => 'gaobinzhan'])->get()->toArray(null,false);
+        $result = $model->where(['name' => 'gaobinzhan'])->get()->toArray(null, false);
         $this->assertFalse(isset($result['hasOneEqName']));
     }
 
@@ -91,12 +96,109 @@ class WithTest extends TestCase
         $this->assertEquals($result[0]['hasManyEqName'][0]['name'], 'gaobinzhan');
     }
 
+    public function testCreateTable()
+    {
+
+        // 主表a b副表 c为b副表
+        $sql = "SHOW TABLES LIKE 'test_a';";
+        $query = new QueryBuilder();
+        $query->raw($sql);
+        $data = $this->connection->defer()->query($query);
+
+        if (empty($data->getResult())) {
+            $tableDDL = new Table('test_a');
+            $tableDDL->colInt('id', 11)->setIsPrimaryKey()->setIsAutoIncrement();
+            $tableDDL->colVarChar('a_name', 255);
+            $tableDDL->setIfNotExists();
+            $sql = $tableDDL->__createDDL();
+            $query->raw($sql);
+            $data = $this->connection->defer()->query($query);
+            $this->assertTrue($data->getResult());
+        }
+
+        $sql = "SHOW TABLES LIKE 'test_b';";
+        $query = new QueryBuilder();
+        $query->raw($sql);
+        $data = $this->connection->defer()->query($query);
+
+        if (empty($data->getResult())) {
+            $tableDDL = new Table('test_b');
+            $tableDDL->colInt('id', 11)->setIsPrimaryKey()->setIsAutoIncrement();
+            $tableDDL->colInt('a_id', 11);
+            $tableDDL->colVarChar('b_name', 255);
+            $tableDDL->setIfNotExists();
+            $sql = $tableDDL->__createDDL();
+            $query->raw($sql);
+            $data = $this->connection->defer()->query($query);
+            $this->assertTrue($data->getResult());
+        }
+
+        $sql = "SHOW TABLES LIKE 'test_c';";
+        $query = new QueryBuilder();
+        $query->raw($sql);
+        $data = $this->connection->defer()->query($query);
+
+        if (empty($data->getResult())) {
+            $tableDDL = new Table('test_c');
+            $tableDDL->colInt('id', 11)->setIsPrimaryKey()->setIsAutoIncrement();
+            $tableDDL->colInt('b_id', 11);
+            $tableDDL->colVarChar('c_name', 255);
+            $tableDDL->setIfNotExists();
+            $sql = $tableDDL->__createDDL();
+            $query->raw($sql);
+            $data = $this->connection->defer()->query($query);
+            $this->assertTrue($data->getResult());
+        }
+    }
+
+    public function testWithToArray()
+    {
+        $aId = TestA::create()->data(['a_name' => 'testA'])->save();
+        $bId1 = TestB::create()->data(['a_id' => $aId, 'b_name' => 'testB1'])->save();
+        $bId2 = TestB::create()->data(['a_id' => $aId, 'b_name' => 'testB2'])->save();
+        TestC::create()->data(['b_id' => $bId1, 'c_name' => 'testC1'])->save();
+        TestC::create()->data(['b_id' => $bId1, 'c_name' => 'testC2'])->save();
+        TestC::create()->data(['b_id' => $bId2, 'c_name' => 'testC1'])->save();
+        TestC::create()->data(['b_id' => $bId2, 'c_name' => 'testC2'])->save();
+
+        $testAM = TestA::create();
+
+        // hasOne
+        // get
+        $result = $testAM->with('hasOneList')->get($aId)->toArray(null, false);
+        $this->assertEquals('testC1', $result['hasOneList']['c_name']);
+        $result = $testAM->with('hasOneList')->get($aId)->toArray(null, null);
+        $this->assertTrue(!isset($result['hasOneList']));
+        // all
+        $result = $testAM->with('hasOneList')->all()->toArray(null, false);
+        $this->assertEquals('testC2', $result[0]['hasOneList']['c_name']);
+        $result = $testAM->with('hasOneList')->all()->toArray(null, null);
+        $this->assertTrue(!isset($result[0]['hasOneList']));
+
+        // hasMany
+        // get
+        $result = $testAM->with('hasManyList')->get($aId)->toArray(null, false);
+        $this->assertEquals('testC1', $result['hasManyList'][0]['c_name']);
+        $result = $testAM->with('hasManyList')->get($aId)->toArray(null, null);
+        $this->assertTrue(!isset($result['hasManyList']));
+        // all
+        $result = $testAM->with('hasManyList')->all()->toArray(null, false);
+        $this->assertEquals('testC1', $result[0]['hasManyList'][0]['c_name']);
+        $result = $testAM->with('hasManyList')->all()->toArray(null, null);
+        $this->assertTrue(!isset($result[0]['hasManyList']));
+    }
+
     public function testDeleteAll()
     {
         $res = TestRelationModel::create()->destroy(null, true);
         $this->assertIsInt($res);
         $res = TestUserListModel::create()->destroy(null, true);
         $this->assertIsInt($res);
+        $res = TestA::create()->destroy(null, true);
+        $this->assertIsInt($res);
+        $res = TestB::create()->destroy(null, true);
+        $this->assertIsInt($res);
+        $res = TestC::create()->destroy(null, true);
+        $this->assertIsInt($res);
     }
-
 }
