@@ -16,6 +16,7 @@ use EasySwoole\ORM\Utility\FieldHandle;
 
 class HasMany
 {
+    /** @var AbstractModel $fatherModel */
     private $fatherModel;
     private $childModelName;
 
@@ -87,7 +88,12 @@ class HasMany
         if ($result) {
             $return = [];
             foreach ($result as $one) {
-                $return[] = ($ref->newInstance())->data($one);
+                /** @var AbstractModel $childModel */
+                $childModel = $ref->newInstance();
+                $childModel->setToArrayNotNull($this->fatherModel->isToArrayNotNull());
+                $childModel->setToArrayStrict($this->fatherModel->isToArrayStrict());
+
+                $return[] = $childModel->data($one);
             }
 
             return $return;
@@ -129,10 +135,13 @@ class HasMany
             }
         });
         $temData  = [];
+
+        /** @var AbstractModel $insV */
         foreach ($insData as $insK => $insV){
-            /**
-             * @var $insV AbstractModel
-             */
+
+            $insV->setToArrayNotNull($this->fatherModel->isToArrayNotNull());
+            $insV->setToArrayStrict($this->fatherModel->isToArrayStrict());
+
             $temData[$insV[$insPk]][] = $insV;
         }
         // ins表中的insPk = 主表.pk  这是查询条件

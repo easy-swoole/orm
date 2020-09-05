@@ -93,6 +93,9 @@ class HasOne
                 $targetData[$key] = $value;
             }
 
+            $ins->setToArrayNotNull($this->fatherModel->isToArrayNotNull());
+            $ins->setToArrayStrict($this->fatherModel->isToArrayStrict());
+
             $ins->data($targetData, true);
             return $ins;
         }
@@ -135,7 +138,12 @@ class HasOne
         });
 
         $temData  = [];
+        /** @var AbstractModel $insV */
         foreach ($insData as $insK => $insV){
+
+            $insV->setToArrayNotNull($this->fatherModel->isToArrayNotNull());
+            $insV->setToArrayStrict($this->fatherModel->isToArrayStrict());
+
             $temData[$insV[$insPk]] = $insV;// 以子表主键映射数组
         }
         // 附表insPk的值 = 主表pk的值 这是查询条件
