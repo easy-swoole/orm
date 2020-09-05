@@ -111,7 +111,7 @@ trait RelationShip
                 if (is_numeric($with)) {
                     call_user_func([$data, $params]);
                 } else {
-                    call_user_func_array([$data,$with], $params);
+                    call_user_func([$data,$with], $params);
                 }
             }
             return $data;
@@ -123,7 +123,7 @@ trait RelationShip
                     $with = $params;
                     $withFuncResult = call_user_func([$data[0], $with]);
                 }else{
-                    $withFuncResult = call_user_func_array([$data[0], $with], $params);
+                    $withFuncResult = call_user_func([$data[0], $with], $params);
                 }
                 list($class, $where, $pk, $joinPk, $joinType, $withType) = $withFuncResult;
                 $data[0]->preHandleWith = false;

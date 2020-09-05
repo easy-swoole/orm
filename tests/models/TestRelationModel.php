@@ -37,7 +37,8 @@ class TestRelationModel extends AbstractModel
         }, 'name', 'name');
     }
 
-    public function hasManyEqName($name){
+    public function hasManyEqName($data){
+        $name = $data[0];
         return $this->hasMany(TestUserListModel::class, function (QueryBuilder $queryBuilder) use ($name){
             $queryBuilder->where('name', $name);
             return $queryBuilder;
