@@ -863,7 +863,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 if (is_numeric($with)) {
                     $withFuncResult = call_user_func([$this, $params]);
                 }else{
-                    $withFuncResult = call_user_func_array([$this, $with], $params);
+                    $withFuncResult = call_user_func([$this, $with], $params);
                 }
 
                 $pk = $withFuncResult[2];
