@@ -93,6 +93,10 @@ class HasOne
                 $targetData[$key] = $value;
             }
 
+            // 强制toArray参数
+            $ins->setToArrayNotNull(false);
+            $ins->setToArrayStrict(false);
+
             $ins->data($targetData, true);
             return $ins;
         }
@@ -135,7 +139,13 @@ class HasOne
         });
 
         $temData  = [];
+        /** @var AbstractModel $insV */
         foreach ($insData as $insK => $insV){
+
+            // 强制toArray参数
+            $insV->setToArrayNotNull(false);
+            $insV->setToArrayStrict(false);
+
             $temData[$insV[$insPk]] = $insV;// 以子表主键映射数组
         }
         // 附表insPk的值 = 主表pk的值 这是查询条件

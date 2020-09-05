@@ -39,9 +39,9 @@ trait Attribute
     private $visible = [];
 
     /** @var bool $toArrayNotNull toArray参数 */
-    private $toArrayNotNull = false;
+    protected $toArrayNotNull = false;
     /** @var bool $toArrayScript toArray参数 */
-    private $toArrayStrict = true;
+    protected $toArrayStrict = true;
 
     /** @var array 类型映射设置 */
     protected $casts = [];
@@ -127,14 +127,19 @@ trait Attribute
 
     /**
      * Model数据转数组格式返回
-     * @param bool $notNull
-     * @param bool $strict
+     * @param bool|null $notNull
+     * @param bool|null $strict
      * @return array
      */
-    public function toArray($notNull = false, $strict = true): array
+    public function toArray($notNull = null, $strict = null): array
     {
-        $this->toArrayNotNull = $notNull;
-        $this->toArrayStrict = $strict;
+        if ($notNull === null) {
+            $notNull = $this->toArrayNotNull;
+        }
+
+        if ($strict === null) {
+            $strict = $this->toArrayStrict;
+        }
 
         $temp = [];
         foreach ($this->data as $key => $value){
@@ -160,14 +165,20 @@ trait Attribute
 
     /**
      * 获取模型当前数据，不经过获取器
-     * @param bool $notNul
-     * @param bool $strict
+     * @param bool|null $notNul
+     * @param bool|null $strict
      * @return array
      */
-    public function toRawArray($notNull = false, $strict = true)
+    public function toRawArray($notNull = null, $strict = null)
     {
-        $this->toArrayNotNull = $notNull;
-        $this->toArrayStrict = $strict;
+        if ($notNull === null) {
+            $notNull = $this->toArrayNotNull;
+        }
+
+        if ($strict === null) {
+            $strict = $this->toArrayStrict;
+        }
+
         $tem = $this->data;
         if ($notNull){
             foreach ($this->data as $key => $value){
@@ -239,14 +250,14 @@ trait Attribute
     {
         foreach ($this->_joinData as $joinField => $joinData){
             if (is_object($joinData) && method_exists($joinData, 'toArray')){
-                $temp[$joinField] = $joinData->toArray($this->toArrayNotNull, $this->toArrayStrict);
+                $temp[$joinField] = $joinData->toArray();
             }else{
                 $joinDataTem = $joinData;
                 if(is_array($joinData)){
                     $joinDataTem = [];
                     foreach ($joinData as $key => $one){
                         if (is_object($one) && method_exists($one, 'toArray')){
-                            $joinDataTem[$key] = $one->toArray($this->toArrayNotNull, $this->toArrayStrict);
+                            $joinDataTem[$key] = $one->toArray();
                         }else{
                             $joinDataTem[$key] = $one;
                         }
@@ -501,5 +512,35 @@ trait Attribute
         $this->resetQuery = $resetQuery;
     }
 
+    /**
+     * @return bool
+     */
+    public function isToArrayNotNull(): bool
+    {
+        return $this->toArrayNotNull;
+    }
 
+    /**
+     * @param bool $toArrayNotNull
+     */
+    public function setToArrayNotNull(bool $toArrayNotNull): void
+    {
+        $this->toArrayNotNull = $toArrayNotNull;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isToArrayStrict(): bool
+    {
+        return $this->toArrayStrict;
+    }
+
+    /**
+     * @param bool $toArrayStrict
+     */
+    public function setToArrayStrict(bool $toArrayStrict): void
+    {
+        $this->toArrayStrict = $toArrayStrict;
+    }
 }

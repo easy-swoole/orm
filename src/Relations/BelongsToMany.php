@@ -17,9 +17,9 @@ use EasySwoole\ORM\Exception\Exception;
 
 class BelongsToMany
 {
-    /** @var AbstractModel */
+    /** @var AbstractModel $fatherModel */
     private $fatherModel;
-    /** @var AbstractModel */
+    /** @var AbstractModel $childModel */
     private $childModel;
 
     private $middelTableName;
@@ -115,6 +115,13 @@ class BelongsToMany
             }
         });
 
+        /** @var AbstractModel $child */
+        foreach ($childRes as $child) {
+            // 强制toArray参数
+            $child->setToArrayNotNull(false);
+            $child->setToArrayStrict(false);
+        }
+
         return $childRes;
     }
 
@@ -179,6 +186,11 @@ class BelongsToMany
         // 映射为以BPK为键的数组
         $BValueByBPK = [];
         foreach ($BValue as $B){
+
+            // 强制toArray参数
+            $B->setToArrayNotNull(false);
+            $B->setToArrayStrict(false);
+
             $BValueByBPK[$B->$realyChildPk] = $B;
         }
 
