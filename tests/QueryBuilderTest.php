@@ -85,4 +85,19 @@ class QueryBuilderTest extends TestCase
             $this->assertEquals("DELETE FROM `test_user_model` WHERE  `id` = {$id} ", $model->lastQuery()->getLastQuery());
         }
     }
+
+    public function testLock()
+    {
+        $model = new TestRelationModel();
+
+        $model->lockForUpdate()->get(1);
+        $this->assertEquals('SELECT  * FROM `test_user_model` WHERE  `id` = 1  LIMIT 1 FOR UPDATE', $model->lastQuery()->getLastQuery());
+        $model->get(1);
+        $this->assertEquals('SELECT  * FROM `test_user_model` WHERE  `id` = 1  LIMIT 1', $model->lastQuery()->getLastQuery());
+
+        $model->sharedLock()->get(1);
+        $this->assertEquals('SELECT  * FROM `test_user_model` WHERE  `id` = 1  LIMIT 1 LOCK IN SHARE MODE', $model->lastQuery()->getLastQuery());
+        $model->get(1);
+        $this->assertEquals('SELECT  * FROM `test_user_model` WHERE  `id` = 1  LIMIT 1', $model->lastQuery()->getLastQuery());
+    }
 }
