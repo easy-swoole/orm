@@ -764,6 +764,32 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * 排他锁
+     * @return $this
+     */
+    public function lockForUpdate()
+    {
+        $this->lock('FOR UPDATE');
+        return $this;
+    }
+
+    /**
+     * 共享锁
+     * @return $this
+     */
+    public function sharedLock()
+    {
+        $this->lock('LOCK IN SHARE MODE');
+        return $this;
+    }
+
+
+    private function lock(string $value)
+    {
+        $this->lock = $value;
+    }
+
+    /**
      * 类属性(连贯操作数据)清除
      */
     private function reset()
@@ -781,6 +807,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->hidden = [];
         $this->append = [];
         $this->visible = [];
+        $this->lock = false;
     }
 
     /**
@@ -855,6 +882,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         if ( $this->fields == '*' ){
             $this->fields = implode(', ', $builder->getField());
         }
+
+        // 设置了lock
+        if ($this->lock !== false) {
+            $builder->setQueryOption($this->lock);
+        }
+
         // 设置了with预查询 并且设置了fields  但fields中不包含需要的主键，则自动补充
         if (!empty($this->with) && $this->fields !== '*'){
             $this->preHandleWith = true;
@@ -993,6 +1026,5 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             if (empty($this->where)) throw $e;
         }
     }
-
 
 }

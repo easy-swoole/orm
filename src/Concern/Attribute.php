@@ -22,6 +22,7 @@ trait Attribute
     private $join   = NULL;
     private $group  = NULL;
     private $alias  = NULL;
+    private $lock = false;
     private $resetQuery = true;
     /** @var Table */
     private static $schemaInfoList;
