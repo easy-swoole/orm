@@ -645,13 +645,28 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $this->originData = [];
         }
 
-        if (!($this->where || $where)) {
+        // 到此逻辑代码 已经走了修改器 $this->data
+        if (($this->where || $where) && empty($data)) {
+            // a情况 $where存在 $data不存在
+            // data不存在 需要从$this->>data取数据 因为$where存在 不需要比较$this->originData
+            $data = $this->data;
+        } else if (($this->where || $where) && $data) {
+            // b情况 $where存在 $data存在
+            // $where存在 $data也存在 所以需要用key获取经过修改器的交集数据
+            $data = array_intersect_key($this->data, $data);
+        } else if (!($this->where || $where) && empty($data)) {
+            // c情况 $where不存在 $data不存在
+            // $where不存在 $data也不存在
             $data = array_diff_assoc($this->data, $this->originData);
+        } else if (!($this->where || $where) && $data) {
+            // d情况 $where不存在 $data存在
+            // $where不存在 $data存在 需要用key获取经过修改器的交集数据 再进行$this->originData的差集
+            $data = array_diff_assoc(array_intersect_key($this->data, $data), $this->originData);
         }
 
         $data = array_merge($data, $attachData);
 
-        if (empty($data)){
+        if (empty($data)) {
             $this->originData = $this->data;
             $this->callEvent('onBeforeUpdate', null);
             $this->callEvent('onAfterUpdate', true);
