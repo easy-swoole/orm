@@ -1000,7 +1000,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public static function invoke(ClientInterface $client,array $data = []): AbstractModel
     {
-        return (static::create($data))->setExecClient($client);
+        return (static::create($data))->setExecClient($client)->connection($client->__connectionName);
     }
 
     /**
