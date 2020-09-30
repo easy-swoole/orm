@@ -617,13 +617,13 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * 更新
      * @param array $data
      * @param null $where
-     * @param bool $allow 是否允许无条件更新
+     * @param bool $allowUpdateWithNoCondition 是否允许无条件更新
      * @return bool
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      * @throws \Throwable
      */
-    public function update(array $data = [], $where = null, $allow = false)
+    public function update(array $data = [], $where = null, $allowUpdateWithNoCondition = false)
     {
         if (!empty($data)) {
             foreach ($data as $columnKey => $columnValue){
@@ -676,7 +676,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $builder = new QueryBuilder();
         if ($where) {
             PreProcess::mappingWhere($builder, $where, $this);
-        } else if (!$allow) {
+        } else if (!$allowUpdateWithNoCondition) {
             $this->preSetWhereFromExistModel($builder);
         }
         $this->preHandleQueryBuilder($builder);
