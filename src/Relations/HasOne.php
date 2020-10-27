@@ -97,7 +97,7 @@ class HasOne
             $ins->setToArrayNotNull(false);
             $ins->setToArrayStrict(false);
 
-            $ins->data($targetData, true);
+            $ins->data($targetData, false);
             return $ins;
         }
         return null;
