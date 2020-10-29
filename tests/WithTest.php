@@ -156,10 +156,10 @@ class WithTest extends TestCase
         $aId = TestA::create()->data(['a_name' => 'testA'])->save();
         $bId1 = TestB::create()->data(['a_id' => $aId, 'b_name' => 'testB1'])->save();
         $bId2 = TestB::create()->data(['a_id' => $aId, 'b_name' => 'testB2'])->save();
-        TestC::create()->data(['b_id' => $bId1, 'c_name' => 'testC1'])->save();
-        TestC::create()->data(['b_id' => $bId1, 'c_name' => 'testC2'])->save();
-        TestC::create()->data(['b_id' => $bId2, 'c_name' => 'testC1'])->save();
-        TestC::create()->data(['b_id' => $bId2, 'c_name' => 'testC2'])->save();
+        $cId1 = TestC::create()->data(['b_id' => $bId1, 'c_name' => 'testC1'])->save();
+        $cId2 = TestC::create()->data(['b_id' => $bId1, 'c_name' => 'testC2'])->save();
+        $cId3 = TestC::create()->data(['b_id' => $bId2, 'c_name' => 'testC1'])->save();
+        $cId4 = TestC::create()->data(['b_id' => $bId2, 'c_name' => 'testC2'])->save();
 
         $testAM = TestA::create();
 
@@ -170,12 +170,21 @@ class WithTest extends TestCase
         $this->assertEquals('testC1', $result['hasOneList']['c_name']);
         $result = $testAM->with('hasOneList')->get($aId)->toArray(null, null);
         $this->assertTrue(!isset($result['hasOneList']));
+        $result = $testAM->with(['hasOneJoinList'],false)->field('*,test_a.id as aid,test_b.id as bid')->join('test_b', 'test_b.a_id = test_a.id', 'left')->get()->toArray(false,false);
+        $this->assertEquals($aId,$result['aid']);
+        $this->assertEquals($bId1,$result['bid']);
+        $this->assertEquals($cId1,$result['hasOneJoinList']['cid']);
+
         // all
         $result = $testAM->with('hasOneList')->all()->toArray(null, false);
         $this->assertEquals('testB2-bar-b', $result[0]['hasOneList']['b_name']);
         $this->assertEquals('testC2', $result[0]['hasOneList']['c_name']);
         $result = $testAM->with('hasOneList')->all()->toArray(null, null);
         $this->assertTrue(!isset($result[0]['hasOneList']));
+        $result = $testAM->with(['hasOneJoinList'],false)->field('*,test_a.id as aid,test_b.id as bid')->join('test_b', 'test_b.a_id = test_a.id', 'left')->all()->toArray(false,false);
+        $this->assertEquals($aId,$result[0]['aid']);
+        $this->assertEquals($bId1,$result[0]['bid']);
+        $this->assertEquals($cId2,$result[0]['hasOneJoinList']['cid']);
 
         // hasMany
         // get
@@ -184,12 +193,20 @@ class WithTest extends TestCase
         $this->assertEquals('testC1', $result['hasManyList'][0]['c_name']);
         $result = $testAM->with('hasManyList')->get($aId)->toArray(null, null);
         $this->assertTrue(!isset($result['hasManyList']));
+        $result = $testAM->with(['hasManyJoinList'],false)->field('*,test_a.id as aid,test_b.id as bid')->join('test_b', 'test_b.a_id = test_a.id', 'left')->get()->toArray(false,false);
+        $this->assertEquals($aId,$result['aid']);
+        $this->assertEquals($bId1,$result['bid']);
+        $this->assertEquals($cId1,$result['hasManyJoinList'][0]['cid']);
         // all
         $result = $testAM->with('hasManyList')->all()->toArray(null, false);
         $this->assertEquals('testB1-bar-b', $result[0]['hasManyList'][0]['b_name']);
         $this->assertEquals('testC1', $result[0]['hasManyList'][0]['c_name']);
         $result = $testAM->with('hasManyList')->all()->toArray(null, null);
         $this->assertTrue(!isset($result[0]['hasManyList']));
+        $result = $testAM->with(['hasManyJoinList'],false)->field('*,test_a.id as aid,test_b.id as bid')->join('test_b', 'test_b.a_id = test_a.id', 'left')->all()->toArray(false,false);
+        $this->assertEquals($aId,$result[0]['aid']);
+        $this->assertEquals($bId1,$result[0]['bid']);
+        $this->assertEquals($cId1,$result[0]['hasManyJoinList'][0]['cid']);
     }
 
     public function testDeleteAll()
