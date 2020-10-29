@@ -27,4 +27,18 @@ class TestA extends AbstractModel
             $queryBuilder->join('test_c', 'test_b.id = test_c.b_id', 'left');
         }, 'id', 'a_id');
     }
+
+    public function hasOneJoinList()
+    {
+        return $this->hasOne(TestC::class, function (QueryBuilder $queryBuilder) {
+            $queryBuilder->fields('*,test_c.id as cid');
+        }, 'bid', 'b_id');
+    }
+
+    public function hasManyJoinList()
+    {
+        return $this->hasMany(TestC::class, function (QueryBuilder $queryBuilder) {
+            $queryBuilder->fields('*,test_c.id as cid');
+        }, 'bid', 'b_id');
+    }
 }
