@@ -94,7 +94,7 @@ class HasMany
                 $childModel->setToArrayNotNull(false);
                 $childModel->setToArrayStrict(false);
 
-                $return[] = $childModel->data($one);
+                $return[] = $childModel->data($one, false);
             }
 
             return $return;

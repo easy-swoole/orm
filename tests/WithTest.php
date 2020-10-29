@@ -166,11 +166,13 @@ class WithTest extends TestCase
         // hasOne
         // get
         $result = $testAM->with('hasOneList')->get($aId)->toArray(null, false);
+        $this->assertEquals('testB1-bar-b', $result['hasOneList']['b_name']);
         $this->assertEquals('testC1', $result['hasOneList']['c_name']);
         $result = $testAM->with('hasOneList')->get($aId)->toArray(null, null);
         $this->assertTrue(!isset($result['hasOneList']));
         // all
         $result = $testAM->with('hasOneList')->all()->toArray(null, false);
+        $this->assertEquals('testB2-bar-b', $result[0]['hasOneList']['b_name']);
         $this->assertEquals('testC2', $result[0]['hasOneList']['c_name']);
         $result = $testAM->with('hasOneList')->all()->toArray(null, null);
         $this->assertTrue(!isset($result[0]['hasOneList']));
@@ -178,11 +180,13 @@ class WithTest extends TestCase
         // hasMany
         // get
         $result = $testAM->with('hasManyList')->get($aId)->toArray(null, false);
+        $this->assertEquals('testB1-bar-b', $result['hasManyList'][0]['b_name']);
         $this->assertEquals('testC1', $result['hasManyList'][0]['c_name']);
         $result = $testAM->with('hasManyList')->get($aId)->toArray(null, null);
         $this->assertTrue(!isset($result['hasManyList']));
         // all
         $result = $testAM->with('hasManyList')->all()->toArray(null, false);
+        $this->assertEquals('testB1-bar-b', $result[0]['hasManyList'][0]['b_name']);
         $this->assertEquals('testC1', $result[0]['hasManyList'][0]['c_name']);
         $result = $testAM->with('hasManyList')->all()->toArray(null, null);
         $this->assertTrue(!isset($result[0]['hasManyList']));
