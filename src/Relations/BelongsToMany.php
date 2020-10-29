@@ -80,7 +80,7 @@ class BelongsToMany
         $pkValue = $this->fatherModel->getAttr($this->fatherModel->schemaInfo()->getPkFiledName());
 
         // 代码执行到这一步 说明父级数据是肯定存在的
-        $data = $this->fatherModel->toRawArray();
+        $data = $this->fatherModel->toRawArray(false, false);
         // 此pk不存在 data 中
         if (!isset($data[$this->fatherModel->schemaInfo()->getPkFiledName()])){
             throw new Exception("relation pk value must be set");

@@ -58,7 +58,7 @@ class HasOne
         }
 
         // 代码执行到这一步 说明父级数据是肯定存在的
-        $data = $this->fatherModel->toRawArray();
+        $data = $this->fatherModel->toRawArray(false, false);
 
         $pkVal = $this->fatherModel->$pk;
 
