@@ -3,6 +3,7 @@
 namespace EasySwoole\ORM\Concern;
 
 use EasySwoole\ORM\AbstractModel;
+use EasySwoole\ORM\Db\ConnectionInterface;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\PreProcess;
@@ -55,16 +56,17 @@ trait Attribute
      */
     public function schemaInfo(bool $isCache = true): Table
     {
+        $client = null;
         // 是否有注入client
-        if($this->client){
-            // 只取连接名传递，TableGeneration里也需要获取config做处理
-            $connectionName = $this->client->__connectionName;
+        if($this->client instanceof ConnectionInterface){
+            $client = $this->client;
         }else{
             if ($this->tempConnectionName) {
                 $connectionName = $this->tempConnectionName;
             } else {
                 $connectionName = $this->connectionName;
             }
+            $client = DbManager::getInstance()->getConnection($connectionName);
         }
         // 使用连接名+表名做key  在分库、分表的时候需要使用
         $key = md5("{$connectionName}_{$this->tableName()}");
@@ -74,7 +76,7 @@ trait Attribute
         if(empty($this->tableName())){
             throw new Exception("Table name is require for model ".static::class);
         }
-        $tableObjectGeneration = new TableObjectGeneration(DbManager::getInstance()->getConnection($connectionName), $this->tableName());
+        $tableObjectGeneration = new TableObjectGeneration($client, $this->tableName());
         $schemaInfo = $tableObjectGeneration->generationTable();
         self::$schemaInfoList[$key] = $schemaInfo;
         return self::$schemaInfoList[$key];
