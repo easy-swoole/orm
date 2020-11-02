@@ -61,11 +61,11 @@ class DbManager
         }
         $connection = $this->getConnection($connectionName);
         if($connection){
-            $client = $connection->getClientPool()->getObj($timeout);
+            $client = $connection->__getClientPool()->getObj($timeout);
             if($client){
                 if($client instanceof ClientInterface){
                     //做名称标记
-                    $client->__connectionName = $connectionName;
+                    $client->connectionName($connectionName);
                     return $client;
                 }else{
                     throw new Exception("connection : {$connectionName} pool not a EasySwoole\ORM\Db\ConnectionInterface pool");
@@ -91,7 +91,7 @@ class DbManager
             //处于事务中的连接暂时不回收
             return;
         }else if($client){
-            $this->getConnection($connectionName)->getClientPool()->recycleObj($client);
+            $this->getConnection($connectionName)->__getClientPool()->recycleObj($client);
         }
     }
 
@@ -197,7 +197,7 @@ class DbManager
         $client = null;
         if($con instanceof ClientInterface){
             $client = $con;
-            $name = $client->__connectionName;
+            $name = $client->connectionName();
             $defer = false;
         }else{
             $name = $con;
@@ -241,7 +241,7 @@ class DbManager
     {
         if($con instanceof ClientInterface){
             $client = $con;
-            $name = $client->__connectionName;
+            $name = $client->connectionName();
         }else{
             $name = $con;
         }
@@ -266,7 +266,7 @@ class DbManager
     {
         if($con instanceof ClientInterface){
             $client = $con;
-            $name = $client->__connectionName;
+            $name = $client->connectionName();
         }else{
             $name = $con;
         }
@@ -290,7 +290,7 @@ class DbManager
     {
         if($con instanceof ClientInterface){
             $client = $con;
-            $name = $client->__connectionName;
+            $name = $client->connectionName();
         }else{
             $name = $con;
         }
@@ -316,7 +316,7 @@ class DbManager
         $client = null;
         if($con instanceof ClientInterface){
             $client = $con;
-            $name = $client->__connectionName;
+            $name = $client->connectionName();
             $outSideClient = true;
         }else{
             $name = $con;
@@ -356,7 +356,7 @@ class DbManager
         $client = null;
         if($con instanceof ClientInterface){
             $client = $con;
-            $name = $client->__connectionName;
+            $name = $client->connectionName();
             $outSideClient = true;
         }else{
             $name = $con;
@@ -390,6 +390,7 @@ class DbManager
 
         $cid = Coroutine::getCid();
         if(isset($this->transactionContext[$cid])){
+            /** @var ClientInterface $con */
             foreach ($this->transactionContext[$cid] as $con){
                 $res = false;
                 try{
@@ -400,7 +401,7 @@ class DbManager
                 } finally {
                     if(!$res){// 在rollback里会回收客户端了
                         //如果这个阶段的回滚还依旧失败，则废弃这个连接
-                        $this->getConnection($con->__connectionName)->getClientPool()->unsetObj($con);
+                        $this->getConnection($con->connectionName())->__getClientPool()->unsetObj($con);
                     }
                 }
             }

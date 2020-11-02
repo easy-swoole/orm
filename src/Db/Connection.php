@@ -26,7 +26,7 @@ class Connection implements ConnectionInterface
         return $this->getPool()->defer($timeout);
     }
 
-    function getClientPool(): AbstractPool
+    function __getClientPool(): AbstractPool
     {
         return $this->getPool();
     }
