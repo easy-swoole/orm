@@ -76,7 +76,9 @@ trait ConnectionInfo
      */
     public function getQueryConnection()
     {
-        if ($this->client) return $this->client;
+        if ($this->client instanceof ClientInterface){
+            return $this->client;
+        }
         return $this->getConnectionName();
     }
 }

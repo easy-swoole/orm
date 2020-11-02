@@ -9,6 +9,6 @@ use EasySwoole\Pool\AbstractPool;
 interface ConnectionInterface
 {
     function defer(float $timeout = null):?ClientInterface;
-    function getClientPool():AbstractPool;
+    function __getClientPool():AbstractPool;
     function getConfig():?Config;
 }

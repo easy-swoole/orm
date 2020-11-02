@@ -12,6 +12,17 @@ use EasySwoole\Pool\ObjectInterface;
 class MysqliClient extends Client implements ClientInterface, ObjectInterface
 {
 
+    private $name;
+
+    public function connectionName(?string $name = null): ?string
+    {
+        if($name !== null){
+            $this->name = $name;
+        }
+        return $this->name;
+    }
+
+
     public function query(QueryBuilder $builder, bool $rawQuery = false): Result
     {
         $result = new Result();
@@ -52,9 +63,6 @@ class MysqliClient extends Client implements ClientInterface, ObjectInterface
             $result->setLastErrorNo($errno);
             $result->setLastInsertId($insert_id);
             $result->setAffectedRows($affected_rows);
-//
-//            $this->lastQueryResult = $result;
-//            $this->lastQuery       = $builder;
         } catch (\Throwable $throwable) {
             throw $throwable;
         } finally {
