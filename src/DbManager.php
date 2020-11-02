@@ -63,9 +63,13 @@ class DbManager
         if($connection){
             $client = $connection->getClientPool()->getObj($timeout);
             if($client){
-                //做名称标记
-                $client->__connectionName = $connectionName;
-                return $client;
+                if($client instanceof ClientInterface){
+                    //做名称标记
+                    $client->__connectionName = $connectionName;
+                    return $client;
+                }else{
+                    throw new Exception("connection : {$connectionName} pool not a EasySwoole\ORM\Db\ConnectionInterface pool");
+                }
             }else{
                 throw new PoolEmpty("connection : {$connectionName} is empty");
             }
