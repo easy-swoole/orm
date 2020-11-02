@@ -115,10 +115,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * toArray时 追加显示的字段
-     * @param array $append
+     * @param array|string $append
      * @return $this
      */
-    public function append(array $append)
+    public function append($append)
     {
         if (!is_array($append)) {
             $append = [$append];
@@ -129,10 +129,10 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * toArray时 规定要显示的字段
-     * @param array $visible
+     * @param array|string $visible
      * @return $this
      */
-    public function visible(array $visible)
+    public function visible($visible)
     {
         if (!is_array($visible)) {
             $visible = [$visible];
@@ -224,7 +224,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * 设置表名(一般用于分表)
-     * @param string $name
+     * @param string|null $name
      * @param bool $is_temp
      * @return string|$this
      * @throws Exception
@@ -280,7 +280,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * @param null $field
-     * @return null
+     * @return int
      * @throws Exception
      * @throws \Throwable
      */
@@ -291,7 +291,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * @param $field
-     * @return null
+     * @return mixed|null
      * @throws Exception
      * @throws \Throwable
      */
@@ -302,7 +302,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
 
     /**
      * @param $field
-     * @return null
+     * @return mixed|null
      * @throws Exception
      * @throws \Throwable
      */
@@ -456,11 +456,6 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 DbManager::getInstance()->commit($connectionName);
             }
             return $result;
-        } catch (\EasySwoole\Mysqli\Exception\Exception $e) {
-            if($transaction) {
-                DbManager::getInstance()->rollback($connectionName);
-            }
-            throw $e;
         } catch (\Throwable $e) {
             if($transaction) {
                 DbManager::getInstance()->rollback($connectionName);
@@ -713,16 +708,22 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     function chunk(callable $call,int $size = 10,int $chunkIndex = 1)
     {
         $this->resetQuery = false;
-        $list = $this->page($chunkIndex,$size)->all();
-        if(!empty($list)){
+        try {
+            $list = $this->page($chunkIndex,$size)->all();
+            if (empty($list)) {
+                return null;
+            }
+
             foreach ($list as $value){
                 call_user_func($call,$value);
             }
             $chunkIndex++;
+
             return $this->chunk($call,$size,$chunkIndex);
-        }else{
+        }catch (\Throwable $throwable){
+            throw $throwable;
+        } finally {
             $this->resetQuery = true;
-            return null;
         }
     }
 
@@ -968,12 +969,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      */
     public static function defer(float $timeout = null)
     {
-        try {
-            $model = new static();
-        } catch (Exception $e) {
-            return null;
-        }
-        $connectionName = $model->connectionName;
+
+        $model = new static();
+        $connectionName = $model->getConnectionName();
 
         return DbManager::getInstance()->getConnection($connectionName)->defer($timeout);
     }
