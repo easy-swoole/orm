@@ -60,7 +60,7 @@ class DbManager
             return $this->transactionContext[$cid][$connectionName];
         }
         $connection = $this->getConnection($connectionName);
-        if($connection){
+        if($connection instanceof ConnectionInterface){
             $client = $connection->__getClientPool()->getObj($timeout);
             if($client){
                 if($client instanceof ClientInterface){
