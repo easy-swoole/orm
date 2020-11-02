@@ -865,7 +865,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
      * @throws Exception
      * @throws \EasySwoole\Mysqli\Exception\Exception
      */
-    public function preHandleQueryBuilder(QueryBuilder $builder)
+    private function preHandleQueryBuilder(QueryBuilder $builder)
     {
         // 快速连贯操作
         if ($this->withTotalCount) {
