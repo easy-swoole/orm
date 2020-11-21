@@ -82,7 +82,7 @@ class BelongsToMany
         // 代码执行到这一步 说明父级数据是肯定存在的
         $data = $this->fatherModel->toRawArray(false, false);
         // 此pk不存在 data 中
-        if (!isset($data[$this->fatherModel->schemaInfo()->getPkFiledName()])){
+        if (!array_key_exists($this->fatherModel->schemaInfo()->getPkFiledName(), $data)){
             throw new Exception("relation pk value must be set");
         }
 

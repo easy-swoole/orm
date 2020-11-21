@@ -63,7 +63,7 @@ class HasOne
         $pkVal = $this->fatherModel->$pk;
 
         // 此pk不存在 data 中
-        if (!isset($data[$pk])){
+        if (!array_key_exists($pk, $data)){
             throw new Exception("relation pk value must be set");    
         }
 
