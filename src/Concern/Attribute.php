@@ -356,19 +356,24 @@ trait Attribute
             if ($setter && method_exists($this, $method)) {
                 $attrValue = call_user_func([$this,$method],$attrValue, $this->data);
             }
-            $attrValue = PreProcess::dataValueFormat($attrValue, $col);
             // 提前预算inc dec
             if (is_array($attrValue) && isset($attrValue["[I]"]) ){
                 if ( isset($this->originData[$attrName]) ){
                     $attrValue = $this->originData[$attrName] + $attrValue["[I]"];
                 }
             }
-            $attrValue = $this->preCastToJson($attrName, $attrValue);
+            if ($setter) {
+                $attrValue = $this->preCastToJson($attrName, $attrValue);
+            }
+
+            $attrValue = PreProcess::dataValueFormat($attrValue, $col);
 
             $this->data[$attrName] = $attrValue;
             return true;
         } else {
-            $attrValue = $this->preCastToJson($attrName, $attrValue);
+            if ($setter) {
+                $attrValue = $this->preCastToJson($attrName, $attrValue);
+            }
             $this->_joinData[$attrName] = $attrValue;
             return false;
         }
