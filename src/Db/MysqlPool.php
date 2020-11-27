@@ -50,4 +50,18 @@ class MysqlPool extends AbstractPool
             return true;
         }
     }
+
+    /**
+     * @param int|null $num
+     * @return int
+     * 屏蔽在定时周期检查的时候，出现连接创建出错，导致进程退出。
+     */
+    public function keepMin(?int $num = null): int
+    {
+        try{
+            return parent::keepMin($num);
+        }catch (\Throwable $throwable){
+            return $this->status()['created'];
+        }
+    }
 }
