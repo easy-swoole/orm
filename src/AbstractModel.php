@@ -496,6 +496,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $model = $this->_clone();
         $model->data($res[0], false);
         $model->lastQuery = $this->lastQuery();
+        $model->lastQueryResult = $this->lastQueryResult();
 
         // 预查询
         if (!empty($this->with)){
