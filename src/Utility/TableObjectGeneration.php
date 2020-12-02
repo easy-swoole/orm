@@ -8,6 +8,7 @@
 
 namespace EasySwoole\ORM\Utility;
 
+use EasySwoole\ORM\Db\ClientInterface;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\Schema\Column;
 use EasySwoole\Mysqli\QueryBuilder;
@@ -24,11 +25,13 @@ class TableObjectGeneration
     protected $tableName;
     protected $connection;
     protected $tableColumns;
+    protected $client;
 
-    public function __construct(ConnectionInterface $connection, $tableName)
+    public function __construct(ConnectionInterface $connection, $tableName, ?ClientInterface $client = null)
     {
         $this->tableName = $tableName;
         $this->connection = $connection;
+        $this->client = $client;
 
     }
 
@@ -36,7 +39,12 @@ class TableObjectGeneration
     {
         $query = new QueryBuilder();
         $query->raw("show full columns from {$this->tableName}");
-        $data = $this->connection->defer()->query($query);
+
+        if ($this->client instanceof ClientInterface) {
+            $data = $this->client->query($query);
+        } else {
+            $data = $this->connection->defer()->query($query);
+        }
 
         if ($this->connection->getConfig()->isFetchMode()){
             $data->getResult()->setReturnAsArray(true);
