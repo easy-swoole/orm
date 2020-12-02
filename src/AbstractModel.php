@@ -329,6 +329,17 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this->lastQuery;
     }
 
+    /**
+     * duplicate
+     * @param array $data
+     * @return $this
+     */
+    public function duplicate(array $data)
+    {
+        $this->duplicate = $data;
+        return $this;
+    }
+
 
     /**
      * @param null $where
@@ -391,6 +402,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $rawArray = $this->data;
         // 合并时间戳字段
         $rawArray = TimeStampHandle::preHandleTimeStamp($this, $rawArray, 'insert');
+
+        if ($this->duplicate) {
+            $builder->onDuplicate($this->duplicate);
+        }
+
         $builder->insert($this->getTableName(), $rawArray);
         $this->preHandleQueryBuilder($builder);
 
@@ -825,6 +841,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->append = [];
         $this->visible = [];
         $this->lock = false;
+        $this->duplicate = [];
     }
 
     /**
