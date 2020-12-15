@@ -644,8 +644,8 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         $attachData = [];
-        // 遍历属性，把inc 和dec 的属性先处理
-        // 能进入这里，证明在setter预算不了，只能通过字段名去数据库更新
+        
+        // 通过字段名去数据库更新
         foreach ($this->data as $tem_key => $tem_data){
             if (is_array($tem_data) && isset($tem_data["[I]"]) ){
                 $attachData[$tem_key] = $tem_data;
@@ -704,10 +704,15 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         $results = $this->query($builder);
-        if ($results){
+        if ($results) {
+            foreach ($data as $key => $val) {
+                if ((is_array($val) && isset($val["[I]"])) && isset($this->originData[$key])) {
+                    $this->data[$key] = $this->originData[$key] + $val["[I]"];
+                }
+            }
             $this->originData = $this->data;
             $this->callEvent('onAfterUpdate', true);
-        }else{
+        } else {
             $this->callEvent('onAfterUpdate', false);
         }
 

@@ -362,12 +362,7 @@ trait Attribute
             if ($setter && method_exists($this, $method)) {
                 $attrValue = call_user_func([$this,$method],$attrValue, $this->data);
             }
-            // 提前预算inc dec
-            if (is_array($attrValue) && isset($attrValue["[I]"]) ){
-                if ( isset($this->originData[$attrName]) ){
-                    $attrValue = $this->originData[$attrName] + $attrValue["[I]"];
-                }
-            }
+
             if ($setter) {
                 $attrValue = $this->preCastToJson($attrName, $attrValue);
             }
