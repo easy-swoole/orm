@@ -339,6 +339,12 @@ class DbManager
             return $ret->getResult();
         }catch (\Throwable $exception){
             throw $exception;
+        } finally {
+            if(isset($this->transactionContext[$cid][$name])){
+                $client = $this->transactionContext[$cid][$name];
+                unset($this->transactionContext[$cid][$name]);
+                $this->recycleClient($name, $client);
+            }
         }
     }
 
@@ -379,6 +385,12 @@ class DbManager
             return $ret->getResult();
         }catch (\Throwable $exception){
             throw $exception;
+        } finally {
+            if(isset($this->transactionContext[$cid][$name])){
+                $client = $this->transactionContext[$cid][$name];
+                unset($this->transactionContext[$cid][$name]);
+                $this->recycleClient($name, $client);
+            }
         }
     }
 
@@ -405,8 +417,8 @@ class DbManager
                     }
                 }
             }
+            unset($this->transactionContext[$cid]);
         }
-        unset($this->transactionContext[$cid]);
     }
 
 
