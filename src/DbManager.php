@@ -417,8 +417,8 @@ class DbManager
                     }
                 }
             }
-            unset($this->transactionContext[$cid]);
         }
+        unset($this->transactionContext[$cid]);
     }
 
 
