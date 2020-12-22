@@ -70,6 +70,22 @@ class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonS
     }
 
     /**
+     * 将数据转成数组（raw）
+     * @access public
+     * @param bool $notNul
+     * @param bool $strict
+     * @return array
+     */
+    public function toRawArray($notNul = false, $strict = true)
+    {
+        return array_map(function ($value) use ($notNul, $strict){
+            return ($value instanceof AbstractModel || $value instanceof self) ?
+                $value->toRawArray($notNul, $strict) :
+                $value;
+        }, $this->items);
+    }
+
+    /**
      * 获取全部的数据
      * @access public
      * @return array

@@ -14,6 +14,7 @@ use EasySwoole\ORM\Collection\Collection;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
+use EasySwoole\ORM\Tests\models\TestUserListGetterModel;
 use EasySwoole\ORM\Tests\models\TestUserListModel;
 use PHPUnit\Framework\TestCase;
 
@@ -137,6 +138,32 @@ class CollectionTest extends TestCase
     {
         $res = TestUserListModel::create()->destroy(null, true);
         $this->assertIsInt($res);
+    }
+
+
+    public function testToRawArray()
+    {
+        $testUserModel = new TestUserListGetterModel();
+        $testUserModel->state = 1;
+        $testUserModel->name = 'gaobinzhan';
+        $testUserModel->age = 20;
+        $testUserModel->addTime = date('Y-m-d H:i:s');
+        $ids[] = $testUserModel->save();
+
+        $testUserModel = new TestUserListGetterModel();
+        $testUserModel->state = 1;
+        $testUserModel->name = 'gaobinzhan';
+        $testUserModel->age = 20;
+        $testUserModel->addTime = date('Y-m-d H:i:s');
+        $ids[] = $testUserModel->save();
+
+        $ret = TestUserListGetterModel::create()->where('id', $ids, 'IN')->all();
+        $this->assertEquals(2, count($ret));
+
+        $this->assertEquals('123', $ret->toArray()[0]['addTime']);
+        $this->assertEquals('2019-11-02 23:48:44', $ret->toRawArray()[0]['addTime']);
+
+        TestUserListGetterModel::create()->destroy([], true);
     }
 
 }
