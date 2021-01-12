@@ -902,7 +902,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
         if ($this->where) {
             foreach ($this->where as $whereOne){
-                if (is_array($whereOne[0]) || is_int($whereOne[0]) || is_callable($whereOne[0])){
+                if (is_array($whereOne[0]) || is_int($whereOne[0]) || $whereOne[0] instanceof \Closure){
                     $builder = PreProcess::mappingWhere($builder, $whereOne[0], $this);
                 }else{
                     $builder->where(...$whereOne);

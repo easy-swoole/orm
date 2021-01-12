@@ -7,6 +7,7 @@
 namespace EasySwoole\ORM\Tests;
 
 
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
@@ -59,6 +60,13 @@ class QueryBuilderTest extends TestCase
         $model->where('id', $this->ids, 'in')->all()->toArray();
         $ids = implode(', ', $this->ids);
         $this->assertEquals("SELECT  * FROM `test_user_model` WHERE  `id` in ( {$ids} ) ", $model->lastQuery()->getLastQuery());
+
+
+        $model->where(function (QueryBuilder $builder) {
+            $builder->where('id', $this->ids, 'in');
+        })->all()->toArray();
+        $ids = implode(', ', $this->ids);
+        $this->assertEquals("SELECT  * FROM `test_user_model` WHERE  `id` in ( {$ids} ) ", $model->lastQuery()->getLastQuery());
     }
 
     public function testUpdate()
@@ -68,9 +76,19 @@ class QueryBuilderTest extends TestCase
         foreach ($this->ids as $id) {
             $model->where('id', $id)->update(['name' => 'gaobinzhan1']);
             $this->assertEquals("UPDATE `test_user_model` SET `name` = 'gaobinzhan1' WHERE  `id` = {$id} ", $model->lastQuery()->getLastQuery());
+
+            $model->where(function (QueryBuilder $builder) use ($id) {
+                $builder->where('id', $id);
+            })->update(['name' => 'gaobinzhan1']);
+            $this->assertEquals("UPDATE `test_user_model` SET `name` = 'gaobinzhan1' WHERE  `id` = {$id} ", $model->lastQuery()->getLastQuery());
         }
         $id = current($this->ids);
         $model->where('id', $id)->update(['age' => '22']);
+        $this->assertEquals("UPDATE `test_user_model` SET `age` = 22 WHERE  `id` = {$id} ", $model->lastQuery()->getLastQuery());
+
+        $model->where(function (QueryBuilder $builder) use ($id) {
+            $builder->where('id', $id);
+        })->update(['age' => '22']);
         $this->assertEquals("UPDATE `test_user_model` SET `age` = 22 WHERE  `id` = {$id} ", $model->lastQuery()->getLastQuery());
 
     }
