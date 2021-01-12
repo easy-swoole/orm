@@ -96,6 +96,11 @@ class ModelTest extends TestCase
 
         $user = $testUserModel->get(['id' => $user->id]);
         $this->assertEquals('仙士可2号', $user->name);
+
+        $user = $testUserModel->where(function (QueryBuilder $builder)use ($user){
+            $builder->where('id', $user->id);
+        })->get();
+        $this->assertEquals('仙士可2号', $user->name);
     }
 
     function testGetAll()
