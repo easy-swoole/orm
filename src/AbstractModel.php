@@ -379,6 +379,17 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * 是否replace 插入
+     * @param bool $replace
+     * @return $this
+     */
+    public function replace(bool $replace = true)
+    {
+        $this->replace = $replace;
+        return $this;
+    }
+
+    /**
      * 保存 插入
      * @throws Exception
      * @throws \Throwable
@@ -407,7 +418,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
             $builder->onDuplicate($this->duplicate);
         }
 
-        $builder->insert($this->getTableName(), $rawArray);
+        if ($this->replace === true) {
+            $builder->replace($this->getTableName(), $rawArray);
+        } else {
+            $builder->insert($this->getTableName(), $rawArray);
+        }
+
         $this->preHandleQueryBuilder($builder);
 
         $this->query($builder);
@@ -644,7 +660,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         }
 
         $attachData = [];
-        
+
         // 通过字段名去数据库更新
         foreach ($this->data as $tem_key => $tem_data){
             if (is_array($tem_data) && isset($tem_data["[I]"]) ){
@@ -847,6 +863,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->visible = [];
         $this->lock = false;
         $this->duplicate = [];
+        $this->replace = false;
     }
 
     /**
