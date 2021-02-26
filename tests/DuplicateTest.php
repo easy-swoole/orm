@@ -10,6 +10,7 @@ namespace EasySwoole\ORM\Tests;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
+use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Tests\models\DuplicateModel;
 use PHPUnit\Framework\TestCase;
 
@@ -34,13 +35,12 @@ class DuplicateTest extends TestCase
 
     public function testAdd()
     {
+        DuplicateModel::create()->destroy([], true);
         DuplicateModel::create()->data(['id' => 1, 'id1' => 1, 'nickname' => '史迪仔', 'nickname1' => '史迪奇'])->save();
         try {
             DuplicateModel::create()->data(['id' => 1, 'id1' => 1, 'nickname' => '史迪仔', 'nickname1' => '史迪奇'])->save();
-        } catch (\Throwable $throwable) {
-            $this->assertEquals(
-                "SQLSTATE[23000] [1062] Duplicate entry '1-1' for key 'PRIMARY' [INSERT  INTO `duplicate` (`id`, `id1`, `nickname`, `nickname1`)  VALUES (1, 1, '史迪仔', '史迪奇')]"
-                , $throwable->getMessage());
+        } catch (Exception $throwable) {
+            $this->assertEquals(1062,$throwable->lastQueryResult()->getLastErrorNo());
         }
 
         DuplicateModel::create()->duplicate(['nickname' => '史迪奇'])->data(['id' => 1, 'id1' => 1, 'nickname' => '史迪仔', 'nickname1' => '史迪奇'])->save();
