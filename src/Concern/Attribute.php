@@ -27,6 +27,7 @@ trait Attribute
     private $lock = false;
     private $resetQuery = true;
     private $duplicate = [];
+    private $replace = false;
     /** @var Table */
     private static $schemaInfoList;
     /** @var array 当前的数据 */

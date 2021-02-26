@@ -152,7 +152,7 @@ class SaveAllTest extends TestCase
             $res = TestUserListModel::create()->connection('siam')->saveAll($data, FALSE);
         } catch (Exception $e) {
         } catch (\EasySwoole\ORM\Exception\Exception $e) {
-            $this->assertNotFalse(strpos($e->getMessage(), "SQLSTATE[23000] [1062] Duplicate entry '{$ids[0]}' for key 'PRIMARY'"));
+            $this->assertNotFalse(strpos($e->getMessage(), "SQLSTATE[23000] [1062] Duplicate entry '{$ids[0]}'"));
         } catch (\Throwable $e) {
         }
     }
