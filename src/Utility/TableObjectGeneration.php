@@ -46,27 +46,28 @@ class TableObjectGeneration
             $data = $this->connection->defer()->query($query);
         }
 
-        if ($this->connection->getConfig()->isFetchMode()){
+        if ($this->connection->getConfig()->isFetchMode()) {
             $data->getResult()->setReturnAsArray(true);
             $this->tableColumns = [];
-            while($tem = $data->getResult()->fetch()){
+            while ($tem = $data->getResult()->fetch()) {
                 $this->tableColumns[] = $tem;
             }
-        }else{
+        } else {
             $this->tableColumns = $data->getResult();
         }
 
-        if (!is_array($this->tableColumns)){
-            throw new Exception("generationTable Error : ". $data->getLastError());
+        if (!is_array($this->tableColumns)) {
+            throw new Exception("generationTable Error : " . $data->getLastError());
         }
         return $data->getResult();
     }
 
-    public function generationTable(){
+    public function generationTable()
+    {
         $this->getTableColumnsInfo();
         $columns = $this->tableColumns;
         $table = new Table($this->tableName);
-        foreach ($columns as $column){
+        foreach ($columns as $column) {
             //新增字段对象
             $columnObj = $this->getTableColumn($column);
             $table->addColumn($columnObj);
@@ -74,49 +75,58 @@ class TableObjectGeneration
         return $table;
     }
 
-    protected function getTableColumn($column):Column
+    protected function getTableColumn($column): Column
     {
-        $columnTypeArr = explode(' ',$column['Type']);
-        $tmpIndex = strpos($columnTypeArr[0],'(');
-        if($tmpIndex!==false){
-            $type = substr($columnTypeArr[0],0,$tmpIndex);
-            $limit = substr($columnTypeArr[0],$tmpIndex+1,strpos($columnTypeArr[0],')')-$tmpIndex-1);
-        }else{
+        $columnTypeArr = explode(' ', $column['Type']);
+        $tmpIndex = strpos($columnTypeArr[0], '(');
+        if ($tmpIndex !== false) {
+            $type = substr($columnTypeArr[0], 0, $tmpIndex);
+            $limit = substr($columnTypeArr[0], $tmpIndex + 1, strpos($columnTypeArr[0], ')') - $tmpIndex - 1);
+        } else {
             $type = $columnTypeArr[0];
             $limit = null;
         }
-        $columnObj = new Column($column['Field'],$type);
+        $columnObj = new Column($column['Field'], $type);
 
         //是否无符号
-        if (in_array('unsigned',$columnTypeArr)){
+        if (in_array('unsigned', $columnTypeArr)) {
             $columnObj->setIsUnsigned();
         }
 
         //长度限制
-        if ($limit!==null){
-            $limitArr = explode(',',$limit);
-            if (isset($limitArr[1])){
+        if ($limit !== null) {
+            $limitArr = explode(',', $limit);
+            if (isset($limitArr[1])) {
                 $columnObj->setColumnLimit($limitArr);
-            }else{
+            } else {
                 $columnObj->setColumnLimit($limitArr[0]);
             }
         }
+
         //是否为主键
-        if ($column['Key']=='PRI'){
+        if ($column['Key'] == 'PRI') {
             $columnObj->setIsPrimaryKey();
         }
+
         //默认值
-        if ($column['Default']!==null){
+        if ($column['Default'] !== null) {
             $columnObj->setDefaultValue($column['Default']);
-        }else{
+        } else {
             $columnObj->setDefaultValue(null);
         }
-        if ($column['Extra']=='auto_increment'){
+
+        if ($column['Extra'] == 'auto_increment') {
             $columnObj->setIsAutoIncrement();
         }
-        if (!empty($column['Comment'])){
+
+        if (!empty($column['Comment'])) {
             $columnObj->setColumnComment($column['Comment']);
         }
+
+        if (isset($column['Null']) && $column['Null'] == 'YES') {
+            $columnObj->setIsNotNull(false);
+        }
+
         return $columnObj;
     }
 
