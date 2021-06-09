@@ -22,9 +22,6 @@ class PreProcess
             } else {
                 $builder->where($primaryKey, $whereVal);
             }
-        } else if (is_string($whereVal)) {
-            $whereKeys = explode(',', $whereVal);
-            $builder->where($primaryKey, $whereKeys, 'IN');
         } else if (is_array($whereVal)) {
             // 如果不相等说明是一个键值数组 需要批量操作where
             if (array_keys($whereVal) !== range(0, count($whereVal) - 1)) {
