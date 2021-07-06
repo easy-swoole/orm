@@ -21,6 +21,7 @@ trait Attribute
     private $withTotalCount = FALSE;
     private $order  = NULL;
     private $where  = [];
+    private $raw    = NULL;
     private $join   = NULL;
     private $group  = NULL;
     private $alias  = NULL;
