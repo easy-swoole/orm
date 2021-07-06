@@ -125,4 +125,21 @@ class ModelTest extends TestCase
         $this->assertNull($user);
     }
 
+    /**
+     * testRaw
+     * @author smile-lcw
+     */
+    function testRaw() {
+        $testUserModel = new TestUserModel();
+
+        $userOneAnd = $testUserModel->where('name', '仙士可2号')->raw('and id=1')->get();
+        $userOneOr = $testUserModel->where('name', '仙士可2号')->raw('or id=1')->get();
+
+        $userAllAnd = $testUserModel->where('id', '0', '>')->raw("and name like '%仙%'")->all();
+        $this->assertIsArray($userAllAnd);
+        $userAllOr = $testUserModel->where('id', '0', '>')->raw("or name like '%仙%'")->get();
+        $this->assertIsArray($userAllOr);
+
+    }
+
 }
