@@ -9,10 +9,12 @@
 namespace EasySwoole\ORM\Tests;
 
 use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\AbstractModel;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\Tests\models\Roles;
+use EasySwoole\ORM\Tests\models\UserInfo;
 use EasySwoole\ORM\Tests\models\UserRole;
 use EasySwoole\ORM\Tests\models\UserRoleDifferentField;
 use EasySwoole\ORM\Tests\models\Users;
@@ -38,6 +40,7 @@ class BelongsToManyTest extends TestCase
         $this->createUsersTable();
         $this->createMiddleTable();
         $this->createRoleTable();
+        $this->createUserInfoTable();
     }
 
     // 创建三个关联表
@@ -127,8 +130,29 @@ class BelongsToManyTest extends TestCase
         }
     }
 
+    public function createUserInfoTable()
+    {
+        $sql = "SHOW TABLES LIKE 'user_info';";
+        $query = new QueryBuilder();
+        $query->raw($sql);
+        $data = $this->connection->defer()->query($query);
+
+        if (empty($data->getResult())) {
+            $tableDDL = new Table('user_info');
+            $tableDDL->colInt('id', 11)->setIsPrimaryKey()->setIsAutoIncrement();
+            $tableDDL->colInt('user_id', 11);
+            $tableDDL->colVarChar('user_email', 255);
+            $tableDDL->setIfNotExists();
+            $sql = $tableDDL->__createDDL();
+            $query->raw($sql);
+            $data = $this->connection->defer()->query($query);
+            $this->assertTrue($data->getResult());
+        }
+    }
+
     function testInsert()
     {
+        ### 插入第1个用户
         $user = Users::create([
             'name' => 'SiamBelongsToManySimpleRole'
         ])->save();
@@ -138,7 +162,6 @@ class BelongsToManyTest extends TestCase
             'user_id' => $user,
             'role_id' => 1
         ])->save();
-
         $this->assertIsInt($userRole);
 
         UserRoleDifferentField::create([
@@ -146,7 +169,14 @@ class BelongsToManyTest extends TestCase
             'r_id' => 1
         ])->save();
 
+        // 添加user_info信息
+        UserInfo::create([
+            'user_id' => $user,
+            'user_email' => '1@qq.com'
+        ])->save();
 
+
+        ### 插入第2个用户
         $userManyRole = Users::create([
             'name' => 'SiamBelongsToManyManyRole'
         ])->save();
@@ -169,12 +199,19 @@ class BelongsToManyTest extends TestCase
             'u_id' => $userManyRole,
             'r_id' => 3
         ])->save();
+
+        // 添加user_info信息
+        UserInfo::create([
+            'user_id' => $userManyRole,
+            'user_email' => '3@qq.com'
+        ])->save();
     }
 
     // 关联查询
     function testGet()
     {
         $user = Users::create()->where('name', 'SiamBelongsToManySimpleRole')->get();
+        var_dump($user);
         $this->assertInstanceOf(Users::class, $user);
 
         $this->assertEquals(count($user->roles()), 1);
@@ -203,7 +240,6 @@ class BelongsToManyTest extends TestCase
         $this->assertEquals('管理员', $userMany->roles_different_field()[0]->role_name);
         $this->assertEquals('普通用户', $userMany->roles_different_field()[1]->role_name);
     }
-
 
     function testToArray()
     {
@@ -280,6 +316,44 @@ class BelongsToManyTest extends TestCase
         $this->assertTrue(!isset($user[0]->toArray(false, false)['roles_different_field_call'][0]['role_name']));
         $this->assertTrue(!isset($user[1]->toArray(false, false)['roles_different_field_call'][0]['role_name']));
         $this->assertTrue(!isset($user[1]->toArray(false, false)['roles_different_field_call'][1]['role_name']));
+    }
+
+    // 关联查询同时使用 join
+    public function testWithJoinAll()
+    {
+        $user = Users::create()
+            ->alias('users')
+            ->where('users.name', 'SiamBelongsToManySimpleRole')
+            ->with(['roles'])
+            ->join('user_info user_info', 'users.user_id = user_info.user_id', 'INNER')
+            ->get();
+        $this->assertInstanceOf(Users::class, $user);
+        $this->assertEquals($user->toArray(false, false)['roles'][0]['role_name'], '管理员');
+        $this->assertEquals($user->toArray(false, false)['user_email'], '1@qq.com');
+
+        // 自定义键名
+        $user = Users::create()
+            ->alias('users')
+            ->where('users.name', 'SiamBelongsToManySimpleRole')
+            ->with(['roles_different_field'])
+            ->join('user_info user_info', 'users.user_id = user_info.user_id', 'INNER')
+            ->get();
+        $this->assertInstanceOf(Users::class, $user);
+        $this->assertEquals($user->toArray(false, false)['roles_different_field'][0]['role_name'], '管理员');
+        $this->assertEquals($user->toArray(false, false)['user_email'], '1@qq.com');
+
+        /** @var AbstractModel[] $user */
+        $user = Users::create()
+            ->alias('users')
+            ->field('user_info.user_email')
+            ->with(['roles_join'])
+            ->join('user_info as user_info', 'users.user_id = user_info.user_id', 'INNER')
+            ->all();
+        $this->assertIsArray($user);
+        $this->assertTrue(count($user) > 0);
+        foreach ($user as $k => $v) {
+            $this->assertStringContainsString('@qq.com', $v->toArray(false, false)['user_email']);
+        }
     }
 
     function testDelete()
