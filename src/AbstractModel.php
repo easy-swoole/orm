@@ -956,6 +956,11 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 }
 
                 $pk = $withFuncResult[2];
+
+                if (!is_null($this->alias) && !is_null($pk)) {
+                    $pk = $this->alias . '.' . $pk;
+                }
+
                 if (!in_array($pk, $this->fields) && $this->supplyPk == true){
                     $this->fields[] = $pk;
                 }

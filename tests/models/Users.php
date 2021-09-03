@@ -21,6 +21,11 @@ class Users extends AbstractModel
         return $this->belongsToMany(Roles::class, 'user_role');
     }
 
+    public function roles_join()
+    {
+        return $this->belongsToMany(Roles::class, 'user_role', 'user_id', 'user_id');
+    }
+
     public function roles_different_field()
     {
         return $this->belongsToMany(Roles::class, 'user_role_different_field', 'u_id', 'r_id');
