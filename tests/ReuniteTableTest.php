@@ -7,7 +7,6 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Tests\models\ReuniteTableModel;
-use EasySwoole\ORM\Utility\Schema\Table;
 use PHPUnit\Framework\TestCase;
 use EasySwoole\Mysqli\QueryBuilder;
 

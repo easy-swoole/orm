@@ -34,17 +34,18 @@ class ReplaceIntoTest extends TestCase
     public function testException()
     {
         $model = TestUserModel::create();
+        $addTime = date('Y-m-d');
         $data = [
             'name' => '史迪仔',
-            'age' => '21',
-            'addTime' => date('Y-m-d'),
+            'age' => 21,
+            'addTime' => $addTime,
             'state' => 1
         ];
         $id = $model->data($data)->save();
         $this->assertIsInt($id);
 
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage("SQLSTATE[23000] [1062] Duplicate entry '{$id}' for key 'test_user_model.PRIMARY' [INSERT  INTO `test_user_model` (`name`, `age`, `addTime`, `state`, `id`)  VALUES ('史迪仔', 21, '2021-02-26', 1, {$id})]");
+        $this->expectExceptionMessage("SQLSTATE[23000] [1062] Duplicate entry '{$id}' for key 'test_user_model.PRIMARY' [INSERT  INTO `test_user_model` (`name`, `age`, `addTime`, `state`, `id`)  VALUES ('史迪仔', 21, '{$addTime}', 1, {$id})]");
 
         $model->data($data)->save();
 
@@ -55,10 +56,11 @@ class ReplaceIntoTest extends TestCase
     {
         TestUserModel::create()->destroy(null, true);
         $model = TestUserModel::create();
+        $addTime = date('Y-m-d');
         $data = [
             'name' => '史迪仔',
-            'age' => '21',
-            'addTime' => date('Y-m-d'),
+            'age' => 21,
+            'addTime' => $addTime,
             'state' => 1
         ];
         $id = $model->data($data)->save();
@@ -68,7 +70,7 @@ class ReplaceIntoTest extends TestCase
 
         $model->data($data)->replace()->save();
         $sql = DbManager::getInstance()->getLastQuery()->getLastQuery();
-        $this->assertEquals("REPLACE  INTO `test_user_model` (`name`, `age`, `addTime`, `state`, `id`)  VALUES ('replace into', 21, '2021-02-26', 1, {$id})", $sql);
+        $this->assertEquals("REPLACE  INTO `test_user_model` (`name`, `age`, `addTime`, `state`, `id`)  VALUES ('replace into', 21, '{$addTime}', 1, {$id})", $sql);
         $ret = TestUserModel::create()->get($id);
         $this->assertEquals('replace into', $ret->name);
     }

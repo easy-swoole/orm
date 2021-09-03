@@ -211,7 +211,7 @@ class BelongsToManyTest extends TestCase
     function testGet()
     {
         $user = Users::create()->where('name', 'SiamBelongsToManySimpleRole')->get();
-        var_dump($user);
+//        var_dump($user);
         $this->assertInstanceOf(Users::class, $user);
 
         $this->assertEquals(count($user->roles()), 1);
