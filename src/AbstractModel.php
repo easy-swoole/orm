@@ -756,7 +756,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                 call_user_func($call,$value);
             }
             $chunkIndex++;
-
+            unset($list);
             return $this->chunk($call,$size,$chunkIndex);
         }catch (\Throwable $throwable){
             throw $throwable;
