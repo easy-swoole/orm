@@ -16,7 +16,7 @@ class PreProcess
     {
         // 处理查询条件
         $primaryKey = $model->schemaInfo()->getPkFiledName();
-        if (is_int($whereVal)) {
+        if (is_int($whereVal) || is_string($whereVal)) {
             if (empty($primaryKey)) {
                 throw new Exception('Table not have primary key, so can\'t use Model::get($pk)');
             } else {
