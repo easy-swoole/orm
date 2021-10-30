@@ -103,6 +103,54 @@ class ModelTest extends TestCase
         $this->assertEquals('仙士可2号', $user->name);
     }
 
+    /**
+     * @depends testAdd
+     * testUpdateWithLimit
+     * @author XueSi
+     * Time: 18:04
+     */
+    function testUpdateWithLimit()
+    {
+        $testUserModel = new TestUserModel();
+
+        // 无条件进行 limit 更新
+        /**
+         * @var $user TestUserModel
+         */
+        $user = $testUserModel->get();
+        $user->name = 'XueSi-1号';
+        $result = $user->limit(1)->update([], null, true);
+        $this->assertEquals("UPDATE `test_user_model` SET `name` = 'XueSi-1号' LIMIT 1", $user->lastQuery()->getLastQuery());
+        $this->assertTrue($result);
+
+        // 无条件进行 limit 更新
+        /**
+         * @var $user TestUserModel
+         */
+        $user = $testUserModel->get();
+        $user->name = 'XueSi-2号';
+        $result = $user->limit(2, 3)->update([], null, true);
+        $this->assertEquals("UPDATE `test_user_model` SET `name` = 'XueSi-2号' LIMIT 2", $user->lastQuery()->getLastQuery());
+        $this->assertTrue($result);
+
+        // 无条件进行 limit 更新
+        $result = $testUserModel->limit(3)->update(['name' => 'XueSi-1号-1'], null, true);
+        $this->assertEquals("UPDATE `test_user_model` SET `name` = 'XueSi-1号-1' LIMIT 3", $testUserModel->lastQuery()->getLastQuery());
+        $this->assertTrue($result);
+
+        // 无条件进行 limit 更新
+        $testUserModel = new TestUserModel();
+        $result = $testUserModel->limit(4, 5)->update(['name' => 'XueSi-2号-2'], null, true);
+        $this->assertEquals("UPDATE `test_user_model` SET `name` = 'XueSi-2号-2' LIMIT 4", $testUserModel->lastQuery()->getLastQuery());
+        $this->assertTrue($result);
+
+        // 根据条件进行 limit 更新
+        $testUserModel = new TestUserModel();
+        $result = $testUserModel->limit(1)->update(['name' => 'XueSi-3号'], ['id' => 1]);
+        $this->assertEquals("UPDATE `test_user_model` SET `name` = 'XueSi-3号' WHERE  `id` = 1  LIMIT 1", $testUserModel->lastQuery()->getLastQuery());
+        $this->assertTrue($result);
+    }
+
     function testGetAll()
     {
         $testUserModel = new TestUserModel();

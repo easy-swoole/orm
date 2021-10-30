@@ -710,7 +710,18 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->preHandleQueryBuilder($builder);
         // 合并时间戳字段
         $data = TimeStampHandle::preHandleTimeStamp($this, $data, 'update');
-        $builder->update($this->getTableName(), $data);
+
+        // 补充limit条件
+        $rowRows = null;
+        if (!is_null($this->limit)) {
+            if (is_array($this->limit)) {
+                $rowRows = array_shift($this->limit);
+            } else {
+                $rowRows = $this->limit;
+            }
+        }
+
+        $builder->update($this->getTableName(), $data, $rowRows);
 
         // beforeUpdate事件
         $beforeRes = $this->callEvent('onBeforeUpdate', $data);
