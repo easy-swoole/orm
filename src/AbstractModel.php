@@ -160,6 +160,12 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         return $this;
     }
 
+    public function raw(string $raw)
+    {
+        $this->raw = $raw;
+        return $this;
+    }
+
     /**
      * @param string $group
      * @return $this
@@ -854,6 +860,7 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
         $this->withTotalCount = false;
         $this->order  = null;
         $this->where  = [];
+        $this->raw    = null;
         $this->join   = null;
         $this->group  = null;
         $this->alias  = null;
@@ -925,6 +932,9 @@ abstract class AbstractModel implements ArrayAccess, JsonSerializable
                     $builder->where(...$whereOne);
                 }
             }
+        }
+        if($this->raw) {
+            $builder->where($this->raw, 'DBNULL', '=', '');
         }
         if($this->group){
             $builder->groupBy($this->group);
