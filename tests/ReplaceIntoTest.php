@@ -45,7 +45,7 @@ class ReplaceIntoTest extends TestCase
         $this->assertIsInt($id);
 
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage("SQLSTATE[23000] [1062] Duplicate entry '{$id}' for key 'test_user_model.PRIMARY' [INSERT  INTO `test_user_model` (`name`, `age`, `addTime`, `state`, `id`)  VALUES ('史迪仔', 21, '{$addTime}', 1, {$id})]");
+        $this->expectExceptionMessage("SQLSTATE[23000] [1062] Duplicate entry '{$id}' for key 'PRIMARY' [INSERT  INTO `test_user_model` (`name`, `age`, `addTime`, `state`, `id`)  VALUES ('史迪仔', 21, '{$addTime}', 1, {$id})]");
 
         $model->data($data)->save();
 
