@@ -17,7 +17,7 @@ use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
 
-class TiamStampTableGenerationTest extends TestCase
+class TimeStampTableGenerationTest extends TestCase
 {
     /**
      * @var $generation TableObjectGeneration
