@@ -22,6 +22,32 @@ Easyswoole-ORM
 composer require easyswoole/orm
 ```
 
+## RFC
+### 1、Model Invoke
+```
+Model:invoke()->where(col,val)->get()
+Model:invoke(function(Model $m){
+    $m->where(col,val)
+})->get()
+```
+
+### 2、Model Where
+```
+$model = Model:create()
+
+//$op => = , > , < , != , in , between
+$model->where(col1,val1,$op)->get()
+$model->where(col1,100,">")->get()
+$model->where(col1,100,"<")->get()
+$model->where(col1,100,"=")->get()
+$model->where(col1,[1,100],"in")->get()
+$model->where(col1,[1,100],"between")->get()
+
+$model->where(col1,val1)->where(col2,val2)->get()
+=> select * from where col1 = val1 and col2 = val2 limit 1
+
+```
+
 ## 官网文档
 
 http://www.easyswoole.com/Cn/Components/Orm/changeLog.html
