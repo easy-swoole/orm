@@ -62,7 +62,7 @@ http://www.easyswoole.com/Cn/Components/Orm/changeLog.html
 
 ## 主要项目负责人
 
-- 宣言(Siam) 59419979@qq.com
+
 
 ## 参与贡献方式
 
