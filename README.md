@@ -46,6 +46,20 @@ $model->where(col1,[1,100],"between")->get()
 $model->where(col1,val1)->where(col2,val2)->get()
 => select * from where col1 = val1 and col2 = val2 limit 1
 
+
+// 数组形式传参 仅支持此种格式数组
+$array1 = [
+    ['user', 'easyswoole', '='],
+	['age', '18', '!='],
+];
+$array1 = [
+    ['creaet_time', '2021-12-29 14:47:32', '='],
+];
+$model->where($array1)->where($array2)->get()
+
+
+// TODO 兼容 原生sql
+
 ```
 
 ## 官网文档
