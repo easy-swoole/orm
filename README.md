@@ -50,7 +50,7 @@ $model->where(col1,val1)->where(col2,val2)->get()
 // 数组形式传参 仅支持此种格式数组
 $array1 = [
     ['user', 'easyswoole', '='],
-	['age', '18', '!='],
+    ['age', '18', '!='],
 ];
 $array1 = [
     ['creaet_time', '2021-12-29 14:47:32', '='],
