@@ -8,7 +8,7 @@ use EasySwoole\Pool\MagicPool;
 use phpDocumentor\Reflection\Types\This;
 use Swoole\Coroutine\MySQL;
 
-class Orm
+class DbManager
 {
     use Singleton;
 
@@ -18,7 +18,7 @@ class Orm
     protected $config = [];
     protected $pool = [];
 
-    function addConnection(ConnectionConfig $config):Orm
+    function addConnection(ConnectionConfig $config):DbManager
     {
         $this->config[$config->getName()] = $config;
         return $this;
