@@ -8,7 +8,10 @@ use EasySwoole\ORM\Db\MysqlClient;
 use EasySwoole\ORM\Db\Pool;
 use EasySwoole\ORM\Db\QueryResult;
 use EasySwoole\ORM\Exception\PoolError;
+use EasySwoole\Pool\AbstractPool;
 use Swoole\Coroutine;
+use Swoole\Coroutine\Scheduler;
+use Swoole\Timer;
 
 class DbManager
 {
@@ -96,6 +99,29 @@ class DbManager
         return $result;
     }
 
+    function resetPool(bool $clearTimer = true)
+    {
+        /**
+         * @var  $key
+         * @var AbstractPool $pool
+         */
+        foreach ($this->pool as $key => $pool){
+            $pool->reset();
+        }
+        $this->pool = [];
+        if($clearTimer){
+            Timer::clearAll();
+        }
+    }
+
+    function runInMainProcess(callable $func)
+    {
+        $scheduler = new Scheduler();
+        $scheduler->add($func);
+        $scheduler->start();
+        $this->resetPool();
+    }
+
     private function getConnectionPool(string $connectionName):Pool
     {
         if(isset($this->pool[$connectionName])){
@@ -104,6 +130,9 @@ class DbManager
         if(isset($this->config[$connectionName])){
             /** @var ConnectionConfig $conf */
             $conf = $this->config[$connectionName];
+            $pool = new Pool($conf);
+            $this->config[$connectionName] = $pool;
+            return $pool;
         }else{
             throw new PoolError("connection: {$connectionName} did not register yet");
         }

@@ -52,6 +52,23 @@ class MysqlClient extends MySQL implements ObjectInterface
         return $res;
     }
 
+    /**
+     * @param $timeout
+     * @return bool
+     * 重写父类方法，实现事务标记
+     */
+    function begin($timeout = null):bool
+    {
+        if($this->isInTransaction){
+            return true;
+        }
+        $res = parent::begin($timeout);
+        if($res){
+            $this->isInTransaction = true;
+        }
+        return $res;
+    }
+
     function commit($timeout = null):bool
     {
         if($this->isInTransaction){
