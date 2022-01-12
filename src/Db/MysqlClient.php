@@ -104,18 +104,12 @@ class MysqlClient extends MySQL implements ObjectInterface
                 throw $e;
             }
         }
-
+        $result->setResult($ret);
         $result->setLastError($this->error);
         $result->setLastErrorNo($this->errno);
         $result->setLastInsertId($this->insert_id);
         $result->setAffectedRows($this->affected_rows);
 
-        if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
-            $temp = new QueryBuilder();
-            $temp->raw('SELECT FOUND_ROWS() as count');
-            $count = $this->query($temp,$timeout);
-            $ret->setTotalCount($count->getResult()[0]['count']);
-        }
-
+        return $result;
     }
 }
