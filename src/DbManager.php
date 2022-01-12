@@ -83,6 +83,8 @@ class DbManager
         if(isset($this->config[$connectionName])){
             /** @var ConnectionConfig $conf */
             $conf = $this->config[$connectionName];
+        }else{
+            throw new PoolError("connection: {$connectionName} did not register yet");
         }
     }
 
