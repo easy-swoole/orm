@@ -4,11 +4,11 @@ namespace EasySwoole\ORM;
 
 use EasySwoole\Component\Singleton;
 use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\Db\MysqlClient;
 use EasySwoole\ORM\Db\Pool;
 use EasySwoole\ORM\Db\QueryResult;
 use EasySwoole\ORM\Exception\PoolError;
 use Swoole\Coroutine;
-use Swoole\Coroutine\MySQL;
 
 class DbManager
 {
@@ -36,17 +36,17 @@ class DbManager
         return $this->onQuery;
     }
 
-    function fastQuery(?string $connectionName = null)
+    function fastQuery(?string $connectionName = null):QueryExecutor
     {
-
+        return (new QueryExecutor())->setConnectionName($connectionName);
     }
 
-    function invoke(callable $call,string $connectionName = "default",float $timeout = 3):MySQL
+    function invoke(callable $call,string $connectionName = "default",float $timeout = 3)
     {
         $obj = $this->getConnectionPool($connectionName)->getObj($timeout);
         if($obj){
             try{
-                call_user_func($call,$obj);
+                return call_user_func($call,$obj);
             }catch (\Throwable $exception){
                 throw $exception;
             }finally {
@@ -57,7 +57,7 @@ class DbManager
         }
     }
 
-    function defer(string $connectionName = "default",float $timeout = 3):MySQL
+    function defer(string $connectionName = "default",float $timeout = 3):MysqlClient
     {
         $id = Coroutine::getCid();
         if(isset($this->context[$id][$connectionName])){
@@ -76,7 +76,25 @@ class DbManager
         }
     }
 
-
+    function __exec(MysqlClient $client,QueryBuilder $builder,bool $raw = false,float $timeout = 3):QueryResult
+    {
+        $start = microtime(true);
+        $result = $client->execQueryBuilder($builder,$raw,$timeout);
+        if($this->onQuery){
+            $temp = clone $builder;
+            call_user_func($this->onQuery,$result,$temp,$client,$start);
+        }
+        if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
+            $temp = new QueryBuilder();
+            $temp->raw('SELECT FOUND_ROWS() as count');
+            $count = $client->execQueryBuilder($builder,false,$timeout);
+            if($this->onQuery){
+                call_user_func($this->onQuery,$count,$temp,$client,$start);
+            }
+            $result->setTotalCount($count->getResult()[0]['count']);
+        }
+        return $result;
+    }
 
     private function getConnectionPool(string $connectionName):Pool
     {

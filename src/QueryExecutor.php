@@ -4,59 +4,72 @@ namespace EasySwoole\ORM;
 
 
 use EasySwoole\Mysqli\QueryBuilder;
-use EasySwoole\ORM\Exception\ExecuteFail;
-use EasySwoole\ORM\Exception\PrepareFail;
-use Swoole\Coroutine\MySQL;
+use EasySwoole\ORM\Db\MysqlClient;
 
 class QueryExecutor extends QueryBuilder
 {
-    /** @var MySQL|null */
+    /** @var MysqlClient|null */
     private $client;
+    /** @var string|null */
+    private $connectionName;
 
-    function setClient(MySQL $client):QueryExecutor
+    private $timeout = 3;
+
+    function setTimeout(float $time):QueryExecutor
+    {
+        $this->timeout = $time;
+        return $this;
+    }
+
+    function setClient(MysqlClient $client):QueryExecutor
     {
         $this->client = $client;
         return $this;
     }
 
+    function setConnectionName(string $name):QueryExecutor
+    {
+        $this->connectionName = $name;
+        return $this;
+    }
+
+
     function get($tableName, $numRows = null, $columns = null)
     {
         parent::get($tableName, $numRows, $columns);
-        return $this->exec();
+        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
     }
 
     function update($tableName, $tableData, $numRows = null)
     {
         parent::update($tableName, $tableData, $numRows);
-        return $this->exec();
+        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
     }
 
     function getOne($tableName, $columns = '*')
     {
         parent::getOne($tableName, $columns);
-        return $this->exec();
+        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
     }
 
     function insert($tableName, $insertData)
     {
         parent::insert($tableName, $insertData);
-        return $this->exec();
+        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
     }
 
     function insertAll($tableName, $insertData, $option = [])
     {
         parent::insertAll($tableName, $insertData, $option);
-        return $this->exec();
+        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
     }
 
-    private function getClient():MySQL
+    private function getClient():MysqlClient
     {
         if($this->client){
             return $this->client;
+        }else{
+            return DbManager::getInstance()->defer($this->connectionName);
         }
-    }
-
-    private function exec(){
-
     }
 }
