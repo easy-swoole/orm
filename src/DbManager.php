@@ -3,9 +3,9 @@
 namespace EasySwoole\ORM;
 
 use EasySwoole\Component\Singleton;
-use EasySwoole\Mysqli\Config;
-use EasySwoole\Pool\MagicPool;
-use phpDocumentor\Reflection\Types\This;
+use EasySwoole\ORM\Db\Pool;
+use EasySwoole\ORM\Exception\PoolError;
+use Swoole\Coroutine;
 use Swoole\Coroutine\MySQL;
 
 class DbManager
@@ -17,6 +17,8 @@ class DbManager
 
     protected $config = [];
     protected $pool = [];
+    protected $context = [];
+
 
     function addConnection(ConnectionConfig $config):DbManager
     {
@@ -37,29 +39,47 @@ class DbManager
 
     }
 
-
-
-    function invoke(?string $connectionName = null):MySQL
+    function invoke(callable $call,string $connectionName = "default",float $timeout = 3):MySQL
     {
-
-    }
-
-    function defer():MySQL
-    {
-
-    }
-
-    private function getConnectionName(?string $connectionName = null):string
-    {
-        if($connectionName){
-            return $connectionName;
+        $obj = $this->getConnectionPool($connectionName)->getObj($timeout);
+        if($obj){
+            try{
+                call_user_func($call,$obj);
+            }catch (\Throwable $exception){
+                throw $exception;
+            }finally {
+                $this->getConnectionPool($connectionName)->recycleObj($obj);
+            }
         }else{
-            return "default";
+            throw new PoolError("connection: {$connectionName} getObj() timeout,pool may be empty");
         }
     }
 
-    private function getConnectionPool(string $connectionName)
+    function defer(string $connectionName = "default",float $timeout = 3):MySQL
     {
+        $id = Coroutine::getCid();
+        if(isset($this->context[$id][$connectionName])){
+            return $this->context[$id][$connectionName];
+        }else{
+            $obj = $this->getConnectionPool($connectionName)->defer($timeout);
+            if($obj){
+                $this->context[$id][$connectionName] = $obj;
+                Coroutine::defer(function ()use($id){
+                    unset($this->context[$id]);
+                });
+                return $obj;
+            }else{
+                throw new PoolError("connection: {$connectionName} defer() timeout,pool may be empty");
+            }
+        }
+    }
+
+
+    private function getConnectionPool(string $connectionName):Pool
+    {
+        if(isset($this->pool[$connectionName])){
+            return $this->pool[$connectionName];
+        }
         if(isset($this->config[$connectionName])){
             /** @var ConnectionConfig $conf */
             $conf = $this->config[$connectionName];
