@@ -57,21 +57,6 @@ class QueryExecutor extends QueryBuilder
     }
 
     private function exec(){
-        $sql = $this->getLastPrepareQuery();
-        $client = $this->getClient();
-        $stmt = $client->prepare($sql);
-        if($stmt){
-            $ret = $stmt->execute($this->getLastBindParams());
-            if($ret === false && $client->errno){
-                $e = new ExecuteFail();
-                $e->setQueryBuilder($this);
-                throw $e;
-            }
-            return $ret;
-        }else{
-            $e = new PrepareFail();
-            $e->setQueryBuilder($this);
-            throw $e;
-        }
+
     }
 }

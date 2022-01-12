@@ -2,6 +2,9 @@
 
 namespace EasySwoole\ORM\Db;
 
+use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\Exception\ExecuteFail;
+use EasySwoole\ORM\Exception\PrepareFail;
 use EasySwoole\Pool\ObjectInterface;
 use Swoole\Coroutine\MySQL;
 
@@ -72,5 +75,47 @@ class MysqlClient extends MySQL implements ObjectInterface
             return $res;
         }
         return false;
+    }
+
+    function execQueryBuilder(QueryBuilder $builder, bool $raw = false, float $timeout = null):QueryResult
+    {
+
+        $this->errno = 0;
+        $this->error = '';
+        $this->insert_id = 0;
+        $this->affected_rows = 0;
+        
+        $result = new QueryResult();
+
+        if($raw){
+            $ret = $this->query($builder->getLastQuery(),$timeout);
+        }else{
+            $stmt = $this->prepare($builder->getLastPrepareQuery());
+            if($stmt){
+                $ret = $stmt->execute($builder->getLastBindParams());
+                if($ret === false && $this->errno){
+                    $e = new ExecuteFail();
+                    $e->setQueryBuilder($this);
+                    throw $e;
+                }
+            }else{
+                $e = new PrepareFail();
+                $e->setQueryBuilder($this);
+                throw $e;
+            }
+        }
+
+        $result->setLastError($this->error);
+        $result->setLastErrorNo($this->errno);
+        $result->setLastInsertId($this->insert_id);
+        $result->setAffectedRows($this->affected_rows);
+
+        if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
+            $temp = new QueryBuilder();
+            $temp->raw('SELECT FOUND_ROWS() as count');
+            $count = $this->query($temp,$timeout);
+            $ret->setTotalCount($count->getResult()[0]['count']);
+        }
+
     }
 }

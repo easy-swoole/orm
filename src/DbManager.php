@@ -3,7 +3,9 @@
 namespace EasySwoole\ORM;
 
 use EasySwoole\Component\Singleton;
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Pool;
+use EasySwoole\ORM\Db\QueryResult;
 use EasySwoole\ORM\Exception\PoolError;
 use Swoole\Coroutine;
 use Swoole\Coroutine\MySQL;
@@ -73,6 +75,7 @@ class DbManager
             }
         }
     }
+
 
 
     private function getConnectionPool(string $connectionName):Pool
