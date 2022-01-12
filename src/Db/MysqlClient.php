@@ -5,7 +5,7 @@ namespace EasySwoole\ORM\Db;
 use EasySwoole\Pool\ObjectInterface;
 use Swoole\Coroutine\MySQL;
 
-class Object extends MySQL implements ObjectInterface
+class MysqlClient extends MySQL implements ObjectInterface
 {
 
     private $isInTransaction = false;
