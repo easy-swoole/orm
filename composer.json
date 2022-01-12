@@ -21,7 +21,7 @@
         "ext-swoole": ">=4.4.7",
         "ext-json": "*",
         "easyswoole/component": "^2.0",
-        "easyswoole/mysqli": "3.*-dev",
+        "easyswoole/mysqli": "^3.0",
         "easyswoole/ddl": "^1.0",
         "easyswoole/pool": "^1.0"
     },
