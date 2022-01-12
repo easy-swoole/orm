@@ -5,6 +5,7 @@ namespace EasySwoole\ORM;
 
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\MysqlClient;
+use EasySwoole\ORM\Db\QueryResult;
 
 class QueryExecutor extends QueryBuilder
 {
@@ -14,6 +15,9 @@ class QueryExecutor extends QueryBuilder
     private $connectionName;
 
     private $timeout = 3;
+
+    /** @var QueryResult */
+    private $lastQueryResult;
 
     function setTimeout(float $time):QueryExecutor
     {
@@ -37,31 +41,31 @@ class QueryExecutor extends QueryBuilder
     function get($tableName, $numRows = null, $columns = null)
     {
         parent::get($tableName, $numRows, $columns);
-        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
+        return $this->exec();
     }
 
     function update($tableName, $tableData, $numRows = null)
     {
         parent::update($tableName, $tableData, $numRows);
-        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
+        return $this->exec();
     }
 
     function getOne($tableName, $columns = '*')
     {
         parent::getOne($tableName, $columns);
-        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
+        return $this->exec();
     }
 
     function insert($tableName, $insertData)
     {
         parent::insert($tableName, $insertData);
-        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
+        return $this->exec();
     }
 
     function insertAll($tableName, $insertData, $option = [])
     {
         parent::insertAll($tableName, $insertData, $option);
-        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
+        return $this->exec();
     }
 
     private function getClient():MysqlClient
@@ -71,5 +75,10 @@ class QueryExecutor extends QueryBuilder
         }else{
             return DbManager::getInstance()->defer($this->connectionName);
         }
+    }
+
+    private function exec()
+    {
+        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
     }
 }
