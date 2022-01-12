@@ -2,48 +2,76 @@
 
 namespace EasySwoole\ORM;
 
-use EasySwoole\Mysqli\Client;
+
 use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\Exception\ExecuteFail;
+use EasySwoole\ORM\Exception\PrepareFail;
+use Swoole\Coroutine\MySQL;
 
 class QueryExecutor extends QueryBuilder
 {
-
+    /** @var MySQL|null */
     private $client;
 
-    function setClient(Client $client):QueryExecutor
+    function setClient(MySQL $client):QueryExecutor
     {
         $this->client = $client;
         return $this;
     }
 
-    function get($tableName, $numRows = null, $columns = null): ?QueryBuilder
+    function get($tableName, $numRows = null, $columns = null)
     {
-         parent::get($tableName, $numRows, $columns);
-         $sql = $this->getLastPrepareQuery();
+        parent::get($tableName, $numRows, $columns);
+        return $this->exec();
     }
 
     function update($tableName, $tableData, $numRows = null)
     {
-        return parent::update($tableName, $tableData, $numRows);
+        parent::update($tableName, $tableData, $numRows);
+        return $this->exec();
     }
 
-    function getOne($tableName, $columns = '*'): ?QueryBuilder
+    function getOne($tableName, $columns = '*')
     {
-        return parent::getOne($tableName, $columns);
+        parent::getOne($tableName, $columns);
+        return $this->exec();
     }
 
     function insert($tableName, $insertData)
     {
-        return parent::insert($tableName, $insertData);
+        parent::insert($tableName, $insertData);
+        return $this->exec();
     }
 
     function insertAll($tableName, $insertData, $option = [])
     {
-        return parent::insertAll($tableName, $insertData, $option);
+        parent::insertAll($tableName, $insertData, $option);
+        return $this->exec();
     }
 
-    function insertMulti($tableName, array $multiInsertData, array $dataKeys = null)
+    private function getClient():MySQL
     {
-        return parent::insertMulti($tableName, $multiInsertData, $dataKeys);
+        if($this->client){
+            return $this->client;
+        }
+    }
+
+    private function exec(){
+        $sql = $this->getLastPrepareQuery();
+        $client = $this->getClient();
+        $stmt = $client->prepare($sql);
+        if($stmt){
+            $ret = $stmt->execute($this->getLastBindParams());
+            if($ret === false && $client->errno){
+                $e = new ExecuteFail();
+                $e->setQueryBuilder($this);
+                throw $e;
+            }
+            return $ret;
+        }else{
+            $e = new PrepareFail();
+            $e->setQueryBuilder($this);
+            throw $e;
+        }
     }
 }
