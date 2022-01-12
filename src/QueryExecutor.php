@@ -79,6 +79,7 @@ class QueryExecutor extends QueryBuilder
 
     private function exec()
     {
-        return DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
+        $this->lastQueryResult = DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
+        return $this->lastQueryResult->getResult();
     }
 }
