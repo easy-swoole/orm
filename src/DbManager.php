@@ -39,7 +39,7 @@ class DbManager
         return $this->onQuery;
     }
 
-    function fastQuery(?string $connectionName = null):QueryExecutor
+    function fastQuery(?string $connectionName = "default"):QueryExecutor
     {
         return (new QueryExecutor())->setConnectionName($connectionName);
     }

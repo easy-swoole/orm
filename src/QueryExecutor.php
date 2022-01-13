@@ -68,6 +68,12 @@ class QueryExecutor extends QueryBuilder
         return $this->exec();
     }
 
+    function raw($sql, $param = [])
+    {
+        parent::raw($sql, $param);
+        return $this->exec();
+    }
+
     private function getClient():MysqlClient
     {
         if($this->client){

@@ -14,12 +14,12 @@ class Pool extends AbstractPool
     protected function createObject()
     {
         $mysqlConfig = new Config($this->getConfig()->toArray());
-        $client = new MysqlClient($mysqlConfig);
-        if($client->connect()){
+        $client = new MysqlClient();
+        if($client->connect($mysqlConfig->toArray())){
             $client->__lastPingTime = 0;
             return $client;
         }else{
-            throw new Exception("mysql client connect to {$mysqlConfig->getHost()} error: {$client->connect_error}");
+            throw new Exception("mysql client connect to {$mysqlConfig->getHost()}:{$mysqlConfig->getPort()} error: {$client->connect_error}");
         }
     }
 
