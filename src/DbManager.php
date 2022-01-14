@@ -131,7 +131,7 @@ class DbManager
             /** @var ConnectionConfig $conf */
             $conf = $this->config[$connectionName];
             $pool = new Pool($conf);
-            $this->config[$connectionName] = $pool;
+            $this->pool[$connectionName] = $pool;
             return $pool;
         }else{
             throw new PoolError("connection: {$connectionName} did not register yet");
