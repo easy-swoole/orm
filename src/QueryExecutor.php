@@ -11,18 +11,24 @@ class QueryExecutor extends QueryBuilder
 {
     /** @var MysqlClient|null */
     private $client;
-    /** @var string|null */
-    private $connectionName;
 
-    private $timeout = 3;
+    /**
+     * @var ConnectionConfig $connectionConfig
+     */
+    private $connectionConfig;
 
-    /** @var QueryResult */
+    function setConnectionConfig(ConnectionConfig $config):QueryExecutor
+    {
+        $this->connectionConfig = $config;
+        return $this;
+    }
+
+    /** @var QueryResult|null */
     private $lastQueryResult;
 
-    function setTimeout(float $time):QueryExecutor
+    function lastQueryResult():?QueryResult
     {
-        $this->timeout = $time;
-        return $this;
+        return $this->lastQueryResult;
     }
 
     function setClient(MysqlClient $client):QueryExecutor
@@ -30,13 +36,6 @@ class QueryExecutor extends QueryBuilder
         $this->client = $client;
         return $this;
     }
-
-    function setConnectionName(string $name):QueryExecutor
-    {
-        $this->connectionName = $name;
-        return $this;
-    }
-
 
     function get($tableName, $numRows = null, $columns = null)
     {
@@ -79,13 +78,13 @@ class QueryExecutor extends QueryBuilder
         if($this->client){
             return $this->client;
         }else{
-            return DbManager::getInstance()->defer($this->connectionName);
+            return DbManager::getInstance()->defer($this->connectionConfig->getName());
         }
     }
 
     private function exec()
     {
-        $this->lastQueryResult = DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->timeout);
+        $this->lastQueryResult = DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->connectionConfig->getTimeout());
         return $this->lastQueryResult->getResult();
     }
 }

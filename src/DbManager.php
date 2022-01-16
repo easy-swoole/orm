@@ -41,7 +41,11 @@ class DbManager
 
     function fastQuery(?string $connectionName = "default"):QueryExecutor
     {
-        return (new QueryExecutor())->setConnectionName($connectionName);
+        if(isset($this->config[$connectionName])){
+            return (new QueryExecutor())->setConnectionConfig($this->config[$connectionName]);
+        }else{
+            throw new PoolError("connection: {$connectionName} did not register yet");
+        }
     }
 
     function invoke(callable $call,string $connectionName = "default",float $timeout = 3)
@@ -114,12 +118,15 @@ class DbManager
         }
     }
 
-    function runInMainProcess(callable $func)
+    function runInMainProcess(callable $func,bool $clearTimer = true)
     {
         $scheduler = new Scheduler();
-        $scheduler->add($func);
+        $scheduler->add(function ()use($func,$clearTimer){
+            $func($this);
+            $this->resetPool($clearTimer);
+        });
         $scheduler->start();
-        $this->resetPool();
+
     }
 
     private function getConnectionPool(string $connectionName):Pool
