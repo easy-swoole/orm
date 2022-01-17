@@ -70,7 +70,22 @@ class QueryExecutor extends QueryBuilder
     function raw($sql, $param = [])
     {
         parent::raw($sql, $param);
-        return $this->exec();
+        return $this->exec(true);
+    }
+
+    public function startTransaction()
+    {
+        return $this->raw('start transaction');
+    }
+
+    public function commit()
+    {
+        return $this->raw('commit');
+    }
+
+    public function rollback()
+    {
+        return $this->raw("rollback");
     }
 
     private function getClient():MysqlClient
@@ -82,9 +97,9 @@ class QueryExecutor extends QueryBuilder
         }
     }
 
-    private function exec()
+    private function exec(bool $raw = false)
     {
-        $this->lastQueryResult = DbManager::getInstance()->__exec($this->getClient(),$this,false,$this->connectionConfig->getTimeout());
+        $this->lastQueryResult = DbManager::getInstance()->__exec($this->getClient(),$this,$raw,$this->connectionConfig->getTimeout());
         return $this->lastQueryResult->getResult();
     }
 }
