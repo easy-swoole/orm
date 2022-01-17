@@ -4,12 +4,17 @@ namespace EasySwoole\ORM;
 
 use EasySwoole\DDL\Blueprint\Create\Column;
 use EasySwoole\DDL\Blueprint\Create\Table;
+use EasySwoole\DDL\Enum\DataType;
 use EasySwoole\Mysqli\QueryBuilder;
 
-abstract class AbstractModel
+
+abstract class AbstractModel implements \ArrayAccess
 {
     /** @var RuntimeConfig */
     private $runtimeConfig;
+    /** @var null|array */
+    private $__data = null;
+    private $__joinData = [];
 
     abstract function tableName():string;
 
@@ -27,7 +32,7 @@ abstract class AbstractModel
 
     function schemaInfo():Table
     {
-        $key = md5(static::class.$this->tableName().$this->runtimeConfig()->getConnectionConfig()->getName());
+        $key = $this->__modelhash();
         $item = RuntimeCache::getInstance()->get($key);
         if($item){
             return $item;
@@ -86,6 +91,110 @@ abstract class AbstractModel
         return $table;
     }
 
+    public function offsetExists($offset): bool
+    {
+        return $this->__isset($offset);
+    }
+
+    public function offsetGet($offset)
+    {
+        return $this->getAttr($offset);
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        return $this->setAttr($offset, $value);
+    }
+
+    public function offsetUnset($offset)
+    {
+        return $this->setAttr($offset, null);
+    }
+
+
+    function __set($name, $value)
+    {
+        //访问的时候，恢复ddl定义的默认值
+        if($this->__data === null){
+            $this->__data = $this->__tableArray();
+        }
+        $this->setAttr($name, $value);
+    }
+
+    function __get($name)
+    {
+        //访问的时候，恢复ddl定义的默认值
+        if($this->__data === null){
+            $this->__data = $this->__tableArray();
+        }
+        return $this->getAttr($name);
+    }
+
+    public function __isset($name)
+    {
+        return ($this->getAttr($name) !== null);
+    }
+
+    public function getAttr($attrName)
+    {
+        $method = 'get' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
+        if (method_exists($this, $method)) {
+            return $this->$method($this->data[$attrName] ?? null, $this->data);
+        }
+        // 判断是否有关联查询
+        if (method_exists($this, $attrName)) {
+            return $this->$attrName();
+        }
+        // 是否是附加字段
+        if (isset($this->_joinData[$attrName])){
+            return $this->_joinData[$attrName];
+        }
+        return $this->data[$attrName] ?? null;
+    }
+
+    public function setAttr($attrName, $attrValue, $setter = true): bool
+    {
+        if (isset($this->schemaInfo()->getColumns()[$attrName])) {
+            /** @var Column $col */
+            $col = $this->schemaInfo()->getColumns()[$attrName];
+            if(DataType::typeIsTextual($col->getColumnType())){
+                $attrValue = strval($attrValue);
+            }
+            $method = 'set' . str_replace( ' ', '', ucwords( str_replace( ['-', '_'], ' ', $attrName ) ) ) . 'Attr';
+            if ($setter && method_exists($this, $method)) {
+                $attrValue = $this->$method($attrValue, $this->__data);
+            }
+            $this->__data[$attrName] = $attrValue;
+            return true;
+        } else {
+            $this->__joinData[$attrName] = $attrValue;
+            return false;
+        }
+    }
+
+    private function __tableArray():array
+    {
+        $key = "tableArray".$this->__modelhash();
+        $ret = RuntimeCache::getInstance()->get($key);
+        if(is_array($ret)){
+            return $ret;
+        }
+        $table = $this->schemaInfo();
+        $data = $table->getColumns();
+        $list = [];
+        /** @var Column $col */
+        foreach ($data as $col){
+            $list[$col->getColumnName()] = $col->getDefaultValue();
+        }
+        RuntimeCache::getInstance()->set($key,$list);
+        return $list;
+    }
+
+    private function __modelHash():string
+    {
+        $key = md5(static::class.$this->tableName().$this->runtimeConfig()->getConnectionConfig()->getName());
+        return substr($key,8,16);
+    }
 
 
 }
