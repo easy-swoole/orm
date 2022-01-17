@@ -94,7 +94,7 @@ class DbManager
         if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
             $temp = new QueryBuilder();
             $temp->raw('SELECT FOUND_ROWS() as count');
-            $count = $client->execQueryBuilder($builder,false,$timeout);
+            $count = $client->execQueryBuilder($temp,false,$timeout);
             if($this->onQuery){
                 call_user_func($this->onQuery,$count,$temp,$client,$start);
             }
