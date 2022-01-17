@@ -22,7 +22,7 @@
         "ext-json": "*",
         "easyswoole/component": "^2.0",
         "easyswoole/mysqli": "^3.0",
-        "easyswoole/ddl": "^1.0",
+        "easyswoole/ddl": "2.x-dev",
         "easyswoole/pool": "^1.0"
     },
     "require-dev": {

@@ -111,12 +111,12 @@ class MysqlClient extends MySQL implements ObjectInterface
             if($stmt){
                 $ret = $stmt->execute($builder->getLastBindParams());
                 if($ret === false && $this->errno){
-                    $e = new ExecuteFail();
+                    $e = new ExecuteFail($this->error);
                     $e->setQueryBuilder($builder);
                     throw $e;
                 }
             }else{
-                $e = new PrepareFail();
+                $e = new PrepareFail($this->error);
                 $e->setQueryBuilder($builder);
                 throw $e;
             }

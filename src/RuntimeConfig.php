@@ -23,7 +23,7 @@ class RuntimeConfig
     function getConnectionConfig():ConnectionConfig
     {
         if($this->connectionConfig == null){
-            $this->connectionConfig == DbManager::getInstance()->connectionConfig();
+            $this->connectionConfig = DbManager::getInstance()->connectionConfig();
         }
         return $this->connectionConfig;
     }
