@@ -28,28 +28,14 @@ class MysqlClient extends MySQL implements ObjectInterface
          * 强制回滚，回滚失败则断开连接，释放事务
          */
         if($this->isInTransaction){
-            $res = $this->rollback();
-            if(!$res){
-                $this->close();
-            }
+            $this->close();
+            $this->connected = false;
         }
     }
 
     function beforeUse(): ?bool
     {
         return $this->connected;
-    }
-
-    function startTransaction($timeout = null):bool
-    {
-        if($this->isInTransaction){
-            return true;
-        }
-        $res = $this->begin($timeout);
-        if($res){
-            $this->isInTransaction = true;
-        }
-        return $res;
     }
 
     /**
@@ -59,39 +45,17 @@ class MysqlClient extends MySQL implements ObjectInterface
      */
     function begin($timeout = null):bool
     {
-        if($this->isInTransaction){
-            return true;
-        }
-        $res = parent::begin($timeout);
-        if($res){
-            $this->isInTransaction = true;
-        }
-        return $res;
+        throw new ExecuteFail("transaction are forbid call for mysql client");
     }
 
     function commit($timeout = null):bool
     {
-        if($this->isInTransaction){
-            $res = parent::commit($timeout);
-            if($res){
-                $this->isInTransaction = false;
-            }
-            return $res;
-        }
-        return false;
-
+        throw new ExecuteFail("transaction are forbid call for mysql client");
     }
 
     function rollback($timeout = null)
     {
-        if($this->isInTransaction){
-            $res = parent::rollback($timeout);
-            if($res){
-                $this->isInTransaction = false;
-            }
-            return $res;
-        }
-        return false;
+        throw new ExecuteFail("transaction are forbid call for mysql client");
     }
 
     function execQueryBuilder(QueryBuilder $builder, bool $raw = false, float $timeout = null):QueryResult
@@ -105,7 +69,38 @@ class MysqlClient extends MySQL implements ObjectInterface
         $result = new QueryResult();
 
         if($raw){
-            $ret = $this->query($builder->getLastQuery(),$timeout);
+            //事务兼容，禁止客户端直接调用语句
+            $test = str_replace(" ",'',strtolower($builder->getLastQuery()));
+            if($test === "starttransaction") {
+                if($this->isInTransaction){
+                    $ret = true;
+                }else{
+                    $ret = $this->query($builder->getLastQuery(),$timeout);
+                    if($ret){
+                        $this->isInTransaction = true;
+                    }
+                }
+            }elseif($test === "commit"){
+                if(!$this->isInTransaction){
+                    $ret = true;
+                }else{
+                    $ret = $this->query($builder->getLastQuery(),$timeout);
+                    if($ret){
+                        $this->isInTransaction = false;
+                    }
+                }
+            }elseif($test === "rollback"){
+                if(!$this->isInTransaction){
+                    $ret = true;
+                }else{
+                    $ret = $this->query($builder->getLastQuery(),$timeout);
+                    if($ret){
+                        $this->isInTransaction = false;
+                    }
+                }
+            }else{
+                $ret = $this->query($builder->getLastQuery(),$timeout);
+            }
         }else{
             $stmt = $this->prepare($builder->getLastPrepareQuery());
             if($stmt){
