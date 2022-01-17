@@ -17,6 +17,7 @@ class Pool extends AbstractPool
         $client = new MysqlClient();
         if($client->connect($mysqlConfig->toArray())){
             $client->__lastPingTime = 0;
+            $client->setConnectionConfig(new ConnectionConfig($this->getConfig()->toArray()));
             return $client;
         }else{
             throw new Exception("mysql client connect to {$mysqlConfig->getHost()}:{$mysqlConfig->getPort()} error: {$client->connect_error}");

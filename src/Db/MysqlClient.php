@@ -3,8 +3,11 @@
 namespace EasySwoole\ORM\Db;
 
 use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\ConnectionConfig;
+use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\ExecuteFail;
 use EasySwoole\ORM\Exception\PrepareFail;
+use EasySwoole\ORM\RuntimeConfig;
 use EasySwoole\Pool\ObjectInterface;
 use Swoole\Coroutine\MySQL;
 
@@ -12,6 +15,22 @@ class MysqlClient extends MySQL implements ObjectInterface
 {
 
     private $isInTransaction = false;
+
+    private $connectionConfig;
+
+    function setConnectionConfig(ConnectionConfig $config):MysqlClient
+    {
+        $this->connectionConfig = $config;
+        return $this;
+    }
+
+    function getConnectionConfig():ConnectionConfig
+    {
+        if($this->connectionConfig == null){
+            $this->connectionConfig = DbManager::getInstance()->connectionConfig();
+        }
+        return $this->connectionConfig;
+    }
 
     function gc()
     {
@@ -60,6 +79,9 @@ class MysqlClient extends MySQL implements ObjectInterface
 
     function execQueryBuilder(QueryBuilder $builder, bool $raw = false, float $timeout = null):QueryResult
     {
+        if($timeout == null){
+            $this->getConnectionConfig()->getTimeout();
+        }
 
         $this->errno = 0;
         $this->error = '';

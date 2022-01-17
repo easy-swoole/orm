@@ -57,8 +57,11 @@ class DbManager
         }
     }
 
-    function invoke(callable $call,string $connectionName = "default",float $timeout = 3)
+    function invoke(callable $call,string $connectionName = "default",float $timeout = null)
     {
+        if($timeout == null){
+            $this->config[$connectionName]->getTimeout();
+        }
         $obj = $this->getConnectionPool($connectionName)->getObj($timeout);
         if($obj){
             try{
@@ -73,12 +76,15 @@ class DbManager
         }
     }
 
-    function defer(string $connectionName = "default",float $timeout = 3):MysqlClient
+    function defer(string $connectionName = "default",?float $timeout = null):MysqlClient
     {
         $id = Coroutine::getCid();
         if(isset($this->context[$id][$connectionName])){
             return $this->context[$id][$connectionName];
         }else{
+            if($timeout == null){
+                $this->config[$connectionName]->getTimeout();
+            }
             $obj = $this->getConnectionPool($connectionName)->defer($timeout);
             if($obj){
                 $this->context[$id][$connectionName] = $obj;
@@ -92,7 +98,7 @@ class DbManager
         }
     }
 
-    function __exec(MysqlClient $client,QueryBuilder $builder,bool $raw = false,float $timeout = 3):QueryResult
+    function __exec(MysqlClient $client,QueryBuilder $builder,bool $raw = false,?float $timeout = null):QueryResult
     {
         $start = microtime(true);
         $result = $client->execQueryBuilder($builder,$raw,$timeout);
@@ -111,6 +117,39 @@ class DbManager
         }
         return $result;
     }
+
+
+    public function startTransaction(?MysqlClient $client = null,?string $connectionName = null):bool
+    {
+        $query = new QueryBuilder();
+        $query->raw('start transaction');
+        if($client == null){
+            $client = $this->defer($connectionName);
+        }
+        return $this->__exec($client,$query,true)->getResult();
+    }
+
+    public function commit(?MysqlClient $client = null,?string $connectionName = null):bool
+    {
+        $query = new QueryBuilder();
+        $query->raw('commit');
+        if($client == null){
+            $client = $this->defer($connectionName);
+        }
+        return $this->__exec($client,$query,true)->getResult();
+    }
+
+    public function rollback(?MysqlClient $client = null,?string $connectionName = null):bool
+    {
+        $query = new QueryBuilder();
+        $query->raw("rollback");
+        if($client == null){
+            $client = $this->defer($connectionName);
+        }
+        return $this->__exec($client,$query,true)->getResult();
+    }
+
+
 
     function resetPool(bool $clearTimer = true)
     {
