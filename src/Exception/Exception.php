@@ -43,6 +43,4 @@ class Exception extends \Exception
     {
         $this->sql = $sql;
     }
-
-
 }

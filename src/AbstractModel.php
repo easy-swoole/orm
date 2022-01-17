@@ -6,6 +6,8 @@ use EasySwoole\DDL\Blueprint\Create\Column;
 use EasySwoole\DDL\Blueprint\Create\Table;
 use EasySwoole\DDL\Enum\DataType;
 use EasySwoole\Mysqli\QueryBuilder;
+use EasySwoole\ORM\Db\QueryResult;
+use EasySwoole\ORM\Exception\ExecuteFail;
 
 
 abstract class AbstractModel implements \ArrayAccess
@@ -16,12 +18,16 @@ abstract class AbstractModel implements \ArrayAccess
     private $__data = null;
     private $__joinData = [];
     private $__originData = [];
+    /** @var QueryResult|null */
+    private $__lastQueryResult;
 
     abstract function tableName():string;
 
     function __construct(?array $data = null)
     {
-        $this->data($data);
+        if($data){
+            $this->data($data);
+        }
     }
 
     public function data(array $data, $setter = true)
@@ -47,6 +53,11 @@ abstract class AbstractModel implements \ArrayAccess
         return $this->runtimeConfig;
     }
 
+    function lastQueryResult():?QueryResult
+    {
+        return $this->__lastQueryResult;
+    }
+
     function schemaInfo():Table
     {
         $key = $this->__modelhash();
@@ -54,12 +65,12 @@ abstract class AbstractModel implements \ArrayAccess
         if($item){
             return $item;
         }
-        $client = $this->runtimeConfig->getClient();
+        $client = $this->runtimeConfig()->getClient();
         $query = new QueryBuilder();
         $query->raw("show full columns from {$this->tableName()}");
 
         $fields = DbManager::getInstance()
-            ->__exec($client,$query,false,$this->runtimeConfig->getConnectionConfig()->getTimeout())
+            ->__exec($client,$query,false,$this->runtimeConfig()->getConnectionConfig()->getTimeout())
             ->getResult();
         $table = new Table($this->tableName());
 
@@ -189,6 +200,90 @@ abstract class AbstractModel implements \ArrayAccess
         }
     }
 
+    public function where(...$args)
+    {
+        $this->runtimeConfig()->where(...$args);
+        return $this;
+    }
+
+    public function join($joinTable, $joinCondition, $joinType = '')
+    {
+        $this->runtimeConfig()->join([
+            $joinTable,$joinCondition,$joinType
+        ]);
+        return $this;
+    }
+
+    public function order(...$args)
+    {
+        $this->runtimeConfig()->order(...$args);
+        return $this;
+    }
+
+    public function limit(int $one, ?int $two = null)
+    {
+        $this->runtimeConfig()->limit($one,$two);
+        return $this;
+    }
+
+    public function field($fields)
+    {
+        $this->runtimeConfig()->field($fields);
+        return $this;
+    }
+
+    public function groupBy($filed)
+    {
+        $this->runtimeConfig()->groupBy($filed);
+        return $this;
+    }
+
+    public function withTotalCount()
+    {
+        $this->runtimeConfig()->withTotalCount();
+        return $this;
+    }
+
+    public function findOne($pkVal = null)
+    {
+        if($pkVal !== null){
+            $pkName = $this->__tablePk();
+            if($pkName == null){
+                throw new ExecuteFail("table: {$this->tableName()} have no primary key");
+            }else{
+                $this->where($pkName,$pkVal);
+            }
+        }
+        $this->limit(1);
+        $builder = $this->__makeBuilder();
+        $builder->get($this->tableName());
+        $data = $this->__exec($builder);
+        //数据填充
+        var_dump($data);
+    }
+
+    public function all():array
+    {
+        $this->resetStatusRuntimeStatus();
+    }
+
+    public function save():bool
+    {
+        $this->resetStatusRuntimeStatus();
+    }
+
+    public function update(array $data = [],bool $saveMode = true)
+    {
+        //$saveMode 是否允许无条件update
+        $this->resetStatusRuntimeStatus();
+    }
+
+    private function resetStatusRuntimeStatus()
+    {
+        $this->runtimeConfig()->reset();
+    }
+
+
     private function __tableArray():array
     {
         $key = "tableArray".$this->__modelhash();
@@ -207,11 +302,69 @@ abstract class AbstractModel implements \ArrayAccess
         return $list;
     }
 
+    function __tablePk():?string
+    {
+        $key = "tablePk".$this->__modelhash();
+        $ret = RuntimeCache::getInstance()->get($key);
+        if(is_array($ret)){
+            return $ret;
+        }
+
+        $keyCol = null;
+        $table = $this->schemaInfo();
+        /** @var Column $column */
+        foreach ($table->getColumns() as $column){
+            if($column->getIsPrimaryKey()){
+                $keyCol = $column->getColumnName();
+                RuntimeCache::getInstance()->set($key,$keyCol);
+                break;
+            }
+        }
+        return $keyCol;
+    }
+
     private function __modelHash():string
     {
         $key = md5(static::class.$this->tableName().$this->runtimeConfig()->getConnectionConfig()->getName());
         return substr($key,8,16);
     }
 
+    private function __exec(QueryBuilder $builder)
+    {
 
+        $client = $this->runtimeConfig()->getClient();
+
+        $this->__lastQueryResult = DbManager::getInstance()
+            ->__exec($client,$builder,false,$this->runtimeConfig()->getConnectionConfig()->getTimeout());
+
+        $this->resetStatusRuntimeStatus();
+
+        return $this->__lastQueryResult->getResult();
+    }
+
+    private function __makeBuilder():QueryBuilder
+    {
+        //构建query builder
+        $builder = new QueryBuilder();
+        if($this->runtimeConfig()->getWithTotalCount()){
+            $builder->withTotalCount();
+        }
+        foreach ($this->runtimeConfig()->getOrder() as $order){
+            $builder->orderBy(...$order);
+        }
+        foreach ($this->runtimeConfig()->getWhere() as $where){
+            $builder->where(...$where);
+        }
+
+        foreach ($this->runtimeConfig()->getGroupBy() as $group){
+            $builder->groupBy($group);
+        }
+        foreach ($this->runtimeConfig()->getJoin() as $join){
+            $builder->join(...$join);
+        }
+        if($this->runtimeConfig()->getLimit()){
+            $builder->limit($this->runtimeConfig()->getLimit());
+        }
+        return $builder;
+    }
 }

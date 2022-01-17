@@ -19,10 +19,10 @@ class RuntimeConfig
     /** @var null|array|int */
     private $limit  = null;
     private $withTotalCount = false;
-    private $order  = null;
+    private $order  = [];
     private $where  = [];
-    private $join   = null;
-    private $group  = null;
+    private $join   = [];
+    private $groupBy  = [];
     private $alias  = null;
 
     function setConnectionConfig(ConnectionConfig $config):RuntimeConfig
@@ -44,7 +44,7 @@ class RuntimeConfig
         if($this->client){
             return $this->client;
         }else{
-            return DbManager::getInstance()->defer($this->connectionConfig->getName());
+            return DbManager::getInstance()->defer($this->getConnectionConfig()->getName());
         }
     }
 
@@ -54,5 +54,96 @@ class RuntimeConfig
         return $this;
     }
 
+    public function where(...$args)
+    {
+        $this->where = $args;
+    }
+
+    public function getWhere():array
+    {
+        return $this->where;
+    }
+
+    public function order(...$args)
+    {
+        $this->order[] = $args;
+        return $this;
+    }
+
+    public function limit(int $one, ?int $two = null)
+    {
+        if ($two !== null) {
+            $this->limit = [$one, $two];
+        } else {
+            $this->limit = $one;
+        }
+        return $this;
+    }
+
+    public function getLimit()
+    {
+        return $this->limit;
+    }
+
+    public function field($fields)
+    {
+        if (!is_array($fields)) {
+            $fields = [$fields];
+        }
+        $this->fields = $fields;
+        return $this;
+    }
+
+    public function withTotalCount()
+    {
+        $this->withTotalCount = true;
+        return $this;
+    }
+
+    public function getWithTotalCount():bool
+    {
+        return $this->withTotalCount;
+    }
+
+    public function getOrder():array
+    {
+        return $this->order;
+    }
+
+    public function getGroupBy():array
+    {
+        return $this->groupBy;
+    }
+
+    public function groupBy($filed)
+    {
+        $this->groupBy[] = $filed;
+        return $this;
+    }
+
+    public function join(...$args)
+    {
+        $this->join[] = $args;
+        return $this;
+    }
+
+    public function getJoin():array
+    {
+        return $this->join;
+    }
+
+
+
+    public function reset()
+    {
+        $this->fields = "*";
+        $this->limit  = null;
+        $this->withTotalCount = false;
+        $this->order  = [];
+        $this->where  = [];
+        $this->join   = [];
+        $this->groupBy  = [];
+        $this->alias  = null;
+    }
 
 }
