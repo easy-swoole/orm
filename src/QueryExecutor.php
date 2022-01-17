@@ -49,6 +49,12 @@ class QueryExecutor extends QueryBuilder
         return $this->exec();
     }
 
+    function delete($tableName, $numRows = null)
+    {
+        parent::delete($tableName, $numRows);
+        return $this->exec();
+    }
+
     function getOne($tableName, $columns = '*')
     {
         parent::getOne($tableName, $columns);
