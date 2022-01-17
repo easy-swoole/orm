@@ -31,6 +31,15 @@ class DbManager
         return $this;
     }
 
+    function connectionConfig(string $connectionName = "default"):ConnectionConfig
+    {
+        if(isset($this->config[$connectionName])){
+            return $this->config[$connectionName];
+        }else{
+            throw new PoolError("connection: {$connectionName} did not register yet");
+        }
+    }
+
     function setOnQuery(?callable $func = null):?callable
     {
         if($func){
@@ -134,15 +143,10 @@ class DbManager
         if(isset($this->pool[$connectionName])){
             return $this->pool[$connectionName];
         }
-        if(isset($this->config[$connectionName])){
-            /** @var ConnectionConfig $conf */
-            $conf = $this->config[$connectionName];
-            $pool = new Pool($conf);
-            $this->pool[$connectionName] = $pool;
-            return $pool;
-        }else{
-            throw new PoolError("connection: {$connectionName} did not register yet");
-        }
+        $conf = $this->connectionConfig($connectionName);
+        $pool = new Pool($conf);
+        $this->pool[$connectionName] = $pool;
+        return $pool;
     }
 
 }

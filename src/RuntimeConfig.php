@@ -20,7 +20,15 @@ class RuntimeConfig
         return $this;
     }
 
-    private function getClient():MysqlClient
+    function getConnectionConfig():ConnectionConfig
+    {
+        if($this->connectionConfig == null){
+            $this->connectionConfig == DbManager::getInstance()->connectionConfig();
+        }
+        return $this->connectionConfig;
+    }
+
+    function getClient():MysqlClient
     {
         if($this->client){
             return $this->client;
