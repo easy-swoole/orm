@@ -14,6 +14,17 @@ class RuntimeConfig
      */
     private $connectionConfig;
 
+    /** @var string|array */
+    private $fields = "*";
+    /** @var null|array|int */
+    private $limit  = null;
+    private $withTotalCount = false;
+    private $order  = null;
+    private $where  = [];
+    private $join   = null;
+    private $group  = null;
+    private $alias  = null;
+
     function setConnectionConfig(ConnectionConfig $config):RuntimeConfig
     {
         $this->connectionConfig = $config;

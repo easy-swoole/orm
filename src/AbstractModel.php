@@ -15,8 +15,25 @@ abstract class AbstractModel implements \ArrayAccess
     /** @var null|array */
     private $__data = null;
     private $__joinData = [];
+    private $__originData = [];
 
     abstract function tableName():string;
+
+    function __construct(?array $data = null)
+    {
+        $this->data($data);
+    }
+
+    public function data(array $data, $setter = true)
+    {
+        foreach ($data as $key => $value) {
+            $this->setAttr($key, $value, $setter);
+        }
+        //重置数据
+        $this->__joinData = [];
+        $this->__originData = $this->__data;
+        return $this;
+    }
 
     function runtimeConfig(?RuntimeConfig $config = null):RuntimeConfig
     {
