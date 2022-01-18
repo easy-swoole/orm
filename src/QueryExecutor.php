@@ -58,7 +58,11 @@ class QueryExecutor extends QueryBuilder
     function getOne($tableName, $columns = '*')
     {
         parent::getOne($tableName, $columns);
-        return $this->exec();
+        $ret = $this->exec();
+        if($ret){
+            return $ret[0];
+        }
+        return null;
     }
 
     function insert($tableName, $insertData)
