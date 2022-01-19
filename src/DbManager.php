@@ -119,32 +119,32 @@ class DbManager
     }
 
 
-    public function startTransaction(?MysqlClient $client = null,?string $connectionName = null):bool
+    public function startTransaction(?MysqlClient $client = null):bool
     {
         $query = new QueryBuilder();
         $query->raw('start transaction');
         if($client == null){
-            $client = $this->defer($connectionName);
+            $client = $this->defer();
         }
         return $this->__exec($client,$query,true)->getResult();
     }
 
-    public function commit(?MysqlClient $client = null,?string $connectionName = null):bool
+    public function commit(?MysqlClient $client = null):bool
     {
         $query = new QueryBuilder();
         $query->raw('commit');
         if($client == null){
-            $client = $this->defer($connectionName);
+            $client = $this->defer();
         }
         return $this->__exec($client,$query,true)->getResult();
     }
 
-    public function rollback(?MysqlClient $client = null,?string $connectionName = null):bool
+    public function rollback(?MysqlClient $client = null):bool
     {
         $query = new QueryBuilder();
         $query->raw("rollback");
         if($client == null){
-            $client = $this->defer($connectionName);
+            $client = $this->defer();
         }
         return $this->__exec($client,$query,true)->getResult();
     }
