@@ -23,7 +23,7 @@
         "easyswoole/component": "^2.0",
         "easyswoole/mysqli": "^3.0",
         "easyswoole/ddl": "2.x",
-        "easyswoole/pool": "^1.0"
+        "easyswoole/pool": "^1.1"
     },
     "require-dev": {
         "easyswoole/phpunit": "^1.0",

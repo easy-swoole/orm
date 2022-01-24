@@ -88,6 +88,7 @@ class MysqlClient extends MySQL implements ObjectInterface
 
     function execQueryBuilder(QueryBuilder $builder, bool $raw = false, float $timeout = null):QueryResult
     {
+        var_dump($builder->getLastQuery());
 
         $this->debugTrace[] = clone $builder;
 
@@ -137,11 +138,11 @@ class MysqlClient extends MySQL implements ObjectInterface
             case QueryBuilder::TS_OP_ROLLBACK:
             case QueryBuilder::TS_OP_COMMIT:{
                 if($ret){
-                    $this->hasLock = false;
                     $this->isInTransaction = false;
                 }
                 break;
             }
+
             case QueryBuilder::TS_OP_LOCK_TABLE:{
                 if($ret){
                     $this->hasLock = true;
@@ -154,13 +155,8 @@ class MysqlClient extends MySQL implements ObjectInterface
                 }
                 break;
             }
-            case QueryBuilder::TS_OP_LOCK_IN_SHARE:{
-                if($ret){
-                    $this->isInTransaction = true;
-                    $this->hasLock = false;
-                }
-                break;
-            }
+
+            case QueryBuilder::TS_OP_LOCK_IN_SHARE:
             case QueryBuilder::TS_OP_LOCK_FOR_UPDATE:{
                 //执行后自动释放，不需要标记。
                 break;
