@@ -20,6 +20,8 @@ abstract class AbstractModel implements \ArrayAccess
     /** @var QueryResult|null */
     private $__lastQueryResult;
 
+    private $__withData = [];
+
     abstract function tableName():string;
 
     function __construct(?array $data = null)
@@ -239,7 +241,7 @@ abstract class AbstractModel implements \ArrayAccess
     public function findOne($pkVal = null)
     {
         if($pkVal !== null){
-            $pkName = $currentModeWhereCol;
+            $pkName = $this->__tablePk();
             $this->where($pkName,$pkVal);
         }
         $this->limit(1);
@@ -262,25 +264,81 @@ abstract class AbstractModel implements \ArrayAccess
         /** @var AbstractModel $target */
         $target = $target->newInstance();
         $builder = new QueryBuilder();
-        $builder->join($this->tableName(),"{$target->tableName()}.{$targetModeWhereCol} = {$this->tableName()}.{$currentModeWhereCol}",$joinType);
-        $builder->where("{$target->tableName()}.{$targetModeWhereCol}",$this->getAttr($currentModeWhereCol));
-        $builder->limit(2)->get($target->tableName());
-        $data = $this->__exec($builder);
-        if(!empty($data)){
-            //如果存在两条记录，说明关联关系或者是数据库存储有问题
-            if(count($data) > 1){
-                throw new ModelError(static::class." mapOne() to {$targetModelClass} relation error,more than one record match");
-            }else{
-                $target->data($data[0]);
-                return $target;
+
+        if($this->runtimeConfig()->getPreQuery()){
+            //构建ids
+            $ids = [];
+            foreach ($this->lastQueryResult()->getResult() as $item){
+                $ids[] = $item[$currentModeWhereCol];
+            }
+
+            $builder->join($this->tableName(),"{$target->tableName()}.{$targetModeWhereCol} = {$this->tableName()}.{$currentModeWhereCol}",$joinType);
+            $builder->where("{$this->tableName()}.{$currentModeWhereCol}",$ids,"IN");
+            $builder->limit($this->runtimeConfig()->getPreQuery()[1])->get($target->tableName());
+            //返回以父类为key的结果集
+            $list = [];
+            $data =  $this->__exec($builder,false);
+            foreach ($data as $item){
+                $list[$item[$targetModeWhereCol]] = $item;
+            }
+            return $list;
+        }else{
+            $whereVal = $this->getAttr($currentModeWhereCol);
+            $builder->where($targetModeWhereCol,$whereVal)->limit(2)->get($target->tableName());
+            $data = $this->__exec($builder,false);
+            if(!empty($data)){
+                //如果存在两条记录，说明关联关系或者是数据库存储有问题
+                if(count($data) > 1){
+                    throw new ModelError(static::class." mapOne() to {$targetModelClass} relation error,more than one record match");
+                }else{
+                    $target->data($data[0]);
+                    return $target;
+                }
             }
         }
         return null;
     }
 
-    public function all():array
+    public function all(?array $ids = null,?string $idsCol = null):array
     {
+        $builder = $this->__makeBuilder();
+        if($ids != null){
+            if($idsCol == null){
+                $idsCol = $this->__tablePk();
+            }
+            $builder->where($idsCol,$ids,"in");
+        }
+
+        $builder->get($this->tableName());
+
+        $data = $this->__exec($builder);
+
+
+
+        $withData = [];
+        $withCols = [];
+        if($this->runtimeConfig()->getPreQuery()){
+            $info = $this->runtimeConfig()->getPreQuery();
+            $withCols = $info[0];
+            foreach ($withCols as $col){
+                $withData[$col] = call_user_func([$this,$col]);
+            }
+        }
+
+        $list = [];
+
+        foreach ($data as $item){
+            $temp = new static();
+            $temp->data($item);
+            foreach ($withCols as $col){
+
+            }
+            $list[] = $item;
+        }
+
         $this->resetStatusRuntimeStatus();
+
+        return $list;
     }
 
     public function save():bool
@@ -292,6 +350,14 @@ abstract class AbstractModel implements \ArrayAccess
     {
         //$saveMode 是否允许无条件update
         $this->resetStatusRuntimeStatus();
+    }
+
+    public function preQuery(array $col,?int $limit = 65535):AbstractModel
+    {
+        $this->runtimeConfig()->setPreQuery([
+            $col,$limit
+        ]);
+        return $this;
     }
 
     private function resetStatusRuntimeStatus()
@@ -349,17 +415,19 @@ abstract class AbstractModel implements \ArrayAccess
         return substr($key,8,16);
     }
 
-    private function __exec(QueryBuilder $builder)
+    private function __exec(QueryBuilder $builder,bool $resetQueryResult = true)
     {
-
         $client = $this->runtimeConfig()->getClient();
 
-        $this->__lastQueryResult = DbManager::getInstance()
-            ->__exec($client,$builder,false,$this->runtimeConfig()->getConnectionConfig()->getTimeout());
+        if($resetQueryResult){
+            $this->__lastQueryResult = DbManager::getInstance()
+                ->__exec($client,$builder,false,$this->runtimeConfig()->getConnectionConfig()->getTimeout());
 
-        $this->resetStatusRuntimeStatus();
-
-        return $this->__lastQueryResult->getResult();
+            return $this->__lastQueryResult->getResult();
+        }else{
+            return DbManager::getInstance()
+                ->__exec($client,$builder,false,$this->runtimeConfig()->getConnectionConfig()->getTimeout())->getResult();
+        }
     }
 
     private function __makeBuilder():QueryBuilder
