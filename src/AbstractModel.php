@@ -8,6 +8,7 @@ use EasySwoole\DDL\Enum\DataType;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\QueryResult;
 use EasySwoole\ORM\Exception\ExecuteFail;
+use EasySwoole\ORM\Exception\ModelError;
 
 
 abstract class AbstractModel implements \ArrayAccess
@@ -16,8 +17,6 @@ abstract class AbstractModel implements \ArrayAccess
     private $runtimeConfig;
     /** @var null|array */
     private $__data = null;
-    private $__joinData = [];
-    private $__originData = [];
     /** @var QueryResult|null */
     private $__lastQueryResult;
 
@@ -25,7 +24,7 @@ abstract class AbstractModel implements \ArrayAccess
 
     function __construct(?array $data = null)
     {
-        if($data){
+        if(!empty($data)){
             $this->data($data);
         }
     }
@@ -35,9 +34,6 @@ abstract class AbstractModel implements \ArrayAccess
         foreach ($data as $key => $value) {
             $this->setAttr($key, $value, $setter);
         }
-        //重置数据
-        $this->__joinData = [];
-        $this->__originData = $this->__data;
         return $this;
     }
 
@@ -173,11 +169,8 @@ abstract class AbstractModel implements \ArrayAccess
         if (method_exists($this, $attrName)) {
             return $this->$attrName();
         }
-        // 是否是附加字段
-        if (isset($this->_joinData[$attrName])){
-            return $this->_joinData[$attrName];
-        }
-        return $this->data[$attrName] ?? null;
+
+        return $this->__data[$attrName] ?? null;
     }
 
     public function setAttr($attrName, $attrValue, $setter = true): bool
@@ -195,7 +188,6 @@ abstract class AbstractModel implements \ArrayAccess
             $this->__data[$attrName] = $attrValue;
             return true;
         } else {
-            $this->__joinData[$attrName] = $attrValue;
             return false;
         }
     }
@@ -248,11 +240,7 @@ abstract class AbstractModel implements \ArrayAccess
     {
         if($pkVal !== null){
             $pkName = $this->__tablePk();
-            if($pkName == null){
-                throw new ExecuteFail("table: {$this->tableName()} have no primary key");
-            }else{
-                $this->where($pkName,$pkVal);
-            }
+            $this->where($pkName,$pkVal);
         }
         $this->limit(1);
         $builder = $this->__makeBuilder();
@@ -260,6 +248,34 @@ abstract class AbstractModel implements \ArrayAccess
         $data = $this->__exec($builder);
         //数据填充
         var_dump($data);
+    }
+
+    public function mapOne(string $targetModelClass,?QueryBuilder $builder = null):?AbstractModel
+    {
+        $target = new \ReflectionClass($targetModelClass);
+        if(!$target->isSubclassOf(AbstractModel::class)){
+            throw new ExecuteFail("{$targetModelClass} not a subclass of ".AbstractModel::class);
+        }
+        /** @var AbstractModel $target */
+        $target = $target->newInstance();
+        if($builder == null){
+            //不属于任何模型，因此直接new
+            $builder = new QueryBuilder();
+            $builder->join($target->tableName(),"{$target->tableName()}.{$target->__tablePk()} = {$this->tableName()}.{$this->__tablePk()}");
+            $builder->where("{$target->tableName()}.{$target->__tablePk()}",$this->getAttr($this->__tablePk()));
+            $builder->limit(2)->get($this->tableName());
+            $data = $this->__exec($builder);
+            if(!empty($data)){
+                //如果存在两条记录，说明关联关系或者是数据库存储有问题
+                if(count($data) > 1){
+                    throw new ModelError(static::class." mapOne() to {$targetModelClass} relation error,more than one record match");
+                }else{
+                    $target->data($data[0]);
+                    return $target;
+                }
+            }
+        }
+        return null;
     }
 
     public function all():array
@@ -306,7 +322,7 @@ abstract class AbstractModel implements \ArrayAccess
     {
         $key = "tablePk".$this->__modelhash();
         $ret = RuntimeCache::getInstance()->get($key);
-        if(is_array($ret)){
+        if($ret){
             return $ret;
         }
 
@@ -320,6 +336,10 @@ abstract class AbstractModel implements \ArrayAccess
                 break;
             }
         }
+        if($keyCol == null){
+            throw new ExecuteFail("table: {$this->tableName()} have no primary key");
+        }
+
         return $keyCol;
     }
 
