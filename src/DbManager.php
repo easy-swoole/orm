@@ -3,6 +3,7 @@
 namespace EasySwoole\ORM;
 
 use EasySwoole\Component\Singleton;
+use EasySwoole\Mysqli\Config;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\MysqlClient;
 use EasySwoole\ORM\Db\Pool;
@@ -25,6 +26,16 @@ class DbManager
     /** @var callable|null */
     protected $onSecureEvent;
 
+    function __construct()
+    {
+        $this->onSecureEvent = function (array $traces,ConnectionConfig $config){
+            echo "connectionName [{$config->getName()}] for {$config->getHost()}:{$config->getPort()}@{$config->getUser()} may has un commit transaction or un release table lock:\n";
+            /** @var QueryBuilder $trace */
+            foreach ($traces as $trace){
+                echo "\t".$trace->getLastQuery()."\n";
+            }
+        };
+    }
 
     function onSecureEvent(?callable $call = null):?callable
     {

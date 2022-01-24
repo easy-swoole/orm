@@ -170,16 +170,7 @@ class MysqlClient extends MySQL implements ObjectInterface
         try{
             if($this->isInTransaction || $this->hasLock){
                 $call = DbManager::getInstance()->onSecureEvent();
-                if($call == null){
-                    echo "connection:{$this->getConnectionConfig()->getHost()}:{$this->getConnectionConfig()->getPort()}@{$this->getConnectionConfig()->getUser()} may has un commit transaction or un release table lock :\n";
-                    $call = function (array $traces,$client){
-                        /** @var QueryBuilder $trace */
-                        foreach ($traces as $trace){
-                            echo "\t".$trace->getLastQuery()."\n";
-                        }
-                    };
-                }
-                $call($this->debugTrace,$this);
+                call_user_func($call,$this->debugTrace,$this->getConnectionConfig());
             }
         }catch (\Throwable $exception){
             $this->debugTrace = [];
