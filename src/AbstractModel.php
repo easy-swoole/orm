@@ -11,7 +11,7 @@ use EasySwoole\ORM\Exception\ExecuteFail;
 use EasySwoole\ORM\Exception\ModelError;
 
 
-abstract class AbstractModel implements \ArrayAccess
+abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
 {
     /** @var RuntimeConfig */
     private $runtimeConfig;
@@ -270,13 +270,8 @@ abstract class AbstractModel implements \ArrayAccess
             if(isset($this->__preQueryData[$targetModelClass])){
                 $whereVal = $this->getAttr($currentModeWhereCol);
                 $data = $this->__preQueryData[$targetModelClass][$whereVal];
-                if($data instanceof AbstractModel){
-                    return $data;
-                }else{
-                    $target->data($data);
-                    $this->__preQueryData[$targetModelClass][$whereVal] = $data;
-                    return $target;
-                }
+                $target->data($data);
+                return $target;
             }
             //没有执行过，则构建执行
             //构建ids
@@ -328,6 +323,8 @@ abstract class AbstractModel implements \ArrayAccess
 
 
         if($this->runtimeConfig()->getPreQuery()){
+            //清空上次的执行结果
+            $this->__preQueryData = [];
             $info = $this->runtimeConfig()->getPreQuery();
             $withCols = $info[0];
             foreach ($withCols as $col){
@@ -366,6 +363,27 @@ abstract class AbstractModel implements \ArrayAccess
         ]);
         return $this;
     }
+
+    public function jsonSerialize()
+    {
+
+    }
+
+    public function toArray(bool $joinData = true):array
+    {
+        $data = $this->__tableArray();
+        foreach ($data as $key => $val){
+            $val = $this->getAttr($key);
+            $data[$key] = $val;
+        }
+        return $data;
+    }
+
+    function toRawArray():array
+    {
+        return $this->__data;
+    }
+
 
     private function resetStatusRuntimeStatus()
     {
