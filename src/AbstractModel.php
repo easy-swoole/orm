@@ -31,6 +31,11 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
         }
     }
 
+    public static function create(?array $data = null):AbstractModel
+    {
+        return new static($data);
+    }
+
     public function data(array $data, $setter = true)
     {
         foreach ($data as $key => $value) {
@@ -196,7 +201,7 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
 
     public function where(...$args)
     {
-        $this->runtimeConfig()->where(...$args);
+        $this->runtimeConfig()->where($args);
         return $this;
     }
 
@@ -210,7 +215,7 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
 
     public function order(...$args)
     {
-        $this->runtimeConfig()->order(...$args);
+        $this->runtimeConfig()->order($args);
         return $this;
     }
 
@@ -238,7 +243,7 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
         return $this;
     }
 
-    public function findOne($pkVal = null)
+    public function findOne($pkVal = null):?AbstractModel
     {
         if($pkVal !== null){
             $pkName = $this->__tablePk();
@@ -248,8 +253,10 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
         $builder = $this->__makeBuilder();
         $builder->get($this->tableName());
         $data = $this->__exec($builder);
-        //数据填充
-        var_dump($data);
+        if($data){
+            return new static($data[0]);
+        }
+        return null;
     }
 
     public function mapOne(string $targetModelClass,$targetModeWhereCol,?string $currentModeWhereCol = null,string $joinType = "left")
