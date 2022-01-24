@@ -250,7 +250,7 @@ abstract class AbstractModel implements \ArrayAccess
         var_dump($data);
     }
 
-    public function mapOne(string $targetModelClass,$targetModeWhereCol,?string $currentModeWhereCol = null):?AbstractModel
+    public function mapOne(string $targetModelClass,$targetModeWhereCol,?string $currentModeWhereCol = null,string $joinType = "left")
     {
         $target = new \ReflectionClass($targetModelClass);
         if(!$target->isSubclassOf(AbstractModel::class)){
@@ -262,7 +262,7 @@ abstract class AbstractModel implements \ArrayAccess
         /** @var AbstractModel $target */
         $target = $target->newInstance();
         $builder = new QueryBuilder();
-        $builder->join($this->tableName(),"{$target->tableName()}.{$targetModeWhereCol} = {$this->tableName()}.{$currentModeWhereCol}");
+        $builder->join($this->tableName(),"{$target->tableName()}.{$targetModeWhereCol} = {$this->tableName()}.{$currentModeWhereCol}",$joinType);
         $builder->where("{$target->tableName()}.{$targetModeWhereCol}",$this->getAttr($currentModeWhereCol));
         $builder->limit(2)->get($target->tableName());
         $data = $this->__exec($builder);
