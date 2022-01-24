@@ -280,6 +280,7 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
                 $ids[] = $item[$currentModeWhereCol];
             }
 
+            // TODO  还没有处理别名
             $builder->join($this->tableName(),"{$target->tableName()}.{$targetModeWhereCol} = {$this->tableName()}.{$currentModeWhereCol}",$joinType);
             $builder->where("{$this->tableName()}.{$currentModeWhereCol}",$ids,"IN");
             $builder->limit($this->runtimeConfig()->getPreQuery()[1])->get($target->tableName());
