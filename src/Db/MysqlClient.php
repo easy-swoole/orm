@@ -7,16 +7,23 @@ use EasySwoole\ORM\ConnectionConfig;
 use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\ExecuteFail;
 use EasySwoole\ORM\Exception\PrepareFail;
-use EasySwoole\ORM\RuntimeConfig;
 use EasySwoole\Pool\ObjectInterface;
 use Swoole\Coroutine\MySQL;
 
 class MysqlClient extends MySQL implements ObjectInterface
 {
 
+    private $debugTrace = [];
+
     private $isInTransaction = false;
+    private $hasLock = false;
 
     private $connectionConfig;
+
+    function getDebugTrace():array
+    {
+        return $this->debugTrace;
+    }
 
     function setConnectionConfig(ConnectionConfig $config):MysqlClient
     {
@@ -34,6 +41,7 @@ class MysqlClient extends MySQL implements ObjectInterface
 
     function gc()
     {
+        $this->secureCheck();
         if($this->connected){
             $this->close();
         }
@@ -41,12 +49,13 @@ class MysqlClient extends MySQL implements ObjectInterface
 
     function objectRestore()
     {
+        $this->secureCheck();
         /**
          * 连接对象归还的时候，如果遇到存在事务，
          * 说明编程的时候漏了提交或者回滚，为避免生产脏数据，
          * 强制回滚，回滚失败则断开连接，释放事务
          */
-        if($this->isInTransaction){
+        if($this->isInTransaction || $this->hasLock){
             $this->close();
             $this->connected = false;
         }
@@ -79,6 +88,11 @@ class MysqlClient extends MySQL implements ObjectInterface
 
     function execQueryBuilder(QueryBuilder $builder, bool $raw = false, float $timeout = null):QueryResult
     {
+
+
+
+        $this->debugTrace[] = clone $builder;
+
         if($timeout == null){
             $this->getConnectionConfig()->getTimeout();
         }
@@ -91,38 +105,7 @@ class MysqlClient extends MySQL implements ObjectInterface
         $result = new QueryResult();
 
         if($raw){
-            //事务兼容，禁止客户端直接调用语句
-            $test = str_replace(" ",'',strtolower($builder->getLastQuery()));
-            if($test === "starttransaction") {
-                if($this->isInTransaction){
-                    $ret = true;
-                }else{
-                    $ret = $this->query($builder->getLastQuery(),$timeout);
-                    if($ret){
-                        $this->isInTransaction = true;
-                    }
-                }
-            }elseif($test === "commit"){
-                if(!$this->isInTransaction){
-                    $ret = true;
-                }else{
-                    $ret = $this->query($builder->getLastQuery(),$timeout);
-                    if($ret){
-                        $this->isInTransaction = false;
-                    }
-                }
-            }elseif($test === "rollback"){
-                if(!$this->isInTransaction){
-                    $ret = true;
-                }else{
-                    $ret = $this->query($builder->getLastQuery(),$timeout);
-                    if($ret){
-                        $this->isInTransaction = false;
-                    }
-                }
-            }else{
-                $ret = $this->query($builder->getLastQuery(),$timeout);
-            }
+            $ret = $this->query($builder->getLastQuery(),$timeout);
         }else{
             $stmt = $this->prepare($builder->getLastPrepareQuery());
             if($stmt){
@@ -144,6 +127,55 @@ class MysqlClient extends MySQL implements ObjectInterface
         $result->setLastInsertId($this->insert_id);
         $result->setAffectedRows($this->affected_rows);
 
+        $op = $builder->getLastTransactionOp();
+
+        switch ($op){
+            case QueryBuilder::TS_OP_START:{
+                $this->isInTransaction = true;
+                break;
+            }
+            case QueryBuilder::TS_OP_COMMIT:{
+                break;
+            }
+            case QueryBuilder::TS_OP_ROLLBACK:{
+                break;
+            }
+            case QueryBuilder::TS_OP_LOCK_TABLE:{
+                break;
+            }
+            case QueryBuilder::TS_OP_UNLOCK_TABLE:{
+                break;
+            }
+            case QueryBuilder::TS_OP_LOCK_IN_SHARE:{
+                break;
+            }
+            case QueryBuilder::TS_OP_LOCK_FOR_UPDATE:{
+                break;
+            }
+        }
+
         return $result;
+    }
+
+    private function secureCheck()
+    {
+        //如果处于事务中
+        try{
+            if($this->isInTransaction || $this->hasLock){
+                $call = DbManager::getInstance()->onSecureEvent();
+                if($call == null){
+                    echo "connection:{$this->getConnectionConfig()->getHost()}:{$this->getConnectionConfig()->getPort()}@{$this->getConnectionConfig()->getUser()} may has un commit transaction or un release table lock :\n";
+                    $call = function (array $traces,$client){
+                        /** @var QueryBuilder $trace */
+                        foreach ($traces as $trace){
+                            echo "\t".$trace->getLastQuery()."\n";
+                        }
+                    };
+                }
+                $call($this->debugTrace,$this);
+            }
+        }catch (\Throwable $exception){
+            $this->debugTrace = [];
+        }
     }
 }

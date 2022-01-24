@@ -85,17 +85,20 @@ class QueryExecutor extends QueryBuilder
 
     public function startTransaction()
     {
-        return $this->raw('start transaction');
+        parent::startTransaction();
+        return $this->exec(true);
     }
 
     public function commit()
     {
-        return $this->raw('commit');
+        parent::commit();
+        return $this->exec(true);
     }
 
     public function rollback()
     {
-        return $this->raw("rollback");
+        parent::rollback();
+        return $this->exec(true);
     }
 
     public function lockTable($table)

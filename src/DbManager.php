@@ -22,7 +22,17 @@ class DbManager
 
     protected $config = [];
     protected $pool = [];
+    /** @var callable|null */
+    protected $onSecureEvent;
 
+
+    function onSecureEvent(?callable $call = null):?callable
+    {
+        if($call != null){
+            $this->onSecureEvent = $call;
+        }
+        return $this->onSecureEvent;
+    }
 
     function addConnection(ConnectionConfig $config):DbManager
     {
@@ -158,7 +168,7 @@ class DbManager
         $scheduler = new Scheduler();
         $scheduler->add(function ()use($func,$clearTimer){
             $func($this);
-            $this->resetPool($clearTimer);
+//            $this->resetPool($clearTimer);
         });
         $scheduler->start();
 
