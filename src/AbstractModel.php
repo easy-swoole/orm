@@ -20,7 +20,7 @@ abstract class AbstractModel implements \ArrayAccess
     /** @var QueryResult|null */
     private $__lastQueryResult;
 
-    private $__withData = [];
+    private $__preQueryData = [];
 
     abstract function tableName():string;
 
@@ -266,6 +266,19 @@ abstract class AbstractModel implements \ArrayAccess
         $builder = new QueryBuilder();
 
         if($this->runtimeConfig()->getPreQuery()){
+            //说明已经执行了预查询
+            if(isset($this->__preQueryData[$targetModelClass])){
+                $whereVal = $this->getAttr($currentModeWhereCol);
+                $data = $this->__preQueryData[$targetModelClass][$whereVal];
+                if($data instanceof AbstractModel){
+                    return $data;
+                }else{
+                    $target->data($data);
+                    $this->__preQueryData[$targetModelClass][$whereVal] = $data;
+                    return $target;
+                }
+            }
+            //没有执行过，则构建执行
             //构建ids
             $ids = [];
             foreach ($this->lastQueryResult()->getResult() as $item){
@@ -281,7 +294,7 @@ abstract class AbstractModel implements \ArrayAccess
             foreach ($data as $item){
                 $list[$item[$targetModeWhereCol]] = $item;
             }
-            return $list;
+            $this->__preQueryData[$targetModelClass] = $list;
         }else{
             $whereVal = $this->getAttr($currentModeWhereCol);
             $builder->where($targetModeWhereCol,$whereVal)->limit(2)->get($target->tableName());
@@ -314,14 +327,11 @@ abstract class AbstractModel implements \ArrayAccess
         $data = $this->__exec($builder);
 
 
-
-        $withData = [];
-        $withCols = [];
         if($this->runtimeConfig()->getPreQuery()){
             $info = $this->runtimeConfig()->getPreQuery();
             $withCols = $info[0];
             foreach ($withCols as $col){
-                $withData[$col] = call_user_func([$this,$col]);
+                call_user_func([$this,$col]);
             }
         }
 
@@ -330,10 +340,7 @@ abstract class AbstractModel implements \ArrayAccess
         foreach ($data as $item){
             $temp = new static();
             $temp->data($item);
-            foreach ($withCols as $col){
-
-            }
-            $list[] = $item;
+            $list[] = $temp;
         }
 
         $this->resetStatusRuntimeStatus();
