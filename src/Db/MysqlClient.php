@@ -88,8 +88,6 @@ class MysqlClient extends MySQL implements ObjectInterface
 
     function execQueryBuilder(QueryBuilder $builder, bool $raw = false, float $timeout = null):QueryResult
     {
-        var_dump($builder->getLastQuery());
-
         $this->debugTrace[] = clone $builder;
 
         if($timeout == null){
