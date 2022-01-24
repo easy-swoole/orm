@@ -239,7 +239,7 @@ abstract class AbstractModel implements \ArrayAccess
     public function findOne($pkVal = null)
     {
         if($pkVal !== null){
-            $pkName = $this->__tablePk();
+            $pkName = $currentModeWhereCol;
             $this->where($pkName,$pkVal);
         }
         $this->limit(1);
@@ -250,29 +250,29 @@ abstract class AbstractModel implements \ArrayAccess
         var_dump($data);
     }
 
-    public function mapOne(string $targetModelClass,?QueryBuilder $builder = null):?AbstractModel
+    public function mapOne(string $targetModelClass,$targetModeWhereCol,?string $currentModeWhereCol = null):?AbstractModel
     {
         $target = new \ReflectionClass($targetModelClass);
         if(!$target->isSubclassOf(AbstractModel::class)){
             throw new ExecuteFail("{$targetModelClass} not a subclass of ".AbstractModel::class);
         }
+        if($currentModeWhereCol === null){
+            $currentModeWhereCol = $this->__tablePk();
+        }
         /** @var AbstractModel $target */
         $target = $target->newInstance();
-        if($builder == null){
-            //不属于任何模型，因此直接new
-            $builder = new QueryBuilder();
-            $builder->join($target->tableName(),"{$target->tableName()}.{$target->__tablePk()} = {$this->tableName()}.{$this->__tablePk()}");
-            $builder->where("{$target->tableName()}.{$target->__tablePk()}",$this->getAttr($this->__tablePk()));
-            $builder->limit(2)->get($this->tableName());
-            $data = $this->__exec($builder);
-            if(!empty($data)){
-                //如果存在两条记录，说明关联关系或者是数据库存储有问题
-                if(count($data) > 1){
-                    throw new ModelError(static::class." mapOne() to {$targetModelClass} relation error,more than one record match");
-                }else{
-                    $target->data($data[0]);
-                    return $target;
-                }
+        $builder = new QueryBuilder();
+        $builder->join($this->tableName(),"{$target->tableName()}.{$targetModeWhereCol} = {$this->tableName()}.{$currentModeWhereCol}");
+        $builder->where("{$target->tableName()}.{$targetModeWhereCol}",$this->getAttr($currentModeWhereCol));
+        $builder->limit(2)->get($target->tableName());
+        $data = $this->__exec($builder);
+        if(!empty($data)){
+            //如果存在两条记录，说明关联关系或者是数据库存储有问题
+            if(count($data) > 1){
+                throw new ModelError(static::class." mapOne() to {$targetModelClass} relation error,more than one record match");
+            }else{
+                $target->data($data[0]);
+                return $target;
             }
         }
         return null;
