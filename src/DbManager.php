@@ -168,7 +168,7 @@ class DbManager
         $scheduler = new Scheduler();
         $scheduler->add(function ()use($func,$clearTimer){
             $func($this);
-//            $this->resetPool($clearTimer);
+            $this->resetPool($clearTimer);
         });
         $scheduler->start();
 
