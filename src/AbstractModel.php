@@ -259,7 +259,7 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
         return null;
     }
 
-    public function mapOne(string $targetModelClass,$targetModeWhereCol,?string $currentModeWhereCol = null,string $joinType = "left")
+    protected function mapOne(string $targetModelClass,$targetModeWhereCol,?string $currentModeWhereCol = null,string $joinType = "left")
     {
         $target = new \ReflectionClass($targetModelClass);
         if(!$target->isSubclassOf(AbstractModel::class)){
@@ -271,6 +271,11 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
         /** @var AbstractModel $target */
         $target = $target->newInstance();
         $builder = new QueryBuilder();
+        $preData = $this->runtimeConfig()->getPreQueryData();
+        if(!empty($preData)){
+            $target->data($preData[$targetModelClass]);
+            return $target;
+        }
 
         if($this->runtimeConfig()->getPreQuery()){
             //说明已经执行了预查询
@@ -291,13 +296,17 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
             $builder->join($this->tableName(),"{$target->tableName()}.{$targetModeWhereCol} = {$this->tableName()}.{$currentModeWhereCol}",$joinType);
             $builder->where("{$this->tableName()}.{$currentModeWhereCol}",$ids,"IN");
             $builder->limit($this->runtimeConfig()->getPreQuery()[1])->get($target->tableName());
-            //返回以父类为key的结果集
+            //返回以父类定义的where key的结果集
             $list = [];
             $data =  $this->__exec($builder,false);
             foreach ($data as $item){
                 $list[$item[$targetModeWhereCol]] = $item;
             }
-            $this->__preQueryData[$targetModelClass] = $list;
+            return [
+                "model"=>$targetModelClass,
+                "dataList"=>$list,
+                'parentCol'=>$currentModeWhereCol
+            ];
         }else{
             $whereVal = $this->getAttr($currentModeWhereCol);
             $builder->where($targetModeWhereCol,$whereVal)->limit(2)->get($target->tableName());
@@ -329,14 +338,13 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
 
         $data = $this->__exec($builder);
 
-
+        $rawWithResult = [];
         if($this->runtimeConfig()->getPreQuery()){
             //清空上次的执行结果
-            $this->__preQueryData = [];
             $info = $this->runtimeConfig()->getPreQuery();
             $withCols = $info[0];
             foreach ($withCols as $col){
-                call_user_func([$this,$col]);
+                $rawWithResult[] = call_user_func([$this,$col]);
             }
         }
 
@@ -345,6 +353,12 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
         foreach ($data as $item){
             $temp = new static();
             $temp->data($item);
+            $tempArr = [];
+            foreach ($rawWithResult as $withColResult){
+                $keyVal = $this->__data[$withColResult['parentCol']];
+                $tempArr[$withColResult['model']] = $withColResult['dataList'][$keyVal];
+            }
+            $temp->runtimeConfig()->setPreQueryData($tempArr);
             $list[] = $temp;
         }
 
@@ -377,13 +391,27 @@ abstract class AbstractModel implements \ArrayAccess , \JsonSerializable
 
     }
 
-    public function toArray(bool $joinData = true):array
+    public function toArray(?array $callMethods = null):array
     {
         $data = $this->__tableArray();
         foreach ($data as $key => $val){
             $val = $this->getAttr($key);
             $data[$key] = $val;
         }
+        if($callMethods == null){
+            $callMethods = [];
+        }
+        foreach ($callMethods as $callMethod){
+            if(method_exists($this,$callMethod)){
+                $res = call_user_func([$this,$callMethod]);
+                if(is_array($res)){
+                    $data = $data + $res;
+                }elseif($res instanceof AbstractModel){
+                    $data = $data + $res->toArray($callMethods);
+                }
+            }
+        }
+
         return $data;
     }
 

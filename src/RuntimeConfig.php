@@ -25,6 +25,8 @@ class RuntimeConfig
     private $groupBy  = [];
     /** @var null|array */
     private $preQuery = null;
+    /** @var null|array */
+    private $preQueryData = null;
 
 
     function setConnectionConfig(ConnectionConfig $config):RuntimeConfig
@@ -150,6 +152,23 @@ class RuntimeConfig
         $this->preQuery = $preQuery;
     }
 
+    /**
+     * @return array|null
+     */
+    public function getPreQueryData(): ?array
+    {
+        return $this->preQueryData;
+    }
+
+    /**
+     * @param array|null $preQueryData
+     */
+    public function setPreQueryData(?array $preQueryData): void
+    {
+        $this->preQueryData = $preQueryData;
+    }
+
+
     public function reset()
     {
         $this->fields = "*";
@@ -160,6 +179,7 @@ class RuntimeConfig
         $this->join   = [];
         $this->groupBy  = [];
         $this->preQuery = null;
+        $this->preQueryData = null;
     }
 
 }
