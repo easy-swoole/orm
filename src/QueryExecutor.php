@@ -98,6 +98,18 @@ class QueryExecutor extends QueryBuilder
         return $this->raw("rollback");
     }
 
+    public function lockTable($table)
+    {
+        parent::lockTable($table);
+        return $this->exec(true);
+    }
+
+    public function unlockTable()
+    {
+        parent::unlockTable();
+        return $this->exec(true);
+    }
+
     private function getClient():MysqlClient
     {
         if($this->client){

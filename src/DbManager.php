@@ -22,7 +22,6 @@ class DbManager
 
     protected $config = [];
     protected $pool = [];
-    protected $context = [];
 
 
     function addConnection(ConnectionConfig $config):DbManager
@@ -78,23 +77,11 @@ class DbManager
 
     function defer(string $connectionName = "default",?float $timeout = null):MysqlClient
     {
-        $id = Coroutine::getCid();
-        if(isset($this->context[$id][$connectionName])){
-            return $this->context[$id][$connectionName];
+        $obj = $this->getConnectionPool($connectionName)->defer($timeout);
+        if($obj){
+            return $obj;
         }else{
-            if($timeout == null){
-                $this->config[$connectionName]->getTimeout();
-            }
-            $obj = $this->getConnectionPool($connectionName)->defer($timeout);
-            if($obj){
-                $this->context[$id][$connectionName] = $obj;
-                Coroutine::defer(function ()use($id){
-                    unset($this->context[$id]);
-                });
-                return $obj;
-            }else{
-                throw new PoolError("connection: {$connectionName} defer() timeout,pool may be empty");
-            }
+            throw new PoolError("connection: {$connectionName} defer() timeout,pool may be empty");
         }
     }
 
