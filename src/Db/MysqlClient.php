@@ -89,8 +89,6 @@ class MysqlClient extends MySQL implements ObjectInterface
     function execQueryBuilder(QueryBuilder $builder, bool $raw = false, float $timeout = null):QueryResult
     {
 
-
-
         $this->debugTrace[] = clone $builder;
 
         if($timeout == null){
@@ -131,25 +129,40 @@ class MysqlClient extends MySQL implements ObjectInterface
 
         switch ($op){
             case QueryBuilder::TS_OP_START:{
-                $this->isInTransaction = true;
+                if($ret == true){
+                    $this->isInTransaction = true;
+                }
                 break;
             }
+            case QueryBuilder::TS_OP_ROLLBACK:
             case QueryBuilder::TS_OP_COMMIT:{
-                break;
-            }
-            case QueryBuilder::TS_OP_ROLLBACK:{
+                if($ret){
+                    $this->hasLock = false;
+                    $this->isInTransaction = false;
+                }
                 break;
             }
             case QueryBuilder::TS_OP_LOCK_TABLE:{
+                if($ret){
+                    $this->hasLock = true;
+                }
                 break;
             }
             case QueryBuilder::TS_OP_UNLOCK_TABLE:{
+                if($ret){
+                    $this->hasLock = false;
+                }
                 break;
             }
             case QueryBuilder::TS_OP_LOCK_IN_SHARE:{
+                if($ret){
+                    $this->isInTransaction = true;
+                    $this->hasLock = false;
+                }
                 break;
             }
             case QueryBuilder::TS_OP_LOCK_FOR_UPDATE:{
+                //执行后自动释放，不需要标记。
                 break;
             }
         }

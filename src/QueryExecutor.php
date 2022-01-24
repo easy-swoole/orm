@@ -77,7 +77,7 @@ class QueryExecutor extends QueryBuilder
         return $this->exec();
     }
 
-    function raw($sql, $param = [])
+    function execRaw($sql, $param = [])
     {
         parent::raw($sql, $param);
         return $this->exec(true);
