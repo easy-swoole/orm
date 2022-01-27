@@ -58,7 +58,7 @@ class Pool extends AbstractPool
         try{
             return parent::keepMin($num);
         }catch (\Throwable $throwable){
-            return $this->status()['created'];
+            return $this->status(true)['created'];
         }
     }
 }
