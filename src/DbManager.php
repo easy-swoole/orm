@@ -112,14 +112,14 @@ class DbManager
         $result = $client->execQueryBuilder($builder,$raw,$timeout);
         if($this->onQuery){
             $temp = clone $builder;
-            call_user_func($this->onQuery,$result,$temp,$client,$start);
+            call_user_func($this->onQuery,$result,$temp,$start,$client);
         }
         if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
             $temp = new QueryBuilder();
             $temp->raw('SELECT FOUND_ROWS() as count');
             $count = $client->execQueryBuilder($temp,false,$timeout);
             if($this->onQuery){
-                call_user_func($this->onQuery,$count,$temp,$client,$start);
+                call_user_func($this->onQuery,$count,$temp,$start,$client);
             }
             $result->setTotalCount($count->getResult()[0]['count']);
         }
