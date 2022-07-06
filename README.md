@@ -25,15 +25,15 @@ composer require easyswoole/orm
 ## RFC
 ### 1、Model Invoke
 ```
-Model:invoke()->where(col,val)->get()
-Model:invoke(function(Model $m){
+Model::invoke()->where(col,val)->get()
+Model::invoke(function(Model $m){
     $m->where(col,val)
 })->get()
 ```
 
 ### 2、Model Where
 ```
-$model = Model:create()
+$model = Model::create()
 
 //$op => = , > , < , != , in , between
 $model->where(col1,val1,$op)->get()
